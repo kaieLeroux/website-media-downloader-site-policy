@@ -338,6 +338,125 @@ class CloudUploadController {
     }
 }
 
+async function startDropboxStreamUpload(filename) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const res = await browser.storage.local.get('dropbox_token');
+            if (!res.dropbox_token) {
+                return reject(new Error("Dropbox token not found. Please login in settings."));
+            }
+            const token = res.dropbox_token;
+
+            const initXhr = new XMLHttpRequest();
+            initXhr.open('POST', 'https://content.dropboxapi.com/2/files/upload_session/start');
+            initXhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            initXhr.setRequestHeader('Content-Type', 'application/octet-stream');
+            initXhr.setRequestHeader('Dropbox-API-Arg', JSON.stringify({ close: false }));
+
+            initXhr.onload = () => {
+                if (initXhr.status === 200 || initXhr.status === 201) {
+                    try {
+                        const response = JSON.parse(initXhr.responseText);
+                        resolve(response.session_id);
+                    } catch (e) {
+                        reject(new Error("Failed to parse Dropbox session ID"));
+                    }
+                } else if (initXhr.status === 401) {
+                    reauthDropbox().then(() => {
+                        startDropboxStreamUpload(filename).then(resolve).catch(reject);
+                    }).catch(reject);
+                } else {
+                    reject(new Error("Dropbox Stream Init Error: " + initXhr.statusText));
+                }
+            };
+            initXhr.onerror = () => reject(new Error("Network error during Dropbox stream init"));
+            initXhr.send();
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+async function appendDropboxStream(sessionId, offset, chunk) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const res = await browser.storage.local.get('dropbox_token');
+            const token = res.dropbox_token;
+            if (!token) return reject(new Error("Dropbox token missing"));
+
+            const appendXhr = new XMLHttpRequest();
+            appendXhr.open('POST', 'https://content.dropboxapi.com/2/files/upload_session/append_v2');
+            appendXhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            appendXhr.setRequestHeader('Content-Type', 'application/octet-stream');
+            appendXhr.setRequestHeader('Dropbox-API-Arg', JSON.stringify({
+                cursor: {
+                    session_id: sessionId,
+                    offset: offset
+                },
+                close: false
+            }));
+
+            appendXhr.onload = () => {
+                if (appendXhr.status === 200 || appendXhr.status === 201) {
+                    resolve();
+                } else if (appendXhr.status === 401) {
+                    reauthDropbox().then(() => {
+                        appendDropboxStream(sessionId, offset, chunk).then(resolve).catch(reject);
+                    }).catch(reject);
+                } else {
+                    reject(new Error("Dropbox append error: " + appendXhr.statusText));
+                }
+            };
+            appendXhr.onerror = () => reject(new Error("Network error during Dropbox append"));
+            appendXhr.send(chunk);
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+async function finishDropboxStream(sessionId, offset, filename) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const res = await browser.storage.local.get('dropbox_token');
+            const token = res.dropbox_token;
+            if (!token) return reject(new Error("Dropbox token missing"));
+
+            const finishXhr = new XMLHttpRequest();
+            finishXhr.open('POST', 'https://content.dropboxapi.com/2/files/upload_session/finish');
+            finishXhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            finishXhr.setRequestHeader('Content-Type', 'application/octet-stream');
+            const apiArgRaw = JSON.stringify({
+                cursor: { session_id: sessionId, offset: offset },
+                commit: {
+                    path: "/" + filename.replace(/[/\\?%*:|"<>]/g, '-'),
+                    mode: "add", autorename: true, mute: false
+                }
+            });
+            const apiArg = apiArgRaw.replace(/[\u007f-\uffff]/g, function(c) { 
+                return '\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);
+            });
+            finishXhr.setRequestHeader('Dropbox-API-Arg', apiArg);
+
+            finishXhr.onload = () => {
+                if (finishXhr.status === 200 || finishXhr.status === 201) {
+                    resolve();
+                } else if (finishXhr.status === 401) {
+                    reauthDropbox().then(() => {
+                        finishDropboxStream(sessionId, offset, filename).then(resolve).catch(reject);
+                    }).catch(reject);
+                } else {
+                    reject(new Error("Dropbox finish error: " + finishXhr.statusText));
+                }
+            };
+            finishXhr.onerror = () => reject(new Error("Network error during Dropbox finish"));
+            finishXhr.send();
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
 async function startGDriveStreamUpload(filename, totalSize, contentType) {
     const res = await browser.storage.local.get('gdrive_token');
     if (!res.gdrive_token) throw new Error("Google Drive token not found");
@@ -367,9 +486,16 @@ async function startGDriveStreamUpload(filename, totalSize, contentType) {
 }
 
 async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
-    const end = offset + chunk.length;
-    const total = totalSize || '*';
-    const contentRange = `bytes ${offset}-${end - 1}/${total}`;
+    const total = (totalSize !== undefined && totalSize !== null) ? totalSize : '*';
+    let contentRange;
+    if (chunk && chunk.length > 0) {
+        const end = offset + chunk.length;
+        contentRange = `bytes ${offset}-${end - 1}/${total}`;
+    } else {
+        contentRange = `bytes */${total}`;
+        if (total === '*') return;
+        chunk = new Uint8Array(0);
+    }
 
     const response = await fetch(sessionUri, {
         method: 'PUT',
@@ -386,7 +512,258 @@ async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
     return response;
 }
 
-function uploadToGDrive(blob, filename, onProgress, controller) {
+
+async function reauthDropbox() {
+    return new Promise((resolve, reject) => {
+        try {
+            const clientId = "gipboqpkook5oaj";
+            let finalRedirectUri;
+            if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
+                finalRedirectUri = browser.identity.getRedirectURL();
+            } else {
+                const id = browser.runtime.id;
+                if (id && id.includes('@')) {
+                    finalRedirectUri = "https://" + encodeURIComponent(id) + ".extensions.allizom.org/";
+                } else {
+                    finalRedirectUri = "https://924f7c81-8b1e-4b6e-9e7c-8e4a9e1d2c3f.extensions.allizom.org/";
+                }
+            }
+            const normalizedRedirectUri = finalRedirectUri.endsWith('/') ? finalRedirectUri.slice(0, -1) : finalRedirectUri;
+            const authUrl = "https://www.dropbox.com/oauth2/authorize?client_id=" + clientId + "&response_type=token&redirect_uri=" + encodeURIComponent(finalRedirectUri);
+
+            if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
+                browser.identity.launchWebAuthFlow({ url: authUrl, interactive: false }).then(redirectUrl => {
+                    if (redirectUrl) {
+                        const url = new URL(redirectUrl);
+                        const hashParams = new URLSearchParams(url.hash.substring(1));
+                        const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+                        if (accessToken) {
+                            browser.storage.local.set({ 'dropbox_token': accessToken }).then(() => resolve(accessToken));
+                        } else {
+                            reject(new Error("No access token found"));
+                        }
+                    } else reject(new Error("No redirect URL"));
+                }).catch(e => reject(e));
+            } else {
+                let isResolved = false;
+                let authTabId = null;
+                const updatedListener = async (tabId, changeInfo, tab) => {
+                    const urlString = changeInfo.url || tab.url;
+                    if (urlString && urlString.includes(normalizedRedirectUri) && (urlString.includes('access_token=') || urlString.includes('error='))) {
+                        if (!isResolved) {
+                            isResolved = true;
+                            browser.tabs.remove(tabId).catch(() => {});
+                            cleanup();
+                            const url = new URL(urlString);
+                            const hashParams = new URLSearchParams(url.hash.substring(1));
+                            const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+                            if (accessToken) browser.storage.local.set({ 'dropbox_token': accessToken }).then(() => resolve(accessToken));
+                            else reject(new Error("Failed to reauth Dropbox"));
+                        }
+                    }
+                };
+                const removedListener = (tabId) => {
+                    if (authTabId && tabId === authTabId && !isResolved) {
+                        isResolved = true;
+                        cleanup();
+                        reject(new Error("Reauth tab closed"));
+                    }
+                };
+                const cleanup = () => {
+                    browser.tabs.onUpdated.removeListener(updatedListener);
+                    browser.tabs.onRemoved.removeListener(removedListener);
+                };
+                browser.tabs.onUpdated.addListener(updatedListener);
+                browser.tabs.onRemoved.addListener(removedListener);
+                browser.tabs.create({ url: authUrl, active: false }).then(tab => { authTabId = tab.id; }).catch(e => {
+                    if (!isResolved) { isResolved = true; cleanup(); reject(e); }
+                });
+            }
+        } catch (e) { reject(e); }
+    });
+}
+
+async function reauthGDrive() {
+    return new Promise((resolve, reject) => {
+        try {
+            const clientId = "1042907477337-c8h27qniercjia05jqqafgvjao514n28.apps.googleusercontent.com";
+            
+            let finalRedirectUri;
+            if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
+                finalRedirectUri = browser.identity.getRedirectURL();
+            } else {
+                const id = browser.runtime.id;
+                if (id && id.includes('@')) {
+                    finalRedirectUri = `https://${encodeURIComponent(id)}.extensions.allizom.org/`;
+                } else {
+                    finalRedirectUri = "https://924f7c81-8b1e-4b6e-9e7c-8e4a9e1d2c3f.extensions.allizom.org/";
+                }
+            }
+
+            const scope = encodeURIComponent("https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email");
+            const normalizedRedirectUri = finalRedirectUri.endsWith('/') ? finalRedirectUri.slice(0, -1) : finalRedirectUri;
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(finalRedirectUri)}&scope=${scope}&prompt=none`;
+            
+            if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
+                browser.identity.launchWebAuthFlow({
+                    url: authUrl,
+                    interactive: false
+                }).then(async (redirectUrl) => {
+                    if (redirectUrl) {
+                        const url = new URL(redirectUrl);
+                        const hashParams = new URLSearchParams(url.hash.substring(1));
+                        const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+                        if (accessToken) {
+                            await browser.storage.local.set({ 'gdrive_token': accessToken });
+                            resolve(accessToken);
+                        } else {
+                            reject(new Error("No access token in redirect URL"));
+                        }
+                    } else {
+                        reject(new Error("No redirect URL"));
+                    }
+                }).catch(e => {
+                    reject(e);
+                });
+            } else {
+                let isResolved = false;
+                let authTabId = null;
+
+                const updatedListener = async (tabId, changeInfo, tab) => {
+                    const urlString = changeInfo.url || tab.url;
+                    if (urlString && urlString.includes(normalizedRedirectUri) && (urlString.includes('access_token=') || urlString.includes('error='))) {
+                        if (!isResolved) {
+                            isResolved = true;
+                            browser.tabs.remove(tabId).catch(() => {});
+                            cleanup();
+                            
+                            const url = new URL(urlString);
+                            const hashParams = new URLSearchParams(url.hash.substring(1));
+                            const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+                            
+                            if (accessToken) {
+                                await browser.storage.local.set({ 'gdrive_token': accessToken });
+                                resolve(accessToken);
+                            } else {
+                                reject(new Error("Failed to reauth: " + (hashParams.get('error') || "No access token")));
+                            }
+                        }
+                    }
+                };
+
+                const removedListener = (tabId) => {
+                    if (authTabId && tabId === authTabId && !isResolved) {
+                        isResolved = true;
+                        cleanup();
+                        reject(new Error("Reauth tab closed"));
+                    }
+                };
+
+                const cleanup = () => {
+                    browser.tabs.onUpdated.removeListener(updatedListener);
+                    browser.tabs.onRemoved.removeListener(removedListener);
+                };
+
+                browser.tabs.onUpdated.addListener(updatedListener);
+                browser.tabs.onRemoved.addListener(removedListener);
+
+                browser.tabs.create({ url: authUrl, active: false }).then(tab => {
+                    authTabId = tab.id;
+                }).catch(e => {
+                    if (!isResolved) {
+                        isResolved = true;
+                        cleanup();
+                        reject(e);
+                    }
+                });
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+
+function uploadToDropbox(blob, filename, onProgress, controller, isRetry = false) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const res = await browser.storage.local.get('dropbox_token');
+            if (!res.dropbox_token) {
+                return reject(new Error("Dropbox token not found. Please login in settings."));
+            }
+            const token = res.dropbox_token;
+
+            const uploadUrl = 'https://content.dropboxapi.com/2/files/upload';
+            const apiArgRaw = JSON.stringify({
+                path: "/" + filename.replace(/[/\\?%*:|"<>]/g, '-'),
+                mode: "add",
+                autorename: true,
+                mute: false
+            });
+            const apiArg = apiArgRaw.replace(/[\u007f-\uffff]/g, function(c) { 
+                return '\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);
+            });
+
+            const xhr = new XMLHttpRequest();
+            if (controller) controller.xhr = xhr;
+            xhr.open('POST', uploadUrl);
+            xhr.setRequestHeader('Authorization', "Bearer " + token);
+            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+            xhr.setRequestHeader('Dropbox-API-Arg', apiArg);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    onProgress(percent, event.loaded, event.total);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200 || xhr.status === 201) {
+                    resolve();
+                } else if (xhr.status === 401 && !isRetry) {
+                    reauthDropbox().then(() => {
+                        uploadToDropbox(blob, filename, onProgress, controller, true).then(resolve).catch(reject);
+                    }).catch(() => {
+                        reject(new Error("Dropbox session expired. Please re-login in settings."));
+                    });
+                } else {
+                    reject(new Error("Dropbox Upload Error: " + xhr.statusText));
+                }
+            };
+
+            xhr.onabort = () => {
+                if (controller && controller.paused) {
+                    controller.onResume = () => {
+                        controller.onResume = null;
+                        uploadToDropbox(blob, filename, onProgress, controller).then(resolve).catch(reject);
+                    };
+                }
+            };
+
+            xhr.onerror = () => {
+                if (controller && controller.cancelled) {
+                    reject(new Error("Upload cancelled"));
+                } else if (controller && controller.paused) {
+                    controller.onResume = () => {
+                        controller.onResume = null;
+                        uploadToDropbox(blob, filename, onProgress, controller).then(resolve).catch(reject);
+                    };
+                } else {
+                    reject(new Error("Network error during Dropbox upload"));
+                }
+            };
+
+            xhr.send(blob);
+
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+function uploadToGDrive(blob, filename, onProgress, controller, isRetry = false) {
     return new Promise(async (resolve, reject) => {
         try {
             const res = await browser.storage.local.get('gdrive_token');
@@ -417,7 +794,15 @@ function uploadToGDrive(blob, filename, onProgress, controller) {
                         reject(new Error("Failed to get session URI for resumable upload"));
                     }
                 } else if (initXhr.status === 401) {
-                    reject(new Error("Google Drive session expired. Please re-login in settings."));
+                    if (!isRetry) {
+                        reauthGDrive().then(() => {
+                            uploadToGDrive(blob, filename, onProgress, controller, true).then(resolve).catch(reject);
+                        }).catch(() => {
+                            reject(new Error("Google Drive session expired. Please re-login in settings."));
+                        });
+                    } else {
+                        reject(new Error("Google Drive session expired. Please re-login in settings."));
+                    }
                 } else {
                     reject(new Error("GDrive Init Error: " + initXhr.statusText));
                 }
@@ -457,7 +842,7 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
         const chunkSize = 1024 * 1024; // 1MB chunks
         let offset = 0;
 
-        const uploadNextChunk = () => {
+        const uploadNextChunk = (retries = 3) => {
             if (controller && controller.cancelled) {
                 reject(new Error("Upload cancelled"));
                 return;
@@ -498,6 +883,13 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
                     } catch (e) {
                         resolve(xhr.responseText);
                     }
+                } else if (xhr.status >= 500 && xhr.status < 600) {
+                    if (retries > 0) {
+                        console.warn(`GDrive Chunk Error: ${xhr.status}, retrying... (${retries} left)`);
+                        setTimeout(() => uploadNextChunk(retries - 1), 2000);
+                    } else {
+                        reject(new Error("GDrive Chunk Error: " + xhr.status + " " + xhr.statusText));
+                    }
                 } else {
                     reject(new Error("GDrive Chunk Error: " + xhr.status + " " + xhr.statusText));
                 }
@@ -522,7 +914,12 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
                         uploadNextChunk();
                     };
                 } else {
-                    reject(new Error("Network error during GDrive chunk upload"));
+                    if (retries > 0) {
+                        console.warn(`Network error during GDrive chunk upload, retrying... (${retries} left)`);
+                        setTimeout(() => uploadNextChunk(retries - 1), 2000);
+                    } else {
+                        reject(new Error("Network error during GDrive chunk upload"));
+                    }
                 }
             };
             xhr.send(chunk);
@@ -532,7 +929,7 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
     });
 }
 
-async function finalizeDownload(blob, filename, downloadMethod, loadingBar = null, streamedToGDrive = false) {
+async function finalizeDownload(blob, filename, downloadMethod, loadingBar = null, streamedToGDrive = false, streamedToDropbox = false) {
     if (!blob) {
         if (streamedToGDrive) {
             if (loadingBar) {
@@ -547,8 +944,9 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
         return;
     }
 
-    const settings = await browser.storage.local.get(['save-to-gdrive', 'gdrive_token']);
+    const settings = await browser.storage.local.get(['save-to-gdrive', 'gdrive_token', 'save-to-dropbox', 'dropbox_token']);
     const gdriveEnabled = settings['save-to-gdrive'] === '1' && settings['gdrive_token'];
+    const dropboxEnabled = settings['save-to-dropbox'] === '1' && settings['dropbox_token'];
     
     // Trigger local download first or early to preserve user gesture
     const objectUrl = URL.createObjectURL(blob);
@@ -587,6 +985,54 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
         });
     };
 
+    
+    if (dropboxEnabled && !streamedToDropbox) {
+        const controller = new CloudUploadController();
+        try {
+            if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({ 
+                    message: `Uploading ${filename} to Dropbox...`, 
+                    placement: "top",
+                    action: "Cancel",
+                    onActionClick: () => controller.cancel()
+                });
+            }
+            
+            if (loadingBar) {
+                loadingBar.max = 100;
+                loadingBar.removeAttribute('indeterminate');
+            }
+
+            await uploadToDropbox(blob, filename, (percent) => {
+                if (loadingBar) {
+                    loadingBar.value = 100;
+                    loadingBar.classList.add('uploading-phase');
+                    const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
+                    if (statusInfo) {
+                        statusInfo.textContent = (browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...") + ` (${percent}%)`;
+                    }
+                }
+            }, controller);
+
+            if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({ message: `Successfully uploaded ${filename} to Dropbox`, placement: "top" });
+            }
+            if (loadingBar) {
+                const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
+                if (statusInfo) {
+                    statusInfo.textContent = browser.i18n.getMessage("uploadSuccessGDriveTitle") || `Upload Complete!`;
+                }
+            }
+        } catch (e) {
+            console.error("Dropbox fallback upload failed:", e);
+            if (e.message !== "Upload cancelled" && typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({ message: `Dropbox Upload Failed: ${e.message}`, placement: "top" });
+            }
+            triggerLocalDownload();
+        }
+        return;
+    }
+
     if (gdriveEnabled && !streamedToGDrive) {
         const controller = new CloudUploadController();
         try {
@@ -606,7 +1052,8 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
 
             await uploadToGDrive(blob, filename, (percent) => {
                 if (loadingBar) {
-                    loadingBar.value = percent;
+                    loadingBar.value = 100;
+                    loadingBar.classList.add('uploading-phase');
                     const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
                     if (statusInfo) {
                         statusInfo.textContent = (browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...") + ` (${percent}%)`;
@@ -645,7 +1092,10 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
                 }
             }
         }
-    } else {
+        return;
+    }
+
+    if (!streamedToGDrive && !streamedToDropbox) {
         await triggerLocalDownload();
         if (loadingBar) {
             loadingBar.value = 100;
@@ -1020,16 +1470,34 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
       }
     }
 
-    const settings = await browser.storage.local.get(['speed-boost', 'connections', 'gdrive-stream', 'gdrive_token', 'stream-to-mp4']);
+    const settings = await browser.storage.local.get(['speed-boost', 'connections', 'gdrive-stream', 'gdrive_token', 'stream-to-mp4', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token']);
     const isParallel = settings['speed-boost'] === '1';
     const concurrency = isParallel ? parseInt(settings['connections'] || '4', 10) : 1;
     const queue = new ParallelQueue(concurrency);
 
     const gdriveStreamSettings = await browser.storage.local.get('save-to-gdrive');
     const isGdriveStream = gdriveStreamSettings['save-to-gdrive'] === '1' && settings['gdrive-stream'] === '1' && settings['gdrive_token'];
+    const isDropboxStream = settings['save-to-dropbox'] === '1' && settings['dropbox-stream'] === '1' && settings['dropbox_token'];
     let gdriveSessionUri = null;
+    let dropboxSessionId = null;
+    let dropboxOffset = 0;
+    let useDropboxStream = isDropboxStream;
     let currentUploadOffset = 0;
 
+    if (isDropboxStream) {
+        try {
+            const baseFileName = customFilename ? (customFilename.substring(0, customFilename.lastIndexOf('.')) || customFilename) : getFileName(m3u8Url);
+            const streamExt = settings['stream-to-mp4'] !== '0' ? '.mp4' : '.ts';
+            const uploadFilename = isAudio ? `${baseFileName}_audio.mp4` : `${baseFileName}${streamExt}`;
+            dropboxSessionId = await startDropboxStreamUpload(uploadFilename);
+            if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({ 
+                    message: browser.i18n.getMessage("uploadingToDropbox", [uploadFilename]) || `Uploading ${uploadFilename} to Dropbox...`, 
+                    placement: "top"
+                });
+            }
+        } catch(e) { console.error("Failed to start Dropbox stream upload for M3U8:", e); }
+    }
     if (isGdriveStream) {
         try {
             const baseFileName = customFilename ? (customFilename.substring(0, customFilename.lastIndexOf('.')) || customFilename) : getFileName(m3u8Url);
@@ -1051,7 +1519,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
 
     let transmuxer = null;
     const transmuxedOutputQueue = [];
-    if (gdriveSessionUri && settings['stream-to-mp4'] !== '0' && typeof muxjs !== 'undefined') {
+    if ((gdriveSessionUri || dropboxSessionId) && settings['stream-to-mp4'] !== '0' && typeof muxjs !== 'undefined') {
         transmuxer = new muxjs.mp4.Transmuxer();
         transmuxer.on('data', (event) => {
             if (event.initSegment) transmuxedOutputQueue.push(event.initSegment);
@@ -1067,7 +1535,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
     const GDRIVE_CHUNK_UNIT = 256 * 1024;
 
     async function tryUploadNext(isFinal = false) {
-        if (isUploadingInProgress || !gdriveSessionUri) return;
+        if (isUploadingInProgress || (!gdriveSessionUri && !dropboxSessionId)) return;
         isUploadingInProgress = true;
         
         while (pendingUploads.has(nextUploadIndex) || (isFinal && uploadBufferSize > 0)) {
@@ -1123,14 +1591,21 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
                 let success = false;
                 while (retries > 0 && !success) {
                     try {
-                        await uploadStreamChunk(gdriveSessionUri, dataToUpload, currentUploadOffset);
-                        currentUploadOffset += uploadSize;
+                        if (gdriveSessionUri) {
+                            await uploadStreamChunk(gdriveSessionUri, dataToUpload, currentUploadOffset, isFinal ? (currentUploadOffset + dataToUpload.byteLength) : undefined);
+                        }
+                        if (dropboxSessionId) {
+                            await appendDropboxStream(dropboxSessionId, dropboxOffset, dataToUpload);
+                        }
+                        if (gdriveSessionUri) currentUploadOffset += uploadSize;
+                        if (dropboxSessionId) dropboxOffset += uploadSize;
                         success = true;
                     } catch (e) {
                         retries--;
-                        console.warn(`GDrive HLS chunk upload retry (${3-retries}):`, e);
+                        console.warn(`Cloud HLS chunk upload retry (${3-retries}):`, e);
                         if (retries === 0) {
                             gdriveSessionUri = null;
+                            dropboxSessionId = null;
                             isUploadingInProgress = false;
                             return;
                         }
@@ -1231,7 +1706,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
           arr = combined;
         }
 
-        if (gdriveSessionUri) {
+        if (gdriveSessionUri || dropboxSessionId) {
             pendingUploads.set(seg.index, arr);
             await tryUploadNext();
         }
@@ -1245,7 +1720,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
           loadingBar.value = progressPercent;
           updateSegmentProgressStatus(loadingBar, globalProcessedSegments, globalTotalSegments);
           
-          if (gdriveSessionUri) {
+          if (gdriveSessionUri || dropboxSessionId) {
              const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
              if (statusInfo) {
                const percent = Math.round(progressPercent);
@@ -1264,23 +1739,31 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
       await Promise.all(tasks);
       
       // Flush any remaining data in the buffer and finalize
-      if (gdriveSessionUri) {
+      if (gdriveSessionUri || dropboxSessionId) {
           await tryUploadNext(true);
       }
 
-      // Finalize GDrive upload if active
-      if (gdriveSessionUri) {
+      // Finalize GDrive/Dropbox upload if active
+      if (gdriveSessionUri || dropboxSessionId) {
           try {
-              // Send an empty chunk with the final total size to close the session
-              await uploadStreamChunk(gdriveSessionUri, new Uint8Array(0), currentUploadOffset, currentUploadOffset);
               const baseFileName = customFilename ? (customFilename.substring(0, customFilename.lastIndexOf('.')) || customFilename) : getFileName(m3u8Url);
               const streamExt = settings['stream-to-mp4'] !== '0' ? '.mp4' : '.ts';
               const uploadFilename = isAudio ? `${baseFileName}_audio.mp4` : `${baseFileName}${streamExt}`;
-              if (typeof mdui !== 'undefined' && mdui.snackbar) {
-                  mdui.snackbar({ message: browser.i18n.getMessage("uploadSuccessGDrive", [uploadFilename]) || `Successfully saved ${uploadFilename} to Google Drive!`, placement: "top" });
+              
+              if (gdriveSessionUri) {
+                  await uploadStreamChunk(gdriveSessionUri, new Uint8Array(0), currentUploadOffset, currentUploadOffset);
+                  if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                      mdui.snackbar({ message: browser.i18n.getMessage("uploadSuccessGDrive", [uploadFilename]) || `Successfully saved ${uploadFilename} to Google Drive!`, placement: "top" });
+                  }
+              }
+              if (dropboxSessionId) {
+                  await finishDropboxStream(dropboxSessionId, dropboxOffset, uploadFilename);
+                  if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                      mdui.snackbar({ message: browser.i18n.getMessage("uploadSuccessDropbox", [uploadFilename]) || `Successfully saved ${uploadFilename} to Dropbox!`, placement: "top" });
+                  }
               }
           } catch (e) {
-              console.error("Failed to finalize GDrive stream upload:", e);
+              console.error("Failed to finalize Cloud stream upload:", e);
           }
       }
 
@@ -1319,12 +1802,12 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
         loadingBar.value = 100;
         const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
         if (statusInfo) {
-          statusInfo.textContent = gdriveSessionUri 
+          statusInfo.textContent = (gdriveSessionUri || dropboxSessionId) 
             ? (browser.i18n.getMessage("uploadSuccessGDriveTitle") || "Upload Complete!")
             : (browser.i18n.getMessage("downloadComplete") || "Download Complete!");
         }
       }
-      return { ...finalResult, streamed: !!gdriveSessionUri };
+      return { ...finalResult, streamed: !!gdriveSessionUri || !!dropboxSessionId, streamedToGDrive: !!gdriveSessionUri, streamedToDropbox: !!dropboxSessionId };
     } finally {
       await clearConversionChunks(sessionId);
     }
@@ -1361,7 +1844,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
        finalAudioFileName = converted.filename;
 
        // Extracted audio is a new file (WAV/MP3), so we must upload it if GDrive is enabled.
-       await finalizeDownload(finalAudioBlob, finalAudioFileName, downloadMethod, loadingBar, false);
+       await finalizeDownload(finalAudioBlob, finalAudioFileName, downloadMethod, loadingBar, false, false);
 
        return { blob: finalAudioBlob, streamed: false };
     }
@@ -1374,17 +1857,19 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
     }
   }
 
-  let videoBlob, ext, videoStreamed;
+  let videoBlob, ext, videoStreamed, videoStreamedToGDrive, videoStreamedToDropbox;
   if (!audioOnly) {
     const videoResult = await downloadSegments(videoUrl, false, customFilename);
     videoBlob = videoResult.blob;
     ext = videoResult.ext;
     videoStreamed = videoResult.streamed;
+    videoStreamedToGDrive = videoResult.streamedToGDrive;
+    videoStreamedToDropbox = videoResult.streamedToDropbox;
 
     const baseFileName = customFilename ? (customFilename.substring(0, customFilename.lastIndexOf('.')) || customFilename) : getFileName(m3u8Url);
     const videoBlobUrl = URL.createObjectURL(videoBlob);
 
-    await finalizeDownload(videoBlob, audioUrl ? `${baseFileName}_video${ext}` : `${baseFileName}${ext}`, downloadMethod, loadingBar, videoStreamed);
+    await finalizeDownload(videoBlob, audioUrl ? `${baseFileName}_video${ext}` : `${baseFileName}${ext}`, downloadMethod, loadingBar, videoStreamedToGDrive, videoStreamedToDropbox);
 
     URL.revokeObjectURL(videoBlobUrl);
   }
@@ -1400,7 +1885,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
     snackbar.addEventListener('close', () => {
       snackbar.remove();
     });
-    const { blob: audioBlob, streamed: audioStreamed } = await downloadSegments(audioUrl, true, customFilename);
+    const { blob: audioBlob, streamed: audioStreamed, streamedToGDrive: audioStreamedToGDrive, streamedToDropbox: audioStreamedToDropbox } = await downloadSegments(audioUrl, true, customFilename);
 
     let finalAudioBlob = audioBlob;
     let finalAudioFileName = audioOnly ? (customFilename || `${baseFileName}.mp3`) : `${baseFileName}_audio.mp4`;
@@ -1420,7 +1905,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
         finalAudioBlob = converted.blob;        finalAudioFileName = converted.filename;
     }
 
-    await finalizeDownload(finalAudioBlob, finalAudioFileName, downloadMethod, loadingBar, audioConverted ? false : audioStreamed);
+    await finalizeDownload(finalAudioBlob, finalAudioFileName, downloadMethod, loadingBar, audioConverted ? false : audioStreamedToGDrive, audioConverted ? false : audioStreamedToDropbox);
 
     if (audioOnly) {
         showDialog(browser.i18n.getMessage("audioExtractionSuccess", [finalAudioFileName]), browser.i18n.getMessage("successTitle"));

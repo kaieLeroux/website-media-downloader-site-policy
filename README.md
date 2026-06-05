@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-1.9.5-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -47,27 +47,29 @@ Designed with a focus on privacy and technical transparency, all operations—in
 
 ---
 
-## What's New in v1.9.5
+## What's New in v2.0.1
 
-- **Comprehensive Engine Overhaul**:
-    - **Memory Efficiency**: Implemented IndexedDB-based streaming to handle multi-gigabyte files without crashing due to RAM limits.
-    - **Speed Boost**: Refactored multi-threaded fetching with byte-offset chunk indexing for faster, more stable downloads.
-- **Advanced Detection & Interception**:
-    - **WebSocket & Shadow DOM**: Added WebSocket traffic monitoring and recursive Shadow DOM scanning to capture media hidden from standard DOM inspection.
-    - **DRM Detection**: Real-time detection of DRM-protected content with descriptive user notifications.
-    - **Surgical Scrapers**: Integrated high-precision extraction modules for Instagram, TikTok, and Twitter.
-- **Media Processing & Conversion**:
-    - **Automatic MP3 Conversion**: Integrated `lamejs` with a dedicated Web Worker to encode audio to MP3 without blocking the UI.
-    - **TS to MP4 Conversion**: Implemented `mux.js` for seamless client-side transmuxing of MPEG-TS streams into MP4 format.
-- **UI/UX Modernization**:
-    - **Glassmorphic Design**: Updated settings interface with accordion sections and smooth animations.
-    - **Contextual Controls**: Replaced static buttons with context-aware controls (Pause/Resume/Cancel) for active downloads.
-- **Google Drive Integration**: Native support for handling media links directly from Google Drive.
-- **Localization & Stability**: Extensive i18n updates across 9 languages and resolved race conditions in download state management.
+- **Integrations & Cloud**:
+    - **Dropbox Integration**: Added full Dropbox support including OAuth, stream upload, background save, ZIP, and settings UI.
+    - **Google Drive Enhancements**: Implemented automatic silent background re-authentication on token expiration (401) for seamless cloud uploads.
+- **Downloads & Network**:
+    - **Download Resiliency**: Implemented auto-retry and dynamic recovery for parallel downloads to ensure high completion rates on unstable networks.
+    - **Granular Progress & Speed**: Added a real-time download speed meter on media cards and granular 1MB chunk progress tracking.
+    - **Network Diagnostics**: Introduced a highly accurate built-in network speed test tool in the settings.
+- **Media Processing & Organization**:
+    - **Subtitle Processing**: Added comprehensive subtitle format conversion and detection using the `subsrt` library.
+    - **Advanced Sorting**: New media sorting filter based on time, alphabet, and size.
+    - **QR Code Preview**: Improved the QR code scanner with an inline iframe preview.
+- **Performance Optimizations**:
+    - **DOM Scanning**: Debounced MutationObserver and heavily optimized DOM scanning to prevent lag on highly dynamic web pages.
+    - **Resource Management**: Added a performance optimization setting and media list limit to prevent browser slowdowns on heavy sites.
+- **UI/UX & Localization**:
+    - **Interface Improvements**: Added an info icon next to display switches to dynamically show supported formats and resolved layout wrapping issues.
+    - **Localization Refinement**: Completely refactored English and Indonesian translation keys for clarity and professionalism, and fixed hyphenation formatting across all 9 supported languages.
 
 ---
 
-## Technical Features (v1.9.5)
+## Technical Features (v2.0.1)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:
@@ -195,6 +197,7 @@ If you want to develop this project further, please don't forget to include me i
 - QR Generation: [QRCode.js](https://github.com/davidshimjs/qrcodejs)
 - Stream Transmuxing: [mux.js](https://github.com/videojs/mux.js)
 - MP3 Encoding: [lamejs](https://github.com/zhuker/lamejs)
+- Subtitle Processing: [subsrt](https://github.com/papnkukn/subsrt)
 
 ### Iconography
 - Extension Iconography: Icons are derived from the Google Material Symbols and Icons library, utilized under the Apache License 2.0. Specific SVG implementations have been customized for the user interface.

@@ -181,13 +181,29 @@
                 </div>
                 <mdui-switch id="hide-page-components"></mdui-switch>
               </div>
-              
               <div class="setting-item">
                 <div class="setting-text">
                   <h3 data-translate="mediaNotificationCheckbox">Enable detection notification</h3>
                   <p data-translate="mediaNotificationExplain">Show a notification when media is detected.</p>
                 </div>
                 <mdui-switch id="media-notification"></mdui-switch>
+              </div>
+              
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="mediaSortOrderTitle">Sort media by</h3>
+                  <p data-translate="mediaSortOrderExplain">Choose how detected media should be ordered</p>
+                </div>
+                <div class="pill-select-wrapper">
+                  <select id="media-sort-order" class="pill-select">
+                    <option value="newest" data-translate="sortNewest">Newest</option>
+                    <option value="oldest" data-translate="sortOldest">Oldest</option>
+                    <option value="letter_asc" data-translate="sortLetterAsc">Letter (A-Z)</option>
+                    <option value="letter_desc" data-translate="sortLetterDesc">Letter (Z-A)</option>
+                    <option value="number_desc" data-translate="sortNumberDesc">Number (9-0)</option>
+                    <option value="number_asc" data-translate="sortNumberAsc">Number (0-9)</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -207,7 +223,12 @@
                   <h3 data-translate="onlyVideoTitle">Show video</h3>
                   <p data-translate="onlyVideoExplain">Show detected video files in the list.</p>
                 </div>
-                <mdui-switch id="only-video"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="video" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-video"></mdui-switch>
+                </div>
               </div>
               
               <div class="setting-item">
@@ -215,7 +236,12 @@
                   <h3 data-translate="onlyAudioTitle">Show audio</h3>
                   <p data-translate="onlyAudioExplain">Show detected audio files in the list.</p>
                 </div>
-                <mdui-switch id="only-audio"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="audio" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-audio"></mdui-switch>
+                </div>
               </div>
               
               <div class="setting-item">
@@ -223,7 +249,12 @@
                   <h3 data-translate="onlyStreamTitle">Show streams</h3>
                   <p data-translate="onlyStreamExplain">Show detected media streams (HLS, DASH).</p>
                 </div>
-                <mdui-switch id="only-stream"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="stream" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-stream"></mdui-switch>
+                </div>
               </div>
               
               <div class="setting-item">
@@ -231,7 +262,12 @@
                   <h3 data-translate="onlyImageTitle">Show images</h3>
                   <p data-translate="onlyImageExplain">Show detected image files (WebP, PNG, JPG, GIF).</p>
                 </div>
-                <mdui-switch id="only-image"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="image" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-image"></mdui-switch>
+                </div>
               </div>
               
               <div class="setting-item">
@@ -239,7 +275,12 @@
                   <h3 data-translate="onlySubtitleTitle">Show subtitles</h3>
                   <p data-translate="onlySubtitleExplain">Show detected subtitle and caption files.</p>
                 </div>
-                <mdui-switch id="only-subtitle"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="subtitle" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-subtitle"></mdui-switch>
+                </div>
               </div>
               
               <div class="setting-item">
@@ -247,7 +288,12 @@
                   <h3 data-translate="onlyFileTitle">Show download links</h3>
                   <p data-translate="onlyFileExplain">Show detected download links and files.</p>
                 </div>
-                <mdui-switch id="only-file"></mdui-switch>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <mdui-button-icon class="info-extensions" data-type="file" style="opacity: 0.7; transform: scale(0.8);">
+                    <mdui-icon><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></mdui-icon>
+                  </mdui-button-icon>
+                  <mdui-switch id="only-file"></mdui-switch>
+                </div>
               </div>
             </div>
           </div>
@@ -322,6 +368,24 @@
               </div>
               
               <div class="setting-item">
+                 <h3 data-translate="subtitleConversionTitle">Convert subtitle to</h3>
+                 <div class="pill-select-wrapper">
+                   <select id="subtitle-conversion" class="pill-select">
+                      <option value="none" data-translate="subtitleConversionNone">Original (Don't convert)</option>
+                      <option value="srt">SRT</option>
+                      <option value="vtt">VTT</option>
+                      <option value="ass">ASS</option>
+                      <option value="ssa">SSA</option>
+                      <option value="sub">SUB</option>
+                      <option value="smi">SMI</option>
+                      <option value="lrc">LRC</option>
+                      <option value="sbv">SBV</option>
+                      <option value="json">JSON</option>
+                   </select>
+                 </div>
+              </div>
+              
+              <div class="setting-item">
                 <div class="setting-text">
                   <h3 data-translate="mpdFixCheckbox">Fix MPD files (recommended)</h3>
                   <p data-translate="mpdFixExplain">Modify .mpd manifests to include only the downloaded quality, ensuring compatibility with players like VLC.</p>
@@ -357,40 +421,69 @@
           <div class="settings-group">
             <h2 class="settings-section-title collapsible-header">
               <mdui-icon>
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95A5.469 5.469 0 0 1 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.12 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5c0-2.64-2.05-4.78-4.65-4.96z"/></svg>
               </mdui-icon>
-              <span data-translate="settingsCloudSectionTitle">Cloud Settings</span>
+              <span data-translate="settingsCloudSectionTitle">Cloud Integration</span>
               <mdui-icon class="collapse-icon" style="margin-left: auto; display: none;"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></mdui-icon>
             </h2>
 
             <div class="settings-items-container">
-              <div class="setting-item">
+              <div class="setting-item" style="padding-top: 10px; padding-bottom: 10px;">
                 <div class="setting-text">
-                  <h3 data-translate="saveToGDriveTitle">Save to Google Drive</h3>
-                  <p data-translate="saveToGDriveExplain">Upload downloaded files directly to your Google Drive.</p>
+                  <h3 data-translate="cloudSaveLocation">Save Location</h3>
+                  <p data-translate="cloudSaveLocationDesc">Choose where to save downloads.</p>
                 </div>
-                <mdui-switch id="save-to-gdrive"></mdui-switch>
+                <div class="pill-select-wrapper" style="flex-shrink: 0;">
+                  <select id="cloud-save-location" class="pill-select">
+                    <option value="local" data-translate="cloudSaveLocal">Local Device Only</option>
+                    <option value="gdrive" data-translate="cloudSaveGDrive">Google Drive</option>
+                    <option value="dropbox" data-translate="cloudSaveDropbox">Dropbox</option>
+                  </select>
+                </div>
               </div>
 
-              <div class="setting-item">
-                <div class="setting-text">
-                  <h3 data-translate="gdriveStreamTitle">Stream upload</h3>
-                  <p data-translate="gdriveStreamExplain">Upload chunks while downloading.</p>
-                </div>
-                <mdui-switch id="gdrive-stream"></mdui-switch>
-              </div>
-
-              <div id="gdrive-login-container" class="setting-item" style="padding-top: 10px; padding-bottom: 10px;">
-                <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
-                  <h3 data-translate="gdriveAccountTitle" style="margin: 0;">Google Drive Account</h3>
-                  <div id="gdrive-user-info" style="display: none; font-size: 11px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <span id="gdrive-user-email"></span>
+              <div id="gdrive-details-container" style="display: none; flex-direction: column;">
+                <div id="gdrive-login-container" class="setting-item" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid var(--mdui-color-surface-variant);">
+                  <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+                    <h3 data-translate="gdriveAccountTitle" style="margin: 0;">Google Drive Account</h3>
+                    <div id="gdrive-user-info" style="display: none; font-size: 11px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span id="gdrive-user-email"></span>
+                    </div>
                   </div>
+                  <mdui-button variant="tonal" id="gdrive-login-btn" style="--mdui-shape-corner-extra-small: 16px; height: 32px; flex-shrink: 0; margin-left: 12px; align-self: center;">
+                    <mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.48 10.92v3.28h4.74c-.2 1.06-.9 1.95-2.04 2.71a6.49 6.49 0 0 1-10.36-4.59 6.49 6.49 0 0 1 10.36-4.59l2.56-2.56A10.003 10.003 0 0 0 2.48 12c0 5.52 4.48 10 10 10 5.52 0 10-4.48 10-10 0-.68-.08-1.34-.23-1.98h-9.77z"/></svg></mdui-icon>
+                    <span id="gdrive-login-text" data-translate="gdriveLoginButton">Login</span>
+                  </mdui-button>
                 </div>
-                <mdui-button variant="tonal" id="gdrive-login-btn" style="--mdui-shape-corner-extra-small: 16px; height: 32px; flex-shrink: 0; margin-left: 12px; align-self: center;">
-                  <mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.48 10.92v3.28h4.74c-.2 1.06-.9 1.95-2.04 2.71a6.49 6.49 0 0 1-10.36-4.59 6.49 6.49 0 0 1 10.36-4.59l2.56-2.56A10.003 10.003 0 0 0 2.48 12c0 5.52 4.48 10 10 10 5.52 0 10-4.48 10-10 0-.68-.08-1.34-.23-1.98h-9.77z"/></svg></mdui-icon>
-                  <span id="gdrive-login-text" data-translate="gdriveLoginButton">Login</span>
-                </mdui-button>
+                <div id="gdrive-stream-container" class="setting-item" style="display: none;">
+                  <div class="setting-text">
+                    <h3 data-translate="gdriveStreamTitle">Stream upload</h3>
+                    <p data-translate="gdriveStreamExplain">Upload chunks while downloading.</p>
+                  </div>
+                  <mdui-switch id="gdrive-stream"></mdui-switch>
+                </div>
+              </div>
+
+              <div id="dropbox-details-container" style="display: none; flex-direction: column;">
+                <div id="dropbox-login-container" class="setting-item" style="padding-top: 10px; padding-bottom: 10px; border-top: 1px solid var(--mdui-color-surface-variant);">
+                  <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+                    <h3 data-translate="dropboxAccountTitle" style="margin: 0;">Dropbox Account</h3>
+                    <div id="dropbox-user-info" style="display: none; font-size: 11px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span id="dropbox-user-email"></span>
+                    </div>
+                  </div>
+                  <mdui-button variant="tonal" id="dropbox-login-btn" style="--mdui-shape-corner-extra-small: 16px; height: 32px; flex-shrink: 0; margin-left: 12px; align-self: center;">
+                    <mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.01 2.375l-7.07 4.545l7.07 4.41l7.07-4.41l-7.07-4.545zm-7.07 13.5l7.07-4.545l-7.07-4.41l-7.07 4.41l7.07 4.545zm14.14 0l-7.07-4.41l7.07-4.545l7.07 4.41l-7.07 4.545zm-7.07 1.055l-7.07-4.545l-2.93 1.95v1.205L12.01 21.63l10-6.095v-1.205l-2.93-1.95l-7.07 4.545z"/></svg></mdui-icon>
+                    <span id="dropbox-login-text" data-translate="dropboxLoginButton">Login</span>
+                  </mdui-button>
+                </div>
+                <div id="dropbox-stream-container" class="setting-item" style="display: none;">
+                  <div class="setting-text">
+                    <h3 data-translate="dropboxStreamTitle">Stream upload to Dropbox</h3>
+                    <p data-translate="dropboxStreamExplain">Upload chunks to Dropbox while downloading.</p>
+                  </div>
+                  <mdui-switch id="dropbox-stream"></mdui-switch>
+                </div>
               </div>
             </div>
           </div>
@@ -405,6 +498,42 @@
             </h2>
 
             <div class="settings-items-container">
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="optimizeLowEndTitle">Optimize for low-end devices</h3>
+                  <p data-translate="optimizeLowEndExplain">Reduces CPU usage but may miss some media.</p>
+                </div>
+                <mdui-switch id="optimize-low-end"></mdui-switch>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="limitMediaListTitle">Limit detected media list</h3>
+                  <p data-translate="limitMediaListExplain">Limit the number of media shown.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="pill-select-wrapper">
+                    <select id="limit-media-list" class="pill-select">
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
+                      <option value="custom" data-translate="limitMediaListCustom">Custom (0 = all)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="setting-item" id="setting-limit-media-custom" style="display: none;">
+                <div class="setting-text">
+                  <h3 data-translate="limitMediaListCustomTitle">Custom media limit</h3>
+                  <p data-translate="limitMediaListCustomExplain">Enter custom limit (0 = all)</p>
+                </div>
+                <div>
+                  <input type="number" id="limit-media-list-custom" class="pill-input" min="0" value="0" style="min-width: 60px; width: 60px; text-align: center; padding: 6px 16px; font-size: 0.85rem;">
+                </div>
+              </div>
+              
               <div class="setting-item">
                 <div class="setting-text">
                   <h3 data-translate="speedBoostResumeTitle">Force Speed Boost on Resume</h3>
@@ -511,6 +640,48 @@
                       <svg viewBox="0 -960 960 960"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 312-312H520v-80h240v240h-80v-124L388-332Z"/></svg>
                     </mdui-icon>
                   </mdui-button-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+            <h2 class="settings-section-title collapsible-header">
+              <mdui-icon>
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 0 0-9 9 9.07 9.07 0 0 0 .76 3.61l1.43-1.43a7.14 7.14 0 0 1-.19-2.18 7 7 0 1 1 11.23 5.62l1.43 1.43A9 9 0 0 0 12 3zm0 5a4 4 0 0 0-4 4 3.93 3.93 0 0 0 .19 1.18l2.25-2.25a2 2 0 1 1 2.82 2.82l-2.25 2.25A3.93 3.93 0 0 0 12 16a4 4 0 0 0 4-4 4 4 0 0 0-4-4z"/></svg>
+              </mdui-icon>
+              <span data-translate="settingsSpeedTestSectionTitle">Network Speed Test</span>
+              <mdui-icon class="collapse-icon" style="margin-left: auto; display: none;"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></mdui-icon>
+            </h2>
+            
+            <div class="settings-items-container">
+              <div class="setting-item vertical" style="padding: 16px; gap: 12px; align-items: stretch; display: flex; flex-direction: column; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                  <span style="font-weight: 500; font-size: 13px;" data-translate="speedTestIntro">Test your download and upload connection speed.</span>
+                  <mdui-button id="start-speed-test" variant="filled" style="--mdui-shape-corner-extra-small: 16px; height: 36px; flex-shrink: 0;" data-translate="runSpeedTestBtn">Run Test</mdui-button>
+                </div>
+                
+                <div id="speed-test-results" style="display: none; flex-direction: column; gap: 12px; margin-top: 8px; border-top: 1px solid rgb(var(--mdui-color-outline-variant)); padding-top: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mdui-icon style="color: rgb(var(--mdui-color-primary));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg></mdui-icon>
+                      <span style="font-weight: 500; font-size: 13px;" data-translate="downloadSpeed">Download Speed</span>
+                    </div>
+                    <span id="download-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace;">-</span>
+                  </div>
+                  <mdui-linear-progress id="download-test-progress" value="0" style="display: none;"></mdui-linear-progress>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mdui-icon style="color: rgb(var(--mdui-color-secondary));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v-4h-4v4H7l5 5 5-5h-3z"/></svg></mdui-icon>
+                      <span style="font-weight: 500; font-size: 13px;" data-translate="uploadSpeed">Upload Speed</span>
+                    </div>
+                    <span id="upload-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace;">-</span>
+                  </div>
+                  <mdui-linear-progress id="upload-test-progress" value="0" style="display: none;"></mdui-linear-progress>
+                  
+                  <div id="speed-test-status" style="font-size: 11px; opacity: 0.7; text-align: center; margin-top: 4px;"></div>
                 </div>
               </div>
             </div>
@@ -532,7 +703,11 @@
 
   <script src="translations.js"></script>
   <script src="libraries/client-zip.js"></script>
+  <script src="libraries/subsrt.bundle.js"></script>
   <script src="popup.js"></script>
+
+  
+
 </body>
 
 </html>

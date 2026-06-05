@@ -1,67 +1,101 @@
 {
   "en": {
-    "headline": "What's New (v1.9.5)",
+    "headline": "What's New (v2.0.1)",
     "changes": [
-      "Comprehensive engine overhaul: Implemented IndexedDB-based streaming for RAM efficiency, supporting multi-gigabyte files",
-      "Advanced Detection: Added WebSocket interception, Shadow DOM deep scanning, and DRM detection with retroactive filtering",
-      "Automatic MP3 Conversion: Integrated lamejs with dedicated Web Worker for efficient client-side audio encoding",
-      "Automatic TS to MP4 Conversion: Implemented mux.js for seamless MPEG-TS to MP4 transmuxing",
-      "Surgical Scrapers: Introduced high-precision extraction for platforms like Instagram, TikTok, and Twitter",
-      "Speed Boost Overhaul: Multi-threaded fetching with byte-offset chunk indexing",
-      "UI/UX Modernization: New glassmorphic settings view, context-aware download controls, and improved About page",
-      "Improved pause and resume functionality and Google Drive support"
+      "Added full Dropbox integration and automatic background re-authentication for Google Drive to ensure seamless cloud uploads.",
+      "Downloads are now more resilient with automatic retries for parallel connections and highly detailed real-time progress tracking.",
+      "Added a live download speed meter on media cards and a highly accurate network speed test tool in the settings.",
+      "Introduced advanced subtitle format conversion and a new sorting feature to organize your media by time, name, or size.",
+      "Improved the QR code scanner with an inline preview, and heavily optimized the app to prevent lag on heavy websites.",
+      "Completely refined all language translations and the settings interface to be much more professional and user-friendly."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v1.9.5)",
+    "headline": "Yang Baru (v2.0.1)",
     "changes": [
-      "Perombakan engine menyeluruh: Implementasi streaming berbasis IndexedDB untuk efisiensi RAM, mendukung file berukuran multi-gigabyte",
-      "Deteksi Lanjutan: Menambahkan intersepsi WebSocket, pemindaian mendalam Shadow DOM, dan deteksi DRM dengan pemfilteran retrospektif",
-      "Konversi MP3 Otomatis: Integrasi lamejs dengan Web Worker khusus untuk encoding audio sisi klien yang efisien",
-      "Konversi TS ke MP4 Otomatis: Implementasi mux.js untuk transmuxing MPEG-TS ke MP4 yang mulus",
-      "Surgical Scrapers: Introduksi ekstraksi presisi tinggi untuk platform seperti Instagram, TikTok, dan Twitter",
-      "Perombakan Speed Boost: Pengunduhan multi-thread dengan pengindeksan chunk byte-offset",
-      "Modernisasi UI/UX: Tampilan pengaturan glassmorphic baru, kontrol unduhan sadar-konteks, dan halaman About yang ditingkatkan",
-      "Peningkatan fungsionalitas pause/resume dan dukungan Google Drive"
+      "Menambahkan integrasi penuh untuk Dropbox dan pembaruan sesi otomatis untuk Google Drive agar pengunggahan ke cloud lebih mulus.",
+      "Proses unduhan kini lebih tangguh dengan fitur coba lagi otomatis dan pelacakan progres megabita yang sangat mendetail secara langsung.",
+      "Menambahkan meteran kecepatan unduh pada daftar media dan alat uji kecepatan internet bawaan yang sangat akurat.",
+      "Memperkenalkan konversi format takarir (subtitle) otomatis dan fitur penyortiran baru untuk merapikan media Anda.",
+      "Menyempurnakan fitur kode QR dengan pratinjau, serta mengoptimalkan performa aplikasi secara drastis agar peramban tidak lag.",
+      "Memperbarui seluruh antarmuka pengaturan dan teks terjemahan bahasa agar jauh lebih profesional, rapi, dan mudah digunakan."
     ]
   },
   "ja": {
-    "headline": "新機能 (v1.9.5)",
+    "headline": "新機能 (v2.0.1)",
     "changes": [
-      "包括的なエンジンオーバーホール：IndexedDBベースのストリーミングを実装し、RAM効率を最適化、ギガバイト単位のファイルのダウンロードをサポート",
-      "高度な検出：WebSocketインターセプション、Shadow DOMディープスキャン、DRM検出と遡及的フィルタリングを追加",
-      "自動MP3変換：lamejsと専用Web Workerを統合し、効率的なクライアントサイドオーディオエンコーディングを実現",
-      "自動TSからMP4への変換：mux.jsを実装し、スムーズなMPEG-TSからMP4へのトランスマルチプレクシングを実現",
-      "サージカルスクレイパー：Instagram、TikTok、Twitterなどのプラットフォーム向けの精密な抽出機能を追加",
-      "Speed Boostのオーバーホール：バイトオフセットチャンクインデックスを用いたマルチスレッドフェッチ",
-      "UI/UXの現代化：新しいグラスモーフィックな設定ビュー、コンテキスト対応のダウンロードコントロール、Aboutページの改善",
-      "一時停止・再開機能の向上およびGoogleドライブのサポート追加"
+      "Dropboxの完全統合とGoogleドライブの自動バックグラウンド再認証を追加し、シームレスなクラウドアップロードを実現しました。",
+      "並列接続の自動再試行機能と詳細なリアルタイム進捗追跡により、ダウンロードの安定性が向上しました。",
+      "メディアカードにライブダウンロード速度メーターを追加し、設定に高精度なネットワーク速度テストツールを導入しました。",
+      "高度な字幕フォーマット変換機能と、メディアを整理するための新しい並べ替え機能を追加しました。",
+      "QRコードスキャナーを改善し、重いウェブサイトでのラグを防ぐためにアプリを大幅に最適化しました。",
+      "すべての言語翻訳と設定インターフェースを完全に洗練し、よりプロフェッショナルでユーザーフレンドリーにしました。"
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v1.9.5)",
+    "headline": "Was gibt's Neues (v2.0.1)",
     "changes": [
-      "Umfassende Engine-Überarbeitung: IndexedDB-basiertes Streaming für RAM-Effizienz bei Multi-Gigabyte-Dateien",
-      "Erweiterte Erkennung: WebSocket-Interception, Shadow-DOM-Deep-Scanning und DRM-Erkennung mit retrospektiver Filterung",
-      "Automatische MP3-Konvertierung: Integration von lamejs mit dediziertem Web Worker für effizientes clientseitiges Audio-Encoding",
-      "Automatische TS-zu-MP4-Konvertierung: Implementierung von mux.js für nahtloses MPEG-TS-zu-MP4-Transmuxing",
-      "Surgical Scrapers: Hochpräzise Extraktion für Plattformen wie Instagram, TikTok und Twitter",
-      "Überarbeitung des Speed Boosts: Multi-threaded Fetching mit Byte-Offset-Chunk-Indizierung",
-      "UI/UX-Modernisierung: Neue glassmorphe Einstellungsansicht, kontextabhängige Download-Steuerelemente und verbesserte About-Seite",
-      "Verbesserte Pause- und Fortsetzen-Funktionalität sowie Google Drive-Unterstützung"
+      "Vollständige Dropbox-Integration und automatische Hintergrund-Neuauthentifizierung für Google Drive für nahtlose Cloud-Uploads hinzugefügt.",
+      "Downloads sind jetzt widerstandsfähiger mit automatischen Wiederholungsversuchen und sehr detaillierter Echtzeit-Fortschrittsverfolgung.",
+      "Ein Live-Download-Geschwindigkeitsmesser auf Medienkarten und ein genaues Netzwerk-Geschwindigkeitstest-Tool wurden hinzugefügt.",
+      "Erweiterte Untertitel-Formatkonvertierung und eine neue Sortierfunktion zur Organisation Ihrer Medien eingeführt.",
+      "Den QR-Code-Scanner mit einer Inline-Vorschau verbessert und die App stark optimiert, um Verzögerungen zu vermeiden.",
+      "Alle Sprachübersetzungen und die Benutzeroberfläche wurden komplett überarbeitet, um professioneller und benutzerfreundlicher zu sein."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v1.9.5)",
+    "headline": "Nouveautés (v2.0.1)",
     "changes": [
-      "Refonte complète du moteur : Streaming basé sur IndexedDB pour l'efficacité RAM, supportant les fichiers de plusieurs gigaoctets",
-      "Détection avancée : Interception WebSocket, scan profond du Shadow DOM, et détection DRM avec filtrage rétrospectif",
-      "Conversion MP3 automatique : Intégration de lamejs avec un Web Worker dédié pour un encodage audio efficace côté client",
-      "Conversion TS vers MP4 automatique : Implémentation de mux.js pour un transmuxing MPEG-TS vers MP4 fluide",
-      "Surgical Scrapers : Extraction de haute précision pour des plateformes comme Instagram, TikTok et Twitter",
-      "Refonte du Speed Boost : Récupération multi-thread avec indexation de chunks par offset d'octets",
-      "Modernisation de l'UI/UX : Nouvelle vue des paramètres en glassmorphism, contrôles de téléchargement contextuels, et page About améliorée",
-      "Amélioration de la fonctionnalité de pause/reprise et support de Google Drive"
+      "Ajout de l'intégration complète de Dropbox et de la réauthentification automatique en arrière-plan pour Google Drive.",
+      "Les téléchargements sont désormais plus fiables avec des tentatives automatiques et un suivi de progression très détaillé en temps réel.",
+      "Ajout d'un compteur de vitesse de téléchargement en direct et d'un outil de test de vitesse réseau très précis dans les paramètres.",
+      "Introduction de la conversion de format de sous-titres avancée et d'une nouvelle fonction de tri pour organiser vos médias.",
+      "Amélioration du scanner de code QR avec un aperçu intégré, et optimisation de l'application pour éviter les ralentissements.",
+      "Affinement complet de toutes les traductions et de l'interface des paramètres pour être beaucoup plus professionnel et convivial."
+    ]
+  },
+  "ko": {
+    "headline": "새로운 기능 (v2.0.1)",
+    "changes": [
+      "Dropbox 전체 통합 및 Google Drive용 자동 백그라운드 재인증을 추가하여 원활한 클라우드 업로드를 보장합니다.",
+      "병렬 연결에 대한 자동 재시도 및 매우 상세한 실시간 진행률 추적으로 다운로드 안정성이 향상되었습니다.",
+      "미디어 카드에 실시간 다운로드 속도 측정기를 추가하고 설정에 매우 정확한 네트워크 속도 테스트 도구를 추가했습니다.",
+      "고급 자막 형식 변환 및 미디어를 정리하는 새로운 정렬 기능을 도입했습니다.",
+      "인라인 미리보기로 QR 코드 스캐너를 개선하고 앱을 크게 최적화하여 지연을 방지했습니다.",
+      "모든 언어 번역 및 설정 인터페이스를 완전히 개선하여 훨씬 더 전문적이고 사용자 친화적으로 만들었습니다."
+    ]
+  },
+  "pt": {
+    "headline": "Novidades (v2.0.1)",
+    "changes": [
+      "Adicionada integração total com o Dropbox e reautenticação automática em segundo plano para o Google Drive.",
+      "Os downloads agora são mais resilientes com novas tentativas automáticas e acompanhamento de progresso em tempo real.",
+      "Adicionado um medidor de velocidade de download ao vivo e uma ferramenta de teste de velocidade de rede altamente precisa.",
+      "Introduzida a conversão avançada de formato de legenda e um novo recurso de classificação para organizar suas mídias.",
+      "Melhorado o scanner de código QR com uma visualização e otimização pesada do aplicativo para evitar travamentos.",
+      "Traduções de todos os idiomas e interface de configurações completamente refinadas para serem mais profissionais e fáceis de usar."
+    ]
+  },
+  "ru": {
+    "headline": "Что нового (v2.0.1)",
+    "changes": [
+      "Добавлена полная интеграция с Dropbox и автоматическая фоновая повторная аутентификация для Google Drive.",
+      "Загрузки теперь более надежны благодаря автоматическим повторным попыткам и подробному отслеживанию прогресса.",
+      "Добавлен измеритель скорости загрузки в реальном времени и высокоточный инструмент для проверки скорости сети.",
+      "Внедрено расширенное преобразование форматов субтитров и новая функция сортировки для организации ваших медиафайлов.",
+      "Улучшен сканер QR-кода и сильно оптимизировано приложение для предотвращения задержек на тяжелых сайтах.",
+      "Полностью переработаны переводы на все языки и интерфейс настроек, чтобы стать более профессиональными и удобными."
+    ]
+  },
+  "ar": {
+    "headline": "ما الجديد (v2.0.1)",
+    "changes": [
+      "تمت إضافة تكامل كامل مع Dropbox وإعادة المصادقة التلقائية في الخلفية لـ Google Drive لضمان عمليات التحميل السلسة.",
+      "أصبحت التنزيلات الآن أكثر مرونة مع إعادة المحاولة التلقائية وتتبع التقدم المفصل للغاية في الوقت الفعلي.",
+      "تمت إضافة مقياس سرعة التنزيل المباشر وأداة اختبار سرعة الشبكة عالية الدقة في الإعدادات.",
+      "تم تقديم تحويل متقدم لتنسيق الترجمة وميزة فرز جديدة لتنظيم الوسائط الخاصة بك.",
+      "تم تحسين ماسح رمز الاستجابة السريعة مع معاينة مضمنة، وتم تحسين التطبيق بشكل كبير لمنع التأخير.",
+      "تم تحسين جميع ترجمات اللغات وواجهة الإعدادات بالكامل لتكون أكثر احترافية وسهلة الاستخدام."
     ]
   }
 }

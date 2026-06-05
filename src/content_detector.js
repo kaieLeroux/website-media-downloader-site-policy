@@ -22,114 +22,11 @@
         return;
     }
 
-    try {
-        const script = document.createElement('script');
-        script.textContent = `
-            (function() {
-                try {
-                    const originalRequestMediaKeySystemAccess = navigator.requestMediaKeySystemAccess;
-                    if (originalRequestMediaKeySystemAccess && !navigator.mdu_hooked) {
-                        navigator.requestMediaKeySystemAccess = function() {
-                            window.postMessage({ type: 'MDU_DRM_DETECTED' }, '*');
-                            return originalRequestMediaKeySystemAccess.apply(this, arguments);
-                        };
-                        navigator.mdu_hooked = true;
-                    }
-
-                    const originalAttachShadow = Element.prototype.attachShadow;
-                    if (originalAttachShadow && !Element.prototype.mdu_hooked) {
-                        Element.prototype.attachShadow = function(init) {
-                            const shadowRoot = originalAttachShadow.apply(this, arguments);
-                            window.postMessage({ type: 'MDU_DOM_CHANGED' }, '*');
-                            try {
-                                const observer = new MutationObserver(() => {
-                                    window.postMessage({ type: 'MDU_DOM_CHANGED' }, '*');
-                                });
-                                observer.observe(shadowRoot, { childList: true, subtree: true });
-                            } catch (e) {}
-                            return shadowRoot;
-                        };
-                        Element.prototype.mdu_hooked = true;
-                    }
-
-                    const OriginalWebSocket = window.WebSocket;
-                    const detectedWs = new Set();
-                    window.WebSocket = function(url, protocols) {
-                        const ws = new OriginalWebSocket(url, protocols);
-                        
-                        const checkMedia = async (data) => {
-                            if (detectedWs.has(url)) return;
-                            
-                            try {
-                                let buffer;
-                                if (data instanceof ArrayBuffer) {
-                                    buffer = data;
-                                } else if (window.Blob && data instanceof Blob) {
-                                    buffer = await data.slice(0, 10).arrayBuffer();
-                                }
-
-                                if (buffer && buffer.byteLength >= 3) {
-                                    const view = new Uint8Array(buffer);
-                                    
-                                    const isNAL = (view[0] === 0 && view[1] === 0 && view[2] === 1) || 
-                                                 (view.byteLength >= 4 && view[0] === 0 && view[1] === 0 && view[2] === 0 && view[3] === 1);
-                                    
-                                    if (isNAL) {
-                                        detectedWs.add(url);
-                                        window.postMessage({ type: 'MDU_WS_STREAM_DETECTED', url: url }, '*');
-                                    }
-                                }
-                            } catch (e) {}
-                        };
-
-                        ws.addEventListener('message', (event) => {
-                            checkMedia(event.data);
-                        });
-
-                        return ws;
-                    };
-                    window.WebSocket.prototype = OriginalWebSocket.prototype;
-                    Object.assign(window.WebSocket, OriginalWebSocket);
-
-                    window.mdu_deep_scan = function() {
-                        const urls = [];
-                        try {
-                            if (window.__additionalData) {
-                                const findInObj = (obj, d = 0) => {
-                                    if (d > 10 || !obj || typeof obj !== 'object') return;
-                                    for (let k in obj) {
-                                        if (typeof obj[k] === 'string' && (obj[k].includes('.mp4') || obj[k].includes('.cdninstagram.com')) && obj[k].startsWith('http')) {
-                                            urls.push(obj[k]);
-                                        } else if (typeof obj[k] === 'object') findInObj(obj[k], d + 1);
-                                    }
-                                };
-                                findInObj(window.__additionalData);
-                            }
-                            if (window.SIGI_STATE) {
-                                if (window.SIGI_STATE.ItemModule) {
-                                    Object.values(window.SIGI_STATE.ItemModule).forEach(item => {
-                                        if (item.video) {
-                                            if (item.video.downloadAddr) urls.push(item.video.downloadAddr);
-                                            if (item.video.playAddr) urls.push(item.video.playAddr);
-                                        }
-                                    });
-                                }
-                            }
-                        } catch (e) {}
-                        if (urls.length > 0) {
-                            window.postMessage({ type: 'MDU_DEEP_URLS_DETECTED', urls: urls }, '*');
-                        }
-                    };
-                } catch (e) {}
-            })();
-        `;
-        (document.head || document.documentElement).appendChild(script);
-        script.remove();
-    } catch (e) {}
-
     if (typeof browser === 'undefined') {
         var browser = chrome;
     }
+
+    let isGlobalOpt = false;
 
     window.addEventListener('message', (event) => {
         if (event.data) {
@@ -138,7 +35,9 @@
                     browser.runtime.sendMessage({ action: 'drmDetected' });
                 } catch (e) {}
             } else if (event.data.type === 'MDU_DOM_CHANGED') {
-                if (window.mdu_scan) window.mdu_scan();
+                if (!isGlobalOpt) {
+                    if (window.mdu_scan) window.mdu_scan();
+                }
             } else if (event.data.type === 'MDU_WS_STREAM_DETECTED') {
                 if (event.data.url) {
                     const absolute = getAbsoluteUrl(event.data.url);
@@ -166,7 +65,7 @@
     const videoExtensions = [".3g2", ".3gp", ".asx", ".avi", ".divx", ".4v", ".flv", ".ismv", ".m2t", ".m2ts", ".m2v", ".m4s", ".m4v", ".mk3d", ".mkv", ".mng", ".mov", ".mp2v", ".mp4", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mxf", ".ogm", ".ogv", ".qt", ".rm", ".swf", ".ts", ".vob", ".vp9", ".webm", ".wmv"];
     const audioExtensions = [".3ga", ".aac", ".ac3", ".adts", ".aif", ".aiff", ".alac", ".ape", ".asf", ".au", ".dts", ".f4a", ".f4b", ".flac", ".isma", ".it", ".m4a", ".m4b", ".m4r", ".mid", ".mka", ".mod", ".mp1", ".mp2", ".mp3", ".mp4a", ".mpa", ".mpga", ".oga", ".ogg", ".ogx", ".opus", ".ra", ".shn", ".spx", ".vorbis", ".wav", ".weba", ".wma", ".xm"];
     const streamExtensions = [".f4f", ".f4m", ".m3u8", ".mpd", ".smil"];
-    const subtitleExtensions = [".vtt", ".srt", ".ass", ".ssa", ".ttml", ".dfxp"];
+    const subtitleExtensions = [".vtt", ".srt", ".ass", ".ssa", ".ttml", ".dfxp", ".lrc", ".smi", ".sub", ".sbv"];
     const imageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".gif"];
     const downloadExtensions = [".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".msi", ".apk", ".dmg", ".iso", ".bin", ".pdf", ".epub", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"];
     const allExtensions = videoExtensions.concat(audioExtensions, streamExtensions, subtitleExtensions, imageExtensions);
@@ -290,7 +189,8 @@
         }
 
         try {
-            const bg = window.getComputedStyle(el).backgroundImage;
+            const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
+            const bg = isOpt ? el.style.backgroundImage : (el.style.backgroundImage || window.getComputedStyle(el).backgroundImage);
             if (bg && bg !== 'none') {
                 const match = bg.match(/url\(['"]?([^'"]+)['"]?\)/);
                 if (match && match[1]) {
@@ -325,23 +225,78 @@
     }
 
     async function scanContainer(container, result, detectDownloads, extraExts) {
-        const elements = container.querySelectorAll('*');
+        const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
+        const selector = isOpt ? 'img, video, audio, source, track, a, iframe, object, embed, [data-src], [data-url], [data-href], [data-original], [style*="background"]' : '*';
+        const elements = container.querySelectorAll(selector);
         for (const el of elements) {
             await processElement(el, result, detectDownloads, extraExts);
         }
     }
 
     let scanPending = false;
-    window.mdu_scan = async function() {
-        if (scanPending) return;
-        scanPending = true;
+    let fullScanTimeout = null;
+    window.mdu_scan = function() {
+        if (fullScanTimeout) clearTimeout(fullScanTimeout);
+        fullScanTimeout = setTimeout(async () => {
+            if (scanPending) return;
+            scanPending = true;
 
-        const result = await browser.storage.local.get(['detect-download-links', 'hide-segments', 'hide-page-components', 'only-image']);
+            const result = await browser.storage.local.get(['detect-download-links', 'hide-segments', 'hide-page-components', 'only-image', 'optimize-low-end']);
+            const detectDownloads = result['detect-download-links'] === '1' || result['detect-download-links'] === true;
+            const initialSize = detected.size;
+            const extraExts = detectDownloads ? downloadExtensions : [];
+
+            await scanContainer(document, result, detectDownloads, extraExts);
+
+            if (window.mdu_run_surgical_scrapers) {
+                const surgicalUrls = window.mdu_run_surgical_scrapers();
+                surgicalUrls.forEach(url => {
+                    const absolute = getAbsoluteUrl(url);
+                    if (absolute) detected.add(absolute);
+                });
+            }
+
+            try {
+                const script = document.createElement('script');
+                script.textContent = 'if(window.mdu_deep_scan) window.mdu_deep_scan();';
+                (document.head || document.documentElement).appendChild(script);
+                script.remove();
+            } catch (e) {}
+
+            if (detected.size > initialSize || initialSize === 0) {
+                if (reportTimeout) clearTimeout(reportTimeout);
+                reportTimeout = setTimeout(report, 500);
+            }
+
+            scanPending = false;
+        }, 150);
+    };
+
+    let scanTimeout = null;
+    let pendingNodesToScan = new Set();
+
+    async function processPendingNodes() {
+        if (pendingNodesToScan.size === 0) return;
+        const nodes = Array.from(pendingNodesToScan);
+        pendingNodesToScan.clear();
+
+        const result = await browser.storage.local.get(['detect-download-links', 'hide-segments', 'hide-page-components', 'only-image', 'optimize-low-end']);
         const detectDownloads = result['detect-download-links'] === '1' || result['detect-download-links'] === true;
         const initialSize = detected.size;
         const extraExts = detectDownloads ? downloadExtensions : [];
 
-        await scanContainer(document, result, detectDownloads, extraExts);
+        for (const node of nodes) {
+            if (!node.isConnected) continue;
+            await processElement(node, result, detectDownloads, extraExts);
+            try {
+                const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
+                const selector = isOpt ? 'img, video, audio, source, track, a, iframe, object, embed, [data-src], [data-url], [data-href], [data-original], [style*="background"]' : '*';
+                const elements = node.querySelectorAll(selector);
+                for (const el of elements) {
+                    await processElement(el, result, detectDownloads, extraExts);
+                }
+            } catch (e) {}
+        }
 
         if (window.mdu_run_surgical_scrapers) {
             const surgicalUrls = window.mdu_run_surgical_scrapers();
@@ -362,26 +317,158 @@
             if (reportTimeout) clearTimeout(reportTimeout);
             reportTimeout = setTimeout(report, 500);
         }
+    }
 
-        scanPending = false;
-    };
+    function queueNodesForScan(nodes) {
+        nodes.forEach(node => pendingNodesToScan.add(node));
+        if (scanTimeout) clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(processPendingNodes, 100);
+    }
 
     window.mdu_scan();
 
     const observer = new MutationObserver((mutations) => {
-        let shouldScan = false;
+        const addedElements = [];
         for (const mutation of mutations) {
-            if (mutation.addedNodes.length > 0) {
-                shouldScan = true;
-                break;
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    addedElements.push(node);
+                }
             }
         }
-        if (shouldScan) {
-            window.mdu_scan();
+        if (addedElements.length > 0) {
+            queueNodesForScan(addedElements);
         }
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    let isObserving = false;
+    browser.storage.local.get(['optimize-low-end']).then((result) => {
+        const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
+        isGlobalOpt = isOpt;
+        if (!isOpt) {
+            try {
+                const script = document.createElement('script');
+                script.textContent = `
+                    (function() {
+                        try {
+                            const originalRequestMediaKeySystemAccess = navigator.requestMediaKeySystemAccess;
+                            if (originalRequestMediaKeySystemAccess && !navigator.mdu_hooked) {
+                                navigator.requestMediaKeySystemAccess = function() {
+                                    window.postMessage({ type: 'MDU_DRM_DETECTED' }, '*');
+                                    return originalRequestMediaKeySystemAccess.apply(this, arguments);
+                                };
+                                navigator.mdu_hooked = true;
+                            }
+
+                            const originalAttachShadow = Element.prototype.attachShadow;
+                            if (originalAttachShadow && !Element.prototype.mdu_hooked) {
+                                Element.prototype.attachShadow = function(init) {
+                                    const shadowRoot = originalAttachShadow.apply(this, arguments);
+                                    window.postMessage({ type: 'MDU_DOM_CHANGED' }, '*');
+                                    try {
+                                        const observer = new MutationObserver(() => {
+                                            window.postMessage({ type: 'MDU_DOM_CHANGED' }, '*');
+                                        });
+                                        observer.observe(shadowRoot, { childList: true, subtree: true });
+                                    } catch (e) {}
+                                    return shadowRoot;
+                                };
+                                Element.prototype.mdu_hooked = true;
+                            }
+
+                            const OriginalWebSocket = window.WebSocket;
+                            const detectedWs = new Set();
+                            window.WebSocket = function(url, protocols) {
+                                const ws = new OriginalWebSocket(url, protocols);
+                                
+                                const checkMedia = async (data) => {
+                                    if (detectedWs.has(url)) return;
+                                    
+                                    try {
+                                        let buffer;
+                                        if (data instanceof ArrayBuffer) {
+                                            buffer = data;
+                                        } else if (window.Blob && data instanceof Blob) {
+                                            buffer = await data.slice(0, 10).arrayBuffer();
+                                        }
+
+                                        if (buffer && buffer.byteLength >= 3) {
+                                            const view = new Uint8Array(buffer);
+                                            
+                                            const isNAL = (view[0] === 0 && view[1] === 0 && view[2] === 1) || 
+                                                         (view.byteLength >= 4 && view[0] === 0 && view[1] === 0 && view[2] === 0 && view[3] === 1);
+                                            
+                                            if (isNAL) {
+                                                detectedWs.add(url);
+                                                window.postMessage({ type: 'MDU_WS_STREAM_DETECTED', url: url }, '*');
+                                            }
+                                        }
+                                    } catch (e) {}
+                                };
+
+                                ws.addEventListener('message', (event) => {
+                                    checkMedia(event.data);
+                                });
+
+                                return ws;
+                            };
+                            window.WebSocket.prototype = OriginalWebSocket.prototype;
+                            Object.assign(window.WebSocket, OriginalWebSocket);
+
+                            window.mdu_deep_scan = function() {
+                                const urls = [];
+                                try {
+                                    if (window.__additionalData) {
+                                        const findInObj = (obj, d = 0) => {
+                                            if (d > 10 || !obj || typeof obj !== 'object') return;
+                                            for (let k in obj) {
+                                                if (typeof obj[k] === 'string' && (obj[k].includes('.mp4') || obj[k].includes('.cdninstagram.com')) && obj[k].startsWith('http')) {
+                                                    urls.push(obj[k]);
+                                                } else if (typeof obj[k] === 'object') findInObj(obj[k], d + 1);
+                                            }
+                                        };
+                                        findInObj(window.__additionalData);
+                                    }
+                                    if (window.SIGI_STATE) {
+                                        if (window.SIGI_STATE.ItemModule) {
+                                            Object.values(window.SIGI_STATE.ItemModule).forEach(item => {
+                                                if (item.video) {
+                                                    if (item.video.downloadAddr) urls.push(item.video.downloadAddr);
+                                                    if (item.video.playAddr) urls.push(item.video.playAddr);
+                                                }
+                                            });
+                                        }
+                                    }
+                                } catch (e) {}
+                                if (urls.length > 0) {
+                                    window.postMessage({ type: 'MDU_DEEP_URLS_DETECTED', urls: urls }, '*');
+                                }
+                            };
+                        } catch (e) {}
+                    })();
+                `;
+                (document.head || document.documentElement).appendChild(script);
+                script.remove();
+            } catch (e) {}
+
+            observer.observe(document.body, { childList: true, subtree: true });
+            isObserving = true;
+        }
+    });
+
+    browser.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes['optimize-low-end']) {
+            const isOpt = changes['optimize-low-end'].newValue === '1' || changes['optimize-low-end'].newValue === true;
+            isGlobalOpt = isOpt;
+            if (isOpt && isObserving) {
+                observer.disconnect();
+                isObserving = false;
+            } else if (!isOpt && !isObserving) {
+                observer.observe(document.body, { childList: true, subtree: true });
+                isObserving = true;
+            }
+        }
+    });
 
     window.mdu_detector_injected = true;
 })();

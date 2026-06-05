@@ -243,7 +243,7 @@
             <div class="brand" data-translate="installedBrand">
                 WMD
             </div>
-            <div class="version-tag"><span data-translate="installedVersion">Version</span> <span id="extension-version">1.9.5</span></div>
+            <div class="version-tag"><span data-translate="installedVersion">Version</span> <span id="extension-version">2.0.1</span></div>
         </nav>
 
         <header class="hero">
@@ -255,29 +255,7 @@
             </a>
         </header>
 
-        <div class="section-header" data-translate="installedChangelogTitle">Improvements & Updates (v1.9.5)</div>
-        <ul class="step-list" style="margin-bottom: 48px;">
-            <li class="step-item">
-                <div class="step-number">01</div>
-                <div class="step-content">Comprehensive engine overhaul with IndexedDB-based streaming for RAM efficiency.</div>
-            </li>
-            <li class="step-item">
-                <div class="step-number">02</div>
-                <div class="step-content">New: Automatic MP3 and TS to MP4 conversion.</div>
-            </li>
-            <li class="step-item">
-                <div class="step-number">03</div>
-                <div class="step-content">High-precision media extraction for Instagram, TikTok, and Twitter.</div>
-            </li>
-            <li class="step-item">
-                <div class="step-number">04</div>
-                <div class="step-content">Modernized UI/UX with glassmorphic design and improved controls.</div>
-            </li>
-            <li class="step-item">
-                <div class="step-number">05</div>
-                <div class="step-content">Added Google Drive integration and improved download stability.</div>
-            </li>
-        </ul>
+
 
         <div class="bottom-grid">
             <a href="https://github.com/anpa26" target="_blank" class="action-card">
@@ -318,19 +296,27 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             
-            const lang = browser.i18n.getUILanguage();
+            const lang = (typeof browser !== 'undefined' && browser.i18n && browser.i18n.getUILanguage) ? browser.i18n.getUILanguage() : 'en';
             document.documentElement.lang = lang;
             const rtlLangs = ['ar', 'he', 'fa', 'ur'];
-            if (rtlLangs.includes(lang.split('-')[0])) {
+            const shortLang = lang.split('-')[0];
+            if (rtlLangs.includes(shortLang)) {
                 document.documentElement.dir = 'rtl';
             }
-            const pageTitle = browser.i18n.getMessage('installedTitle');
-            if (pageTitle) document.title = pageTitle;
+            
+            try {
+                const pageTitle = browser.i18n.getMessage('installedTitle');
+                if (pageTitle) document.title = pageTitle;
+            } catch(e) {}
 
-            const versionEl = document.getElementById('extension-version');
-            if (versionEl) {
-                versionEl.textContent = browser.runtime.getManifest().version;
-            }
+            try {
+                const versionEl = document.getElementById('extension-version');
+                if (versionEl && typeof browser !== 'undefined' && browser.runtime && browser.runtime.getManifest) {
+                    versionEl.textContent = browser.runtime.getManifest().version;
+                }
+            } catch(e) {}
+
+
         });
     </script>
     <script src="translations.js"></script>

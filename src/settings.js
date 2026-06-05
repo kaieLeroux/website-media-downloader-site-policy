@@ -32,6 +32,59 @@ const getRedirectURL = () => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+    const cloudLocationSelect = document.getElementById('cloud-save-location');
+    const gdriveDetails = document.getElementById('gdrive-details-container');
+    const dropboxDetails = document.getElementById('dropbox-details-container');
+
+        async function updateCloudVisibility() {
+        const res = await browser.storage.local.get(['save-to-gdrive', 'save-to-dropbox']);
+        let gdriveVal = pendingChanges['save-to-gdrive'] !== undefined ? pendingChanges['save-to-gdrive'] : res['save-to-gdrive'];
+        let dropboxVal = pendingChanges['save-to-dropbox'] !== undefined ? pendingChanges['save-to-dropbox'] : res['save-to-dropbox'];
+
+        let val = 'local';
+        if (gdriveVal === '1') val = 'gdrive';
+        if (dropboxVal === '1') val = 'dropbox';
+        
+        if (cloudLocationSelect) {
+            if (cloudLocationSelect.value !== val) {
+                cloudLocationSelect.value = val;
+            }
+        }
+
+        if (val === 'gdrive') {
+            if (gdriveDetails) gdriveDetails.style.display = 'flex';
+            if (dropboxDetails) dropboxDetails.style.display = 'none';
+        } else if (val === 'dropbox') {
+            if (gdriveDetails) gdriveDetails.style.display = 'none';
+            if (dropboxDetails) dropboxDetails.style.display = 'flex';
+        } else {
+            if (gdriveDetails) gdriveDetails.style.display = 'none';
+            if (dropboxDetails) dropboxDetails.style.display = 'none';
+        }
+    }
+
+    if (cloudLocationSelect) {
+        cloudLocationSelect.addEventListener('change', async (e) => {
+            const val = e.target.value;
+            if (val === 'local') {
+                pendingChanges['save-to-gdrive'] = '0';
+                pendingChanges['save-to-dropbox'] = '0';
+            } else if (val === 'gdrive') {
+                pendingChanges['save-to-gdrive'] = '1';
+                pendingChanges['save-to-dropbox'] = '0';
+            } else if (val === 'dropbox') {
+                pendingChanges['save-to-gdrive'] = '0';
+                pendingChanges['save-to-dropbox'] = '1';
+            }
+            if (typeof showApplyBar === 'function') showApplyBar();
+            updateCloudVisibility();
+        });
+    }
+    
+    // Call it initially
+    updateCloudVisibility();
+
     await Promise.allSettled([
         customElements.whenDefined('mdui-switch'),
         customElements.whenDefined('mdui-segmented-button-group'),
@@ -39,6 +92,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     await initializeSettings();
     setupConfirmationBar();
+    setupSpeedTest();
+
+    
+    if (window.location.search.includes('startDropbox=true')) {
+        const res = await browser.storage.local.get('dropbox_token');
+        if (!res.dropbox_token) {
+            const dropboxBtn = document.getElementById('dropbox-login-btn');
+            if (dropboxBtn) dropboxBtn.click();
+        }
+    }
 
     if (window.location.search.includes('startGDrive=true')) {
         const res = await browser.storage.local.get('gdrive_token');
@@ -50,6 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 let pendingChanges = {};
+let isInitializing = false;
 
 function setupConfirmationBar() {
     const bar = document.getElementById('settings-apply-bar');
@@ -80,17 +144,20 @@ function setupConfirmationBar() {
 }
 
 function showApplyBar() {
+    if (isInitializing) return;
     const bar = document.getElementById('settings-apply-bar');
     if (bar) bar.style.display = 'flex';
 }
 
 async function initializeSettings() {
+    isInitializing = true;
     const settings = [
-        'url-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components',
+        'url-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
         'media-notification', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
-        'stream-quality', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
-        'filename-template', 'disable-rename-dialog', 'history-page', 'clean-view', 'save-to-gdrive', 'gdrive-stream'
+        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
+        'filename-template', 'disable-rename-dialog', 'history-page', 'clean-view', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
+        'save-to-dropbox', 'dropbox-stream'
     ];
 
     for (const setting of settings) {
@@ -107,7 +174,7 @@ async function initializeSettings() {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
             }
-if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'clean-view', 'audio-to-mp3', 'save-to-gdrive', 'gdrive-stream'].includes(setting)) {
+if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'clean-view', 'audio-to-mp3', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream'].includes(setting)) {
     value = '0';
 } else {
                 browser.storage.local.set({ [setting]: value });
@@ -220,8 +287,8 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                             gdriveStream.disabled = true;
                             pendingChanges['gdrive-stream'] = '0';
                             
-                            // Also handle the cascade: if gdrive-stream is off, it might re-enable speed-boost
-                            if (speedBoost) {
+                            const dbxStream = document.getElementById('dropbox-stream');
+                            if (speedBoost && (!dbxStream || !dbxStream.checked)) {
                                 speedBoost.disabled = false;
                                 if (speedBoostResume) {
                                     speedBoostResume.disabled = !speedBoost.checked;
@@ -244,6 +311,44 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                     }
                 }
 
+                
+                if (setting === 'save-to-dropbox') {
+                    if (!element.checked) {
+                        const dbxStream = document.getElementById('dropbox-stream');
+                        if (dbxStream) {
+                            dbxStream.checked = false;
+                            dbxStream.disabled = true;
+                            pendingChanges['dropbox-stream'] = '0';
+
+                            const gdriveStream = document.getElementById('gdrive-stream');
+                            const speedBoost = document.getElementById('speed-boost');
+                            const speedBoostResume = document.getElementById('speed-boost-resume');
+                            const connections = document.getElementById('connections');
+                            
+                            if (speedBoost && (!gdriveStream || !gdriveStream.checked)) {
+                                speedBoost.disabled = false;
+                                if (speedBoostResume) {
+                                    speedBoostResume.disabled = !speedBoost.checked;
+                                    const item = speedBoostResume.closest('.setting-item');
+                                    if (item) item.style.display = speedBoost.checked ? 'flex' : 'none';
+                                    if (speedBoostResume.disabled) {
+                                        speedBoostResume.checked = false;
+                                        pendingChanges['speed-boost-resume'] = '0';
+                                    }
+                                }
+                                if (connections) {
+                                    connections.disabled = !speedBoost.checked;
+                                    const item = connections.closest('.setting-item');
+                                    if (item) item.style.display = speedBoost.checked ? 'flex' : 'none';
+                                }
+                            }
+                        }
+                    } else {
+                        const dbxStream = document.getElementById('dropbox-stream');
+                        if (dbxStream) dbxStream.disabled = false;
+                    }
+                }
+
                 if (setting === 'detect-download-links') {
                     if (onlyFile) {
                         const item = onlyFile.closest('.setting-item');
@@ -256,10 +361,56 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                         }
                     }
                 }
+
+                if (setting === 'optimize-low-end') {
+                    const limitSelect = document.getElementById('limit-media-list');
+                    const limitCustom = document.getElementById('limit-media-list-custom');
+                    if (element.checked) {
+                        if (limitSelect) {
+                            if (limitSelect.value !== '10') limitSelect.value = '10';
+                            limitSelect.disabled = true;
+                            pendingChanges['limit-media-list'] = '10';
+                        }
+                        if (limitCustom) {
+                            limitCustom.disabled = true;
+                            const item = limitCustom.closest('.setting-item');
+                            if (item) item.style.display = 'none';
+                        }
+                        const cleanView = document.getElementById('clean-view');
+                        if (cleanView && !cleanView.checked) {
+                            cleanView.checked = true;
+                            cleanView.dispatchEvent(new Event('change'));
+                        }
+                        const mediaCache = document.getElementById('media-cache');
+                        if (mediaCache) {
+                            if (mediaCache.checked) {
+                                mediaCache.checked = false;
+                                pendingChanges['media-cache'] = '0';
+                            }
+                            mediaCache.disabled = true;
+                            try {
+                                browser.runtime.sendMessage({ action: 'clearStorage' });
+                            } catch(e) {}
+                        }
+                    } else {
+                        if (limitSelect) {
+                            limitSelect.disabled = false;
+                            if (limitSelect.value === 'custom' && limitCustom) {
+                                const item = limitCustom.closest('.setting-item');
+                                if (item) item.style.display = 'flex';
+                                limitCustom.disabled = false;
+                            }
+                        }
+                        const mediaCache = document.getElementById('media-cache');
+                        if (mediaCache) {
+                            mediaCache.disabled = false;
+                        }
+                    }
+                }
             };
 
             // Initial constraint check
-            if (setting === 'gdrive-stream' || setting === 'speed-boost' || setting === 'background-download' || setting === 'save-to-gdrive' || setting === 'detect-download-links') {
+            if (setting === 'gdrive-stream' || setting === 'speed-boost' || setting === 'background-download' || setting === 'save-to-gdrive' || setting === 'detect-download-links' || setting === 'optimize-low-end') {
                 const checkInitial = () => {
                     const speedBoost = document.getElementById('speed-boost');
                     const speedBoostResume = document.getElementById('speed-boost-resume');
@@ -270,9 +421,24 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                     const saveToGDrive = document.getElementById('save-to-gdrive');
                     const detectDownloadLinks = document.getElementById('detect-download-links');
                     const onlyFile = document.getElementById('only-file');
+                    const optimizeLowEnd = document.getElementById('optimize-low-end');
+                    const limitSelect = document.getElementById('limit-media-list');
+                    const limitCustom = document.getElementById('limit-media-list-custom');
 
                     if (speedBoost && speedBoostResume && connections && gdriveStream && backgroundDownload && autoResume && saveToGDrive && detectDownloadLinks && onlyFile) {
-                        if (gdriveStream.checked) {
+                        const saveToDropbox = document.getElementById('save-to-dropbox');
+                        const dropboxStream = document.getElementById('dropbox-stream');
+                        
+                        if (gdriveStream && saveToGDrive) {
+                            gdriveStream.disabled = !saveToGDrive.checked;
+                            if (gdriveStream.disabled) gdriveStream.checked = false;
+                        }
+                        if (dropboxStream && saveToDropbox) {
+                            dropboxStream.disabled = !saveToDropbox.checked;
+                            if (dropboxStream.disabled) dropboxStream.checked = false;
+                        }
+
+                        if ((gdriveStream && gdriveStream.checked) || (dropboxStream && dropboxStream.checked)) {
                             speedBoost.checked = false;
                             speedBoost.disabled = true;
                             if (speedBoostResume) {
@@ -287,6 +453,7 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                                 if (item) item.style.display = 'none';
                             }
                         } else {
+                            speedBoost.disabled = false;
                             if (speedBoostResume) {
                                 speedBoostResume.disabled = !speedBoost.checked;
                                 if (speedBoostResume.disabled) speedBoostResume.checked = false;
@@ -304,16 +471,24 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                             autoResume.disabled = !backgroundDownload.checked;
                             if (autoResume.disabled) autoResume.checked = false;
                         }
-                        if (gdriveStream) {
-                            gdriveStream.disabled = !saveToGDrive.checked;
-                            if (gdriveStream.disabled) gdriveStream.checked = false;
-                        }
 
                         if (onlyFile && detectDownloadLinks) {
                             const item = onlyFile.closest('.setting-item');
                             if (item) {
                                 item.style.display = detectDownloadLinks.checked ? 'flex' : 'none';
                                 if (!detectDownloadLinks.checked) onlyFile.checked = false;
+                            }
+                        }
+
+                        if (optimizeLowEnd && limitSelect && limitCustom) {
+                            if (optimizeLowEnd.checked) {
+                                if (limitSelect.value !== '10') {
+                                    limitSelect.value = '10';
+                                }
+                                limitSelect.disabled = true;
+                                limitCustom.disabled = true;
+                                const item = limitCustom.closest('.setting-item');
+                                if (item) item.style.display = 'none';
                             }
                         }
                     } else {
@@ -342,36 +517,82 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                     }
                 }
 
+                
+                if ((setting === 'save-to-dropbox' || setting === 'dropbox-stream') && element.checked) {
+                    checkDropboxLogin();
+                }
+
                 if ((setting === 'save-to-gdrive' || setting === 'gdrive-stream') && element.checked) {
                     checkGDriveLogin();
+    checkDropboxLogin();
                 }
             };
             element.addEventListener('change', handleChange);
             continue;
         }
 
-        if (element.tagName === 'MDUI-TEXT-FIELD' || (element.tagName === 'INPUT' && element.type === 'text')) {
+        if (element.tagName === 'MDUI-TEXT-FIELD' || (element.tagName === 'INPUT' && (element.type === 'text' || element.type === 'number'))) {
             element.value = value || '';
             element.oninput = () => {
                 pendingChanges[setting] = element.value;
                 showApplyBar();
             };
+            if (setting === 'limit-media-list-custom') {
+                element.addEventListener('blur', () => {
+                    if (element.value.trim() === '') {
+                        element.value = '0';
+                        pendingChanges[setting] = '0';
+                        if (!isInitializing) showApplyBar();
+                    }
+                });
+            }
             continue;
         }
 
-        if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT') {
-            const defaultValue = setting === 'open-preference' ? 'tab' :
+        if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
+            const defaultValue = setting === 'limit-media-list' ? '20' :
+                                (setting === 'open-preference' ? 'tab' :
                                 (setting === 'download-method' ? 'browser' :
                                 (setting === 'stream-quality' ? 'highest' :
+                                (setting === 'subtitle-conversion' ? 'none' :
                                 (setting === 'connections' ? '4' :
-                                (setting === 'stream-download' ? 'offline' : 'stream'))));
+                                (setting === 'media-sort-order' ? 'newest' :
+                                (setting === 'stream-download' ? 'offline' : 'stream')))))));
             
             element.value = value || defaultValue;
-            element.onchange = () => {
+            element.addEventListener('change', () => {
                 pendingChanges[setting] = element.value;
                 showApplyBar();
-            };
+                if (setting === 'limit-media-list') {
+                    const limitCustom = document.getElementById('limit-media-list-custom');
+                    if (limitCustom) {
+                        const item = limitCustom.closest('.setting-item');
+                        if (item) item.style.display = element.value === 'custom' ? 'flex' : 'none';
+                    }
+                }
+            });
             continue;
+        }
+    }
+
+    const limitSelectInitial = document.getElementById('limit-media-list');
+    const limitCustomInitial = document.getElementById('limit-media-list-custom');
+    const optimizeLowEndInitial = document.getElementById('optimize-low-end');
+    if (limitSelectInitial && limitCustomInitial) {
+        const item = limitCustomInitial.closest('.setting-item');
+        if (item) {
+            if (limitSelectInitial.value === 'custom' && (!optimizeLowEndInitial || !optimizeLowEndInitial.checked)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        }
+    }
+
+    if (optimizeLowEndInitial && optimizeLowEndInitial.checked) {
+        const mediaCache = document.getElementById('media-cache');
+        if (mediaCache) {
+            mediaCache.disabled = true;
         }
     }
 
@@ -380,11 +601,66 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
     const gdriveUserInfo = document.getElementById('gdrive-user-info');
     const gdriveUserEmail = document.getElementById('gdrive-user-email');
 
+    const dropboxBtn = document.getElementById('dropbox-login-btn');
+    const dropboxText = document.getElementById('dropbox-login-text');
+    const dropboxUserInfo = document.getElementById('dropbox-user-info');
+    const dropboxUserEmail = document.getElementById('dropbox-user-email');
+
+
+    
+    async function checkDropboxLogin() {
+        const res = await browser.storage.local.get('dropbox_token');
+        const dropboxSwitch = document.getElementById('save-to-dropbox');
+
+        const dropboxSaveContainer = document.getElementById('dropbox-save-container');
+        const dropboxStreamContainer = document.getElementById('dropbox-stream-container');
+
+        if (res.dropbox_token) {
+            if (dropboxSaveContainer) dropboxSaveContainer.style.display = 'flex';
+            if (dropboxStreamContainer) dropboxStreamContainer.style.display = 'flex';
+            dropboxText.textContent = browser.i18n.getMessage("dropboxLogoutButton") || "Logout";
+            if (dropboxBtn) dropboxBtn.variant = "outlined";
+            
+            const userRes = await browser.storage.local.get('dropbox_user');
+            if (userRes.dropbox_user) {
+                dropboxUserInfo.style.display = 'block';
+                dropboxUserEmail.textContent = userRes.dropbox_user.email;
+            }
+        } else {
+            dropboxText.textContent = browser.i18n.getMessage("dropboxLoginButton") || "Login";
+            if (dropboxBtn) dropboxBtn.variant = "tonal";
+            dropboxUserInfo.style.display = 'none';
+
+            if (dropboxSaveContainer) dropboxSaveContainer.style.display = 'none';
+            if (dropboxStreamContainer) dropboxStreamContainer.style.display = 'none';
+
+            const current = await browser.storage.local.get('save-to-dropbox');
+            if (current['save-to-dropbox'] === '1' || pendingChanges['save-to-dropbox'] === '1') {
+                pendingChanges['save-to-dropbox'] = '0';
+                await browser.storage.local.set({ 'save-to-dropbox': '0' }); // Auto-save
+                
+                // If it was currently active, revert the dropdown to local immediately
+                const select = document.getElementById('cloud-save-location');
+                if (select && select.value === 'dropbox') {
+                    select.value = 'local';
+                    select.dispatchEvent(new Event('change'));
+                }
+                const dropboxDetails = document.getElementById('dropbox-details-container');
+                if (dropboxDetails) dropboxDetails.style.display = 'none';
+            }
+        }
+    }
+
     async function checkGDriveLogin() {
         const res = await browser.storage.local.get('gdrive_token');
         const gdriveSwitch = document.getElementById('save-to-gdrive');
 
+        const gdriveSaveContainer = document.getElementById('gdrive-save-container');
+        const gdriveStreamContainer = document.getElementById('gdrive-stream-container');
+
         if (res.gdrive_token) {
+            if (gdriveSaveContainer) gdriveSaveContainer.style.display = 'flex';
+            if (gdriveStreamContainer) gdriveStreamContainer.style.display = 'flex';
             gdriveText.textContent = browser.i18n.getMessage("gdriveLogoutButton") || "Logout";
             gdriveBtn.variant = "outlined";
             
@@ -393,23 +669,28 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                 gdriveUserInfo.style.display = 'block';
                 gdriveUserEmail.textContent = userRes.gdrive_user.email;
             }
-
-            if (gdriveSwitch) {
-                gdriveSwitch.disabled = false;
-            }
         } else {
             gdriveText.textContent = browser.i18n.getMessage("gdriveLoginButton") || "Login";
             gdriveBtn.variant = "tonal";
             gdriveUserInfo.style.display = 'none';
 
-            if (gdriveSwitch) {
-                gdriveSwitch.checked = false;
-                gdriveSwitch.disabled = true;
-                
-                const current = await browser.storage.local.get('save-to-gdrive');
-                if (current['save-to-gdrive'] === '1') {
-                    await browser.storage.local.set({ 'save-to-gdrive': '0' });
+            if (gdriveSaveContainer) gdriveSaveContainer.style.display = 'none';
+            if (gdriveStreamContainer) gdriveStreamContainer.style.display = 'none';
+
+            const current = await browser.storage.local.get('save-to-gdrive');
+            if (current['save-to-gdrive'] === '1' || pendingChanges['save-to-gdrive'] === '1') {
+                pendingChanges['save-to-gdrive'] = '0';
+                await browser.storage.local.set({ 'save-to-gdrive': '0' }); // Auto-save
+
+                // If it was currently active, revert the dropdown to local immediately
+                const select = document.getElementById('cloud-save-location');
+                if (select && select.value === 'gdrive') {
+                    select.value = 'local';
+                    // dispatch change event to trigger updateCloudVisibility if it was attached
+                    select.dispatchEvent(new Event('change'));
                 }
+                const gdriveDetails = document.getElementById('gdrive-details-container');
+                if (gdriveDetails) gdriveDetails.style.display = 'none';
             }
         }
     }
@@ -540,6 +821,138 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
         checkGDriveLogin();
     }
 
+    if (dropboxBtn) {
+        dropboxBtn.onclick = async () => {
+            const res = await browser.storage.local.get('dropbox_token');
+            if (res.dropbox_token) {
+                await browser.storage.local.remove(['dropbox_token', 'dropbox_user']);
+                checkDropboxLogin();
+                if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                    mdui.snackbar({ message: "Logged out from Dropbox", placement: "top" });
+                }
+            } else {
+                let isPopup = window.location.pathname.endsWith('popup.html') && !window.location.search.includes('options=true');
+                
+                try {
+                    const clientId = "gipboqpkook5oaj";
+                    let finalRedirectUri;
+                    if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
+                        finalRedirectUri = browser.identity.getRedirectURL();
+                    } else {
+                        const id = browser.runtime.id;
+                        if (id && id.includes('@')) {
+                            finalRedirectUri = "https://" + encodeURIComponent(id) + ".extensions.allizom.org/";
+                        } else {
+                            finalRedirectUri = "https://924f7c81-8b1e-4b6e-9e7c-8e4a9e1d2c3f.extensions.allizom.org/";
+                        }
+                    }
+
+                    const authUrl = "https://www.dropbox.com/oauth2/authorize?client_id=" + clientId + "&response_type=token&redirect_uri=" + encodeURIComponent(finalRedirectUri);
+                    const normalizedRedirectUri = finalRedirectUri.endsWith('/') ? finalRedirectUri.slice(0, -1) : finalRedirectUri;
+
+                    if (isPopup) {
+                        await browser.tabs.create({ url: 'popup.html?options=true&startDropbox=true' });
+                        window.close();
+                        return;
+                    }
+
+                    let token = await new Promise((resolve, reject) => {
+                        let isResolved = false;
+                        let authTabId = null;
+
+                        const updatedListener = async (tabId, changeInfo, tab) => {
+                            const urlString = changeInfo.url || tab.url;
+                            if (urlString && urlString.includes(normalizedRedirectUri) && urlString.includes('access_token=')) {
+                                const url = new URL(urlString);
+                                const hashParams = new URLSearchParams(url.hash.substring(1));
+                                const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+
+                                if (accessToken && !isResolved) {
+                                    isResolved = true;
+                                    browser.tabs.remove(tabId).catch(() => {});
+                                    cleanup();
+                                    resolve(accessToken);
+                                }
+                            }
+                        };
+
+                        const removedListener = (tabId) => {
+                            if (authTabId && tabId === authTabId && !isResolved) {
+                                isResolved = true;
+                                cleanup();
+                                reject(new Error("Login tab closed by user"));
+                            }
+                        };
+
+                        const cleanup = () => {
+                            browser.tabs.onUpdated.removeListener(updatedListener);
+                            browser.tabs.onRemoved.removeListener(removedListener);
+                        };
+
+                        browser.tabs.onUpdated.addListener(updatedListener);
+                        browser.tabs.onRemoved.addListener(removedListener);
+
+                        if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
+                            browser.identity.launchWebAuthFlow({
+                                url: authUrl,
+                                interactive: true
+                            }).then(redirectUrl => {
+                                if (redirectUrl && !isResolved) {
+                                    const url = new URL(redirectUrl);
+                                    const hashParams = new URLSearchParams(url.hash.substring(1));
+                                    const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
+                                    if (accessToken) {
+                                        isResolved = true;
+                                        cleanup();
+                                        resolve(accessToken);
+                                    }
+                                }
+                            }).catch(e => {
+                                console.log("launchWebAuthFlow error:", e);
+                            });
+                        } else {
+                            browser.tabs.create({ url: authUrl }).then(tab => {
+                                authTabId = tab.id;
+                            }).catch(e => {
+                                console.log("browser.tabs.create error:", e);
+                                if (!isResolved) {
+                                    isResolved = true;
+                                    cleanup();
+                                    reject(e);
+                                }
+                            });
+                        }
+                    });
+
+                    if (token) {
+                        await browser.storage.local.set({ dropbox_token: token });
+                        
+                        const userResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+                            method: 'POST',
+                            headers: { 'Authorization': "Bearer " + token }
+                        });
+                        if (userResponse.ok) {
+                            const userData = await userResponse.json();
+                            await browser.storage.local.set({ dropbox_user: { email: userData.email, name: userData.name.display_name } });
+                        }
+                        
+                        checkDropboxLogin();
+
+                        if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                            mdui.snackbar({ message: "Successfully logged in to Dropbox!", placement: "top" });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Dropbox Login Error", e);
+                    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                        mdui.snackbar({ message: "Login failed: " + e.message, placement: "top" });
+                    }
+                }
+            }
+        };
+        checkDropboxLogin();
+    }
+
     const cleanViewResult = await browser.storage.local.get('clean-view');
     updateCleanViewUI(cleanViewResult['clean-view'] === '1');
 
@@ -642,6 +1055,11 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
     if (bgDlSwitch) {
         syncNotificationSetting(bgDlSwitch.checked);
     }
+    
+    setTimeout(() => {
+        isInitializing = false;
+        pendingChanges = {};
+    }, 500);
 }
 
 function syncNotificationSetting(isBgEnabled) {
@@ -689,13 +1107,33 @@ function updateCleanViewUI(isEnabled) {
     icons.forEach(icon => {
         icon.style.display = isEnabled ? 'block' : 'none';
     });
+
+    setTimeout(enforceUIConstraints, 50);
+}
+
+function enforceUIConstraints() {
+    const optimizeLowEnd = document.getElementById('optimize-low-end');
+    if (optimizeLowEnd && optimizeLowEnd.checked) {
+        const limitSelect = document.getElementById('limit-media-list');
+        const limitCustom = document.getElementById('limit-media-list-custom');
+        if (limitSelect) limitSelect.disabled = true;
+        if (limitCustom) limitCustom.disabled = true;
+    }
+    const gdriveStream = document.getElementById('gdrive-stream');
+    const speedBoost = document.getElementById('speed-boost');
+    if (gdriveStream && gdriveStream.checked && speedBoost) {
+        speedBoost.disabled = true;
+    }
 }
 
 function setupCollapsibleLogic() {
     const headers = document.querySelectorAll('.collapsible-header');
     
     headers.forEach(header => {
-        header.onclick = async () => {
+        if (header.dataset.collapsibleBound) return;
+        header.dataset.collapsibleBound = "true";
+
+        header.addEventListener('click', async () => {
             const cleanViewResult = await browser.storage.local.get('clean-view');
             if (cleanViewResult['clean-view'] !== '1') return;
 
@@ -710,7 +1148,166 @@ function setupCollapsibleLogic() {
 
             if (isCurrentlyCollapsed) {
                 currentGroup.classList.remove('collapsed');
+                setTimeout(enforceUIConstraints, 50);
             }
-        };
+        });
     });
+}
+
+function setupSpeedTest() {
+    const startBtn = document.getElementById('start-speed-test');
+    if (!startBtn) return;
+
+    const resultsDiv = document.getElementById('speed-test-results');
+    const dlValue = document.getElementById('download-speed-value');
+    const dlProgress = document.getElementById('download-test-progress');
+    const ulValue = document.getElementById('upload-speed-value');
+    const ulProgress = document.getElementById('upload-test-progress');
+    const statusText = document.getElementById('speed-test-status');
+
+    startBtn.addEventListener('click', async () => {
+        startBtn.disabled = true;
+        resultsDiv.style.display = 'flex';
+        dlValue.textContent = '-';
+        ulValue.textContent = '-';
+        
+        dlProgress.style.display = 'block';
+        dlProgress.value = 0;
+        ulProgress.style.display = 'none';
+        ulProgress.value = 0;
+        
+        statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingDownload") || "Testing download speed...";
+
+        try {
+            // 1. Run Download Test
+            const downloadBps = await runDownloadTest((progress, currentBps) => {
+                dlProgress.value = progress;
+                dlValue.textContent = formatSpeed(currentBps);
+            });
+            dlValue.textContent = formatSpeed(downloadBps);
+            dlProgress.style.display = 'none';
+
+            // 2. Run Upload Test
+            ulProgress.style.display = 'block';
+            statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingUpload") || "Testing upload speed...";
+            const uploadBps = await runUploadTest((progress, currentBps) => {
+                ulProgress.value = progress;
+                ulValue.textContent = formatSpeed(currentBps);
+            });
+            ulValue.textContent = formatSpeed(uploadBps);
+            ulProgress.style.display = 'none';
+
+            statusText.textContent = browser.i18n.getMessage("speedTestStatusCompleted") || "Test completed!";
+        } catch (error) {
+            console.error("Speed Test Error:", error);
+            statusText.textContent = (browser.i18n.getMessage("speedTestStatusFailed") || "Test failed.") + " (" + error.message + ")";
+            dlProgress.style.display = 'none';
+            ulProgress.style.display = 'none';
+        } finally {
+            startBtn.disabled = false;
+        }
+    });
+
+    setupCollapsibleLogic();
+}
+
+function formatSpeed(bps) {
+    if (!bps || bps <= 0) return "-";
+    const Mbps = bps / 1000000;
+    if (Mbps >= 1) {
+        return Mbps.toFixed(2) + " Mbps";
+    }
+    const Kbps = bps / 1000;
+    return Kbps.toFixed(2) + " Kbps";
+}
+
+async function runDownloadTest(onProgress) {
+    const startTime = performance.now();
+    const durationMs = 15000;
+    let totalReceived = 0;
+
+    while (performance.now() - startTime < durationMs) {
+        const controller = new AbortController();
+        let response;
+        try {
+            response = await fetch('https://speed.cloudflare.com/__down?bytes=25000000', { signal: controller.signal });
+        } catch (e) {
+            if (totalReceived > 0) break;
+            throw new Error("Failed to download test file");
+        }
+        if (!response.ok) {
+            if (totalReceived > 0) break;
+            throw new Error("Failed to download test file");
+        }
+
+        const reader = response.body.getReader();
+        try {
+            while (true) {
+                const elapsed = performance.now() - startTime;
+                if (elapsed >= durationMs) {
+                    controller.abort();
+                    break;
+                }
+                const { done, value } = await reader.read();
+                if (done) break;
+                totalReceived += value.length;
+                if (elapsed > 0) {
+                    const bps = (totalReceived * 8) / (elapsed / 1000);
+                    const progress = Math.min((elapsed / durationMs) * 100, 100);
+                    onProgress(progress, bps);
+                }
+            }
+        } catch (e) {
+            if (!(e.name === 'AbortError' || (e.message && e.message.includes('aborted')))) {
+                if (totalReceived > 0) break;
+                throw e;
+            }
+        }
+    }
+
+    const finalElapsed = (performance.now() - startTime) / 1000;
+    return (totalReceived * 8) / finalElapsed;
+}
+
+async function runUploadTest(onProgress) {
+    const startTime = performance.now();
+    const durationMs = 15000;
+    let totalUploaded = 0;
+    
+    const chunk = new Uint8Array(2 * 1024 * 1024); // 2MB chunk
+    
+    while (performance.now() - startTime < durationMs) {
+        await new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://speed.cloudflare.com/__up");
+            
+            let lastLoaded = 0;
+            xhr.upload.onprogress = (event) => {
+                const chunkUploaded = event.loaded - lastLoaded;
+                lastLoaded = event.loaded;
+                totalUploaded += chunkUploaded;
+                
+                const elapsed = performance.now() - startTime;
+                if (elapsed >= durationMs) {
+                    xhr.abort();
+                    return;
+                }
+                
+                if (elapsed > 0) {
+                    const bps = (totalUploaded * 8) / (elapsed / 1000);
+                    const progress = Math.min((elapsed / durationMs) * 100, 100);
+                    onProgress(progress, bps);
+                }
+            };
+            
+            xhr.onload = () => resolve();
+            xhr.onerror = () => resolve();
+            xhr.onabort = () => resolve();
+            
+            xhr.send(chunk);
+        });
+    }
+    
+    const finalElapsed = (performance.now() - startTime) / 1000;
+    return (totalUploaded * 8) / finalElapsed;
 }
