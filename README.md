@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -43,33 +43,17 @@ Designed with a focus on privacy and technical transparency, all operations—in
 - **Educational and Personal Use**: This tool is provided for educational and personal use only.
 - **User Responsibility**: The use of this tool is entirely at the user's own risk. Users are solely responsible for their actions and any consequences resulting from the use of this tool. It is the user's responsibility to ensure compliance with the terms of service of any website visited and all applicable laws and regulations.
 - **Developer Liability**: The developers are not responsible for any misuse, legal issues, or copyright violations. The developers assume no liability for any consequences resulting from the use of this tool.
-- **Non-Supported Platforms**: This extension **does not support YouTube** or any other platforms that are explicitly restricted by technical or legal limitations. It is intended for use only on websites where media acquisition is permitted.
 
 ---
 
-## What's New in v2.0.1
+## What's New in v2.0.3
 
-- **Integrations & Cloud**:
-    - **Dropbox Integration**: Added full Dropbox support including OAuth, stream upload, background save, ZIP, and settings UI.
-    - **Google Drive Enhancements**: Implemented automatic silent background re-authentication on token expiration (401) for seamless cloud uploads.
-- **Downloads & Network**:
-    - **Download Resiliency**: Implemented auto-retry and dynamic recovery for parallel downloads to ensure high completion rates on unstable networks.
-    - **Granular Progress & Speed**: Added a real-time download speed meter on media cards and granular 1MB chunk progress tracking.
-    - **Network Diagnostics**: Introduced a highly accurate built-in network speed test tool in the settings.
-- **Media Processing & Organization**:
-    - **Subtitle Processing**: Added comprehensive subtitle format conversion and detection using the `subsrt` library.
-    - **Advanced Sorting**: New media sorting filter based on time, alphabet, and size.
-    - **QR Code Preview**: Improved the QR code scanner with an inline iframe preview.
-- **Performance Optimizations**:
-    - **DOM Scanning**: Debounced MutationObserver and heavily optimized DOM scanning to prevent lag on highly dynamic web pages.
-    - **Resource Management**: Added a performance optimization setting and media list limit to prevent browser slowdowns on heavy sites.
-- **UI/UX & Localization**:
-    - **Interface Improvements**: Added an info icon next to display switches to dynamically show supported formats and resolved layout wrapping issues.
-    - **Localization Refinement**: Completely refactored English and Indonesian translation keys for clarity and professionalism, and fixed hyphenation formatting across all 9 supported languages.
+- **YouTube Support**: Added full support for downloading from YouTube with specialized media detection.
+- **Bug Fixes**: Fixed several known bugs to improve overall stability and performance.
 
 ---
 
-## Technical Features (v2.0.1)
+## Technical Features (v2.0.3)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:
@@ -163,6 +147,7 @@ You can install the extension directly from the official Firefox Add-ons store:
 ## Troubleshooting
 
 - **Media not detected?** Try refreshing the page and playing the video again. If it still doesn't show up, go to Settings and enable "Detection via server's MIME response".
+- **YouTube media not detected?** The detection might be rate-limited or blocked by your current network. Try changing your network connection or restarting your router.
 - **Download fails?** Some sites use DRM (Digital Rights Management) or encryption. This extension cannot download encrypted content (like Netflix or Amazon Prime).
 - **403 Forbidden on images?** This is often caused by session-based security tokens. It is highly recommended to stay on the current page until downloads are finished. Navigating to the next page or switching lists too quickly can invalidate the request context.
 - **Broken files?** If a converted stream doesn't play, try downloading the "Direct Manifest" and playing it with VLC Media Player.
@@ -198,6 +183,8 @@ If you want to develop this project further, please don't forget to include me i
 - Stream Transmuxing: [mux.js](https://github.com/videojs/mux.js)
 - MP3 Encoding: [lamejs](https://github.com/zhuker/lamejs)
 - Subtitle Processing: [subsrt](https://github.com/papnkukn/subsrt)
+- Media Processing: [libav.js](https://github.com/Yahweasel/libav.js/)
+- YouTube API: [YouTube.js](https://github.com/LuanRT/YouTube.js)
 
 ### Iconography
 - Extension Iconography: Icons are derived from the Google Material Symbols and Icons library, utilized under the Apache License 2.0. Specific SVG implementations have been customized for the user interface.

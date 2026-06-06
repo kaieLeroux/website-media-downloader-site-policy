@@ -1820,5 +1820,11 @@
   "supportedFormats": {
     "message": "تدعم هذه الإضافة اكتشاف وتنزيل صيغ {type} التالية تلقائيًا:",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "اكتشاف يوتيوب"
+  },
+  "youtubeDetectionExplain": {
+    "message": "اكتشاف متقدم لمقاطع فيديو وتنسيقات الصوت في يوتيوب."
   }
 }

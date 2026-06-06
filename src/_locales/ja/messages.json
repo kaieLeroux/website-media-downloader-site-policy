@@ -1820,5 +1820,11 @@
   "supportedFormats": {
     "message": "この拡張機能は、以下の {type} 形式の自動検出とダウンロードをサポートしています：",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "YouTube検出"
+  },
+  "youtubeDetectionExplain": {
+    "message": "YouTubeの動画および音声フォーマットの高度な検出。"
   }
 }

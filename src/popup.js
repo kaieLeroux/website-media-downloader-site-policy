@@ -66,6 +66,8 @@ window.activeCancellations.restoreCallbacks = new Map();
 window.activeCancellations.setRestoreCallback = (url, cb) => {
   window.activeCancellations.restoreCallbacks.set(url, cb);
 };
+window.activePauses = new Set();
+window.activeAbortControllers = new Map(); // url -> AbortController
 
 async function checkForUpdates() {
   const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
@@ -1177,13 +1179,20 @@ function renderNextChunk() {
 
 function createMediaItem(item) {
   const { bestRequest, isVideo, isAudio, isStream, isSubtitle, isFile, isImage } = item;
+  const ytFormats = item.ytFormats || null;
   const mediaURL = new URL(bestRequest.originalUrl);
 
   const mediaDiv = document.createElement('div');
   mediaDiv.classList.add('media-item');
+  mediaDiv.dataset.originalUrl = bestRequest.originalUrl;
   mediaDiv.dataset.url = bestRequest.originalUrl;
   mediaDiv.dataset.size = bestRequest.size;
   mediaDiv.dataset.type = isVideo ? 'video' : isAudio ? 'audio' : isStream ? 'stream' : isImage ? 'image' : isSubtitle ? 'subtitle' : 'file';
+
+
+  let activeUrl = bestRequest.originalUrl;
+  let activeAudioUrl = null;
+  let activeSize = bestRequest.size;
 
   const header = document.createElement('div');
   header.classList.add('media-item-header');
@@ -1281,7 +1290,12 @@ function createMediaItem(item) {
   description.classList.add('media-description');
   const timeStr = new Date(bestRequest.timeStamp).toLocaleTimeString();
   const humanSize = getHumanReadableSize(bestRequest.size);
-  description.textContent = `${mediaURL.hostname} • ${humanSize} • ${timeStr}`;
+
+  let resLabel = '';
+  if (ytFormats && ytFormats.length > 0 && ytFormats[0].label) {
+    resLabel = ` • ${ytFormats[0].label}`;
+  }
+  description.textContent = `${mediaURL.hostname} • ${humanSize}${resLabel} • ${timeStr}`;
   info.appendChild(description);
   header.appendChild(info);
 
@@ -1304,6 +1318,128 @@ function createMediaItem(item) {
 
   const actionsWrapper = document.createElement('div');
   actionsWrapper.classList.add('media-actions-wrapper');
+
+
+  if (ytFormats && ytFormats.length > 1) {
+    const resolutionRow = document.createElement('div');
+    resolutionRow.classList.add('yt-resolution-row');
+
+    const formatWrapper = document.createElement('div');
+    formatWrapper.classList.add('pill-select-wrapper', 'yt-format-select-wrapper');
+
+    const formatSelect = document.createElement('select');
+    formatSelect.classList.add('pill-select', 'yt-format-select');
+
+    const codecWrapper = document.createElement('div');
+    codecWrapper.classList.add('pill-select-wrapper', 'yt-codec-select-wrapper');
+
+    const codecSelect = document.createElement('select');
+    codecSelect.classList.add('pill-select', 'yt-codec-select');
+    
+    const resWrapper = document.createElement('div');
+    resWrapper.classList.add('pill-select-wrapper', 'yt-resolution-select-wrapper');
+
+    const resSelect = document.createElement('select');
+    resSelect.classList.add('pill-select', 'yt-resolution-select');
+    resSelect.id = 'yt-resolution-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+
+
+    const demuxers = [...new Set(ytFormats.map(fmt => fmt.demuxer))];
+    demuxers.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d.toUpperCase();
+      formatSelect.appendChild(opt);
+    });
+
+
+    const defaultDemuxer = demuxers.includes('mp4') ? 'mp4' : demuxers[0];
+    formatSelect.value = defaultDemuxer;
+
+    function updateCodecDropdown() {
+      codecSelect.innerHTML = '';
+      const selectedDemuxer = formatSelect.value;
+      const availableCodecs = [...new Set(ytFormats.filter(fmt => fmt.demuxer === selectedDemuxer).map(fmt => fmt.codec || 'UNKNOWN'))];
+      
+      availableCodecs.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        codecSelect.appendChild(opt);
+      });
+
+
+      if (availableCodecs.includes('AV1')) codecSelect.value = 'AV1';
+      else if (availableCodecs.includes('VP9')) codecSelect.value = 'VP9';
+      else if (availableCodecs.includes('H265')) codecSelect.value = 'H265';
+      else if (availableCodecs.includes('H264')) codecSelect.value = 'H264';
+      else codecSelect.value = availableCodecs[0];
+
+      updateResolutionDropdown();
+    }
+
+    function updateResolutionDropdown() {
+        resSelect.innerHTML = '';
+        const selectedDemuxer = formatSelect.value;
+        const selectedCodec = codecSelect.value;
+
+        const availableFormats = ytFormats.filter(fmt => 
+          fmt.demuxer === selectedDemuxer && 
+          (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
+        );
+        
+        availableFormats.forEach((fmt) => {
+          const opt = document.createElement('option');
+          opt.value = ytFormats.indexOf(fmt);
+          let optLabel = fmt.label || `${fmt.width}x${fmt.height}`;
+          if (fmt.contentLength) {
+            optLabel += ` • ${getHumanReadableSize(fmt.contentLength)}`;
+          }
+          opt.textContent = optLabel;
+          resSelect.appendChild(opt);
+        });
+        
+
+        resSelect.dispatchEvent(new Event('change'));
+    }
+
+    formatSelect.addEventListener('change', updateCodecDropdown);
+    codecSelect.addEventListener('change', updateResolutionDropdown);
+
+    resSelect.addEventListener('change', () => {
+      if (resSelect.value === '') return;
+      
+      const selectedIdx = parseInt(resSelect.value);
+      const fmt = ytFormats[selectedIdx];
+      if (fmt) {
+        activeUrl = fmt.videoUrl;
+        activeAudioUrl = fmt.audioUrl || null;
+        activeSize = fmt.contentLength || 'unknown';
+        mediaDiv.dataset.url = activeUrl;
+        mediaDiv.dataset.audioUrl = activeAudioUrl || '';
+        mediaDiv.dataset.size = activeSize;
+
+        const newHumanSize = getHumanReadableSize(activeSize);
+        const newResLabel = fmt.label ? ` • ${fmt.label}` : '';
+        description.textContent = `${mediaURL.hostname} • ${newHumanSize}${newResLabel} • ${timeStr}`;
+      }
+    });
+
+    formatWrapper.appendChild(formatSelect);
+    resolutionRow.appendChild(formatWrapper);
+    
+    codecWrapper.appendChild(codecSelect);
+    resolutionRow.appendChild(codecWrapper);
+
+    resWrapper.appendChild(resSelect);
+    resolutionRow.appendChild(resWrapper);
+    
+    actionsWrapper.appendChild(resolutionRow);
+
+
+    updateCodecDropdown();
+  }
+
   const actions = document.createElement('div');
   actions.classList.add('media-actions');
 
@@ -1320,15 +1456,25 @@ function createMediaItem(item) {
       if (dlId) {
         browser.runtime.sendMessage({ action: 'resumeActiveDownload', id: dlId });
         updatePausePlayUI(dlBtn, false);
+        if (window.activePauses) {
+          window.activePauses.delete(dlId);
+          if (activeUrl) window.activePauses.delete(activeUrl);
+          if (activeAudioUrl) window.activePauses.delete(activeAudioUrl);
+        }
       }
     } else if (dlBtn.classList.contains('is-playing')) {
       const dlId = mediaDiv.dataset.downloadId;
       if (dlId) {
         browser.runtime.sendMessage({ action: 'pauseDownload', id: dlId });
         updatePausePlayUI(dlBtn, true);
+        if (window.activePauses) {
+          window.activePauses.add(dlId);
+          if (activeUrl) window.activePauses.add(activeUrl);
+          if (activeAudioUrl) window.activePauses.add(activeAudioUrl);
+        }
       }
     } else {
-      downloadFile(bestRequest.originalUrl, mediaDiv, bestRequest.size);
+      downloadFile(activeUrl, mediaDiv, activeSize, false, activeAudioUrl);
     }
   });
 
@@ -1351,7 +1497,7 @@ function createMediaItem(item) {
             largeImg.style.objectFit = "contain";
             inlinePreview.appendChild(largeImg);
           }
-          largeImg.src = bestRequest.originalUrl;
+          largeImg.src = activeUrl;
           largeImg.style.display = 'block';
         } else {
           const largeImg = inlinePreview.querySelector('img');
@@ -1361,13 +1507,13 @@ function createMediaItem(item) {
           if (isStream) {
             if (typeof Hls !== 'undefined' && Hls.isSupported()) {
               hlsLarge = new Hls();
-              hlsLarge.loadSource(bestRequest.originalUrl);
+              hlsLarge.loadSource(activeUrl);
               hlsLarge.attachMedia(largeVideo);
             } else if (largeVideo.canPlayType('application/vnd.apple.mpegurl')) {
-              largeVideo.src = bestRequest.originalUrl;
+              largeVideo.src = activeUrl;
             }
           } else {
-            largeVideo.src = bestRequest.originalUrl;
+            largeVideo.src = activeUrl;
           }
           largeVideo.play().catch(e => console.warn("Auto-play failed:", e));
         }
@@ -1390,7 +1536,11 @@ function createMediaItem(item) {
   audioBtn.id = 'audio-only-button';
   audioBtn.innerHTML = `<mdui-icon slot="icon"><svg viewBox="0 -960 960 960"><path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z"/></svg></mdui-icon>${browser.i18n.getMessage("audioOnly") || "Audio-Only"}`;
   audioBtn.addEventListener('click', () => {
-    downloadAudioOnly(bestRequest.originalUrl, mediaDiv, bestRequest.size);
+    if (activeAudioUrl) {
+        downloadAudioOnly(activeAudioUrl, mediaDiv, activeSize);
+    } else {
+        downloadAudioOnly(activeUrl, mediaDiv, activeSize);
+    }
   });
   if (!isVideo && !isStream) audioBtn.style.display = 'none';
 
@@ -1402,19 +1552,43 @@ function createMediaItem(item) {
   cancelBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const dlId = mediaDiv.dataset.downloadId;
-    window.activeCancellations.add(bestRequest.originalUrl);
-    browser.runtime.sendMessage({ action: 'cancelDownload', url: bestRequest.originalUrl, id: dlId });
-    finishDownloadUI(dlId || bestRequest.originalUrl, false);
+    window.activeCancellations.add(activeUrl);
+    if (window.activeAbortControllers.has(activeUrl)) {
+      window.activeAbortControllers.get(activeUrl).abort();
+    }
+    if (activeAudioUrl) {
+      window.activeCancellations.add(activeAudioUrl);
+      if (window.activeAbortControllers.has(activeAudioUrl)) {
+        window.activeAbortControllers.get(activeAudioUrl).abort();
+      }
+    }
+    if (dlId) {
+      window.activeCancellations.add(dlId);
+      if (window.activePauses) window.activePauses.delete(dlId);
+    }
+    if (window.activePauses) {
+      window.activePauses.delete(activeUrl);
+      if (activeAudioUrl) window.activePauses.delete(activeAudioUrl);
+    }
+    browser.runtime.sendMessage({ action: 'cancelDownload', url: activeUrl, id: dlId });
+    if (activeAudioUrl) {
+      browser.runtime.sendMessage({ action: 'cancelDownload', url: activeAudioUrl, id: dlId });
+    }
+    finishDownloadUI(dlId || activeUrl, false);
   });
+  dlBtn.style.flex = '1.0';
   buttonGroup.appendChild(dlBtn);
-  
+
   if (isVideo || isStream) {
+    audioBtn.style.flex = '1';
     buttonGroup.appendChild(audioBtn);
   }
 
+  cancelBtn.style.flex = '1';
   buttonGroup.appendChild(cancelBtn);
 
   if (!(isSubtitle || isFile)) {
+    prvBtn.style.flex = '1';
     buttonGroup.appendChild(prvBtn);
   }
 
@@ -1644,7 +1818,8 @@ async function loadMediaList() {
           isStream: group.type === 'stream',
           isSubtitle: group.type === 'subtitle',
           isImage: group.type === 'image',
-          isFile: group.type === 'file'
+          isFile: group.type === 'file',
+          ytFormats: group.requests[0].ytFormats || null
         });
     });
 
@@ -2380,10 +2555,24 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
   let wakeLock = null;
   try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
 
+  if (window.activeCancellations) {
+      window.activeCancellations.delete(url);
+  }
+
   try {
    const requests = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: url });
-   const targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
-   if(!targetRequest) throw new Error("Data lost");
+   let targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
+   
+   if (!targetRequest && mediaDiv && mediaDiv.dataset.originalUrl) {
+       const ogUrl = mediaDiv.dataset.originalUrl;
+       const ogReqs = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: ogUrl });
+       targetRequest = ogReqs[ogUrl]?.[0];
+   }
+
+   if (!targetRequest) {
+       console.warn("Target request metadata not found, using generic fallback.");
+       targetRequest = { pageTitle: document.title || "video", responseHeaders: [] };
+   }
 
    const defaultName = targetRequest.pageTitle || getFileName(url, 100);
    const settings = await browser.storage.local.get(['filename-template', 'disable-rename-dialog']);
@@ -2461,7 +2650,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
           }
           const result = await downloadM3U8Offline(url, targetRequest.responseHeaders, downloadMethod, loadingBar, targetRequest, newName, true);
           if (window.activeCancellations.has(url)) throw new Error("Cancelled");
-          // downloadM3U8Offline with audioOnly=true already handles extraction and finalizeDownload
+
           finishDownloadUI(url, true);
           return;
       } else {
@@ -2471,43 +2660,51 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
       }
    } else {
       try {
-          const response = await spoofedFetch(url);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const checkCancel = () => window.activeCancellations && window.activeCancellations.has(url);
+          const isYouTube = url.toLowerCase().includes('googlevideo.com') || url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') || (mediaDiv && mediaDiv.dataset.originalUrl && (mediaDiv.dataset.originalUrl.toLowerCase().includes('youtube.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('googlevideo.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('youtu.be')));
+          
+          let blob;
+          if (isYouTube) {
+              const uint8Array = await window.fetchAsUint8ArrayChunked(url, loadingBar, statusInfo, checkCancel);
+              blob = new Blob([uint8Array.buffer]);
+          } else {
+              const response = await spoofedFetch(url);
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-          const contentLength = +(response.headers.get('Content-Length') || 0);
-          const reader = response.body.getReader();
-          let receivedLength = 0;
-          let chunks = [];
+              const contentLength = +(response.headers.get('Content-Length') || 0);
+              const reader = response.body.getReader();
+              let receivedLength = 0;
+              let chunks = [];
 
-          loadingBar.removeAttribute('indeterminate');
-          if (contentLength > 0) loadingBar.max = contentLength;
+              loadingBar.removeAttribute('indeterminate');
+              if (contentLength > 0) loadingBar.max = contentLength;
 
-          while(true) {
-            if (window.activeCancellations.has(url)) {
-              reader.cancel();
-              throw new Error("Cancelled");
-            }
-            const {done, value} = await reader.read();
-            if (done) break;
-            chunks.push(value);
-            receivedLength += value.length;
+              while(true) {
+                if (window.activeCancellations.has(url)) {
+                  reader.cancel();
+                  throw new Error("Cancelled");
+                }
+                const {done, value} = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                receivedLength += value.length;
 
-            if (contentLength > 0) {
-                loadingBar.value = receivedLength;
-                const percent = Math.round((receivedLength / contentLength) * 100);
-                const loadedMB = (receivedLength / 1048576).toFixed(1);
-                const totalMB = (contentLength / 1048576).toFixed(1);
-                statusInfo.textContent = browser.i18n.getMessage("downloadProgressWithSize", [percent.toString(), loadedMB, totalMB]) || `Downloading: ${percent}% (${loadedMB}MB / ${totalMB}MB)`;
+                if (contentLength > 0) {
+                    loadingBar.value = receivedLength;
+                    const percent = Math.round((receivedLength / contentLength) * 100);
+                    const loadedMB = (receivedLength / 1048576).toFixed(1);
+                    const totalMB = (contentLength / 1048576).toFixed(1);
+                    statusInfo.textContent = browser.i18n.getMessage("downloadProgressWithSize", [percent.toString(), loadedMB, totalMB]) || `Downloading: ${percent}% (${loadedMB}MB / ${totalMB}MB)`;
                 } else {
-                const loadedMB = (receivedLength / 1048576).toFixed(1);
-                statusInfo.textContent = browser.i18n.getMessage("downloadProgressNoSize", [loadedMB]) || `Downloading: ${loadedMB}MB`;
-                }          }
-
-          const blob = new Blob(chunks);
+                    const loadedMB = (receivedLength / 1048576).toFixed(1);
+                    statusInfo.textContent = browser.i18n.getMessage("downloadProgressNoSize", [loadedMB]) || `Downloading: ${loadedMB}MB`;
+                }
+              }
+              blob = new Blob(chunks);
+          }
           statusInfo.textContent = browser.i18n.getMessage("downloadCompletePreparingExtraction");
           await new Promise(r => setTimeout(r, 500)); 
           if (window.activeCancellations.has(url)) throw new Error("Cancelled");
-          const checkCancel = () => window.activeCancellations && window.activeCancellations.has(url);
           await extractAudioFromBlob(blob, newName, downloadMethod, loadingBar, checkCancel);
       } catch (e) {
           throw new Error(e.message === "Cancelled" ? "Cancelled" : browser.i18n.getMessage("downloadError", [e.message]));
@@ -2527,14 +2724,24 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
     if (wakeLock) wakeLock.release();
   }
 }
-async function downloadFile(url, mediaDiv, specificSize, silent = false) {
+async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUrl = null) {
   let wakeLock = null;
   try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
 
   try {
    const requests = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: url });
-   const targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
-   if(!targetRequest) throw new Error("Data lost");
+   let targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
+   
+   if (!targetRequest && mediaDiv && mediaDiv.dataset.originalUrl) {
+       const ogUrl = mediaDiv.dataset.originalUrl;
+       const ogReqs = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: ogUrl });
+       targetRequest = ogReqs[ogUrl]?.[0];
+   }
+
+   if (!targetRequest) {
+       console.warn("Target request metadata not found, using generic fallback.");
+       targetRequest = { pageTitle: document.title || "video", responseHeaders: [] };
+   }
 
    let downloadId = 'dl_' + Date.now();
    if (mediaDiv) {
@@ -2558,6 +2765,20 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false) {
 
     if (template) {
         finalName = await generateTemplateName(template, url, defaultName, targetRequest.pageTitle);
+    }
+
+    if (audioUrl) {
+        let extMatch = url.match(/#(?:video|audio)\.([a-zA-Z0-9]+)$/);
+        let ext = extMatch ? '.' + extMatch[1] : '.mp4';
+        if (!finalName.toLowerCase().endsWith(ext)) finalName += ext;
+    } else {
+        let extMatch = url.match(/#[a-zA-Z0-9_]+\.([a-zA-Z0-9]+)$/);
+        if (extMatch) {
+            let ext = '.' + extMatch[1];
+            if (!finalName.toLowerCase().endsWith(ext)) {
+                finalName += ext;
+            }
+        }
     }
 
     let newName = finalName;
@@ -2606,6 +2827,9 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false) {
 
     const dlSettings = await browser.storage.local.get(['download-method', 'stream-download', 'background-download']);
     let downloadMethod = dlSettings['download-method'] || 'browser';
+    if (url.includes('#audio.m4a') || url.includes('#audio.webm')) {
+        downloadMethod = 'fetch';
+    }
     let streamPref = dlSettings['stream-download'] || 'offline';
     const bgDownloadEnabled = dlSettings['background-download'] !== '0';
 
@@ -2683,6 +2907,26 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false) {
     const isStream = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('.mpd');
     const cloudSettings = await browser.storage.local.get(['save-to-gdrive', 'save-to-dropbox']);
     const cloudEnabled = cloudSettings['save-to-gdrive'] === '1' || cloudSettings['save-to-dropbox'] === '1';
+
+    if (audioUrl) {
+        if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("startingDownload") || "Starting download...";
+        try {
+            console.log("downloadFile: Calling downloadAndMuxYoutube...");
+            // Pre-emptively clear cancellations for this URL to allow fresh start
+            if (window.activeCancellations) {
+                window.activeCancellations.delete(url);
+                window.activeCancellations.delete(audioUrl);
+            }
+            await downloadAndMuxYoutube(url, audioUrl, newName, downloadMethod, loadingBar);
+            console.log("downloadFile: downloadAndMuxYoutube finished successfully.");
+            finishDownloadUI(downloadId, true);
+        } catch (e) {
+            console.error("downloadFile: Muxing failed", e);
+            if (e.message !== "Cancelled") showDialog(browser.i18n.getMessage("downloadError", [e.message]));
+            finishDownloadUI(downloadId, false);
+        }
+        return;
+    }
 
     if (isStream && streamPref === 'offline') {
 
@@ -2795,6 +3039,15 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false) {
     showDialog(browser.i18n.getMessage("downloadError", [error.message]));
     finishDownloadUI(downloadId);
   } finally {
+    if (window.activeCancellations) {
+        window.activeCancellations.delete(url);
+        if (audioUrl) window.activeCancellations.delete(audioUrl);
+        if (downloadId) window.activeCancellations.delete(downloadId);
+        
+        const restoreCb = window.activeCancellations.restoreCallbacks.get(url);
+        if (restoreCb) restoreCb();
+        window.activeCancellations.restoreCallbacks.delete(url);
+    }
     if (wakeLock) wakeLock.release();
   }
 }

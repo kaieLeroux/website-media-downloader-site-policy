@@ -28,6 +28,8 @@
   <script src="libraries/client-zip.js"></script>
   <script src="libraries/qrcode.min.js"></script>
   <script src="libraries/mux.js"></script>
+  <script src="libraries/libav-6.8.8.0.js"></script>
+  <script src="libraries/libav-6.5.7.1.js"></script>
   <script src="offlineStreamConvert.js"></script>
   <link rel="stylesheet" href="styles/style.css">
 </head>
@@ -148,6 +150,14 @@
                   <p data-translate="urlDetectionExplain">Fast, but might miss some media types.</p>
                 </div>
                 <mdui-switch id="url-detection"></mdui-switch>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="youtubeDetectionCheckbox">YouTube Detection</h3>
+                  <p data-translate="youtubeDetectionExplain">Advanced detection for YouTube videos and audio formats.</p>
+                </div>
+                <mdui-switch id="youtube-detection"></mdui-switch>
               </div>
               
               <div class="setting-item">

@@ -1005,7 +1005,7 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
 
             await uploadToDropbox(blob, filename, (percent) => {
                 if (loadingBar) {
-                    loadingBar.value = 100;
+                    loadingBar.value = percent;
                     loadingBar.classList.add('uploading-phase');
                     const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
                     if (statusInfo) {
@@ -1052,7 +1052,7 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
 
             await uploadToGDrive(blob, filename, (percent) => {
                 if (loadingBar) {
-                    loadingBar.value = 100;
+                    loadingBar.value = percent;
                     loadingBar.classList.add('uploading-phase');
                     const statusInfo = loadingBar.parentNode.querySelector('.download-status-info');
                     if (statusInfo) {
@@ -2960,3 +2960,643 @@ async function selectMPDAudioRepresentation(reps) {
   });
 }
 
+
+async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMethod, loadingBar) {
+    console.log("downloadAndMuxYoutube: Starting...");
+    const statusInfo = loadingBar ? loadingBar.parentNode.querySelector('.download-status-info') : null;
+    if (statusInfo) statusInfo.textContent = "Initializing...";
+    if (loadingBar) loadingBar.setAttribute('indeterminate', 'true');
+
+    // Clear any previous cancellation for these specific URLs to allow retry
+    if (window.activeCancellations) {
+        window.activeCancellations.delete(videoUrl);
+        window.activeCancellations.delete(audioUrl);
+    }
+
+    let libav = null;
+    let ffmpegLog = "";
+    const origLog = console.log;
+    const origErr = console.error;
+
+    try {
+        console.log("downloadAndMuxYoutube: Selecting LibAV variant...");
+        const isMp4 = filename.toLowerCase().includes('.mp4');
+        const libavVar = isMp4 ? 'LibAV_h264' : 'LibAV';
+        const libavScript = isMp4 ? 'libraries/libav-6.5.7.1.js' : 'libraries/libav-6.8.8.0.js';
+        const libavWasm = isMp4 ? 'libraries/libav-6.5.7.1.wasm.wasm' : 'libraries/libav-6.8.8.0.wasm.wasm';
+
+        if (!window[libavVar] || !window[libavVar].LibAV) {
+            console.log("downloadAndMuxYoutube: Loading script " + libavScript);
+            const script = document.createElement('script');
+            script.src = browser.runtime.getURL(libavScript);
+            document.head.appendChild(script);
+            await new Promise(resolve => {
+                script.onload = () => {
+                    console.log("downloadAndMuxYoutube: Script loaded: " + libavScript);
+                    resolve();
+                };
+            });
+        }
+        
+        console.log = function(...args) {
+            ffmpegLog += args.join(" ") + "\n";
+            origLog.apply(console, args);
+        };
+        console.error = function(...args) {
+            ffmpegLog += args.join(" ") + "\n";
+            origErr.apply(console, args);
+        };
+
+        console.log("downloadAndMuxYoutube: Initializing LibAV instance...");
+        libav = await window[libavVar].LibAV({
+            noworker: true,
+            wasmurl: browser.runtime.getURL(libavWasm),
+            base: browser.runtime.getURL('libraries')
+        });
+        console.log("downloadAndMuxYoutube: LibAV instance ready.");
+
+        let totalSize = 0;
+        let totalDownloaded = 0;
+        let speedMBps = 0;
+        let startTime = Date.now();
+        const updateSharedProgress = () => {
+            if (!loadingBar || !totalSize || !statusInfo) return;
+            loadingBar.removeAttribute('indeterminate');
+            loadingBar.max = 100;
+            loadingBar.value = Math.round((totalDownloaded / totalSize) * 100);
+            
+            const percent = Math.round((totalDownloaded / totalSize) * 100);
+            const loadedMB = (totalDownloaded / 1048576).toFixed(1);
+            const totalMB = (totalSize / 1048576).toFixed(1);
+            
+            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            speedMBps = elapsedSeconds > 0 ? ((totalDownloaded / 1048576) / elapsedSeconds).toFixed(1) : 0;
+            
+            const isPaused = window.activePauses && (window.activePauses.has(videoUrl) || window.activePauses.has(audioUrl));
+            const statusPrefix = isPaused ? `[${browser.i18n.getMessage("pausedStatus") || "Paused"}] ` : "Downloading: ";
+            const speedStr = isPaused ? "" : ` - ${speedMBps} MB/s`;
+            
+            statusInfo.textContent = `${statusPrefix}${percent}% (${loadedMB}MB / ${totalMB}MB)${speedStr}`;
+        };
+
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB chunks to bypass throttle
+
+        const fetchAsUint8Array = async (url) => {
+            const checkCancel = () => {
+                if (window.activeCancellations) {
+                    if (window.activeCancellations.has(videoUrl) || window.activeCancellations.has(audioUrl) || window.activeCancellations.has(url)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+            
+            const checkPause = async (reader = null) => {
+                let firstPaused = true;
+                while (window.activePauses && (window.activePauses.has(videoUrl) || window.activePauses.has(audioUrl) || window.activePauses.has(url))) {
+                    if (firstPaused) {
+                        firstPaused = false;
+                        updateSharedProgress();
+                    }
+                    if (checkCancel()) {
+                        if (reader) {
+                            try { reader.cancel(); } catch(e) {}
+                        }
+                        throw new Error("Cancelled");
+                    }
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                if (!firstPaused) {
+                    startTime = Date.now() - (totalDownloaded / (1048576 * (parseFloat(speedMBps) || 1))) * 1000;
+                    updateSharedProgress();
+                }
+            };
+
+            if (checkCancel()) throw new Error("Cancelled");
+
+            const controller = new AbortController();
+            if (window.activeAbortControllers) window.activeAbortControllers.set(url, controller);
+
+            try {
+                // Probe size using Range request
+                let probeResp = await spoofedFetch(url, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
+                let isChunked = probeResp.status === 206;
+                let size = 0;
+                
+                if (isChunked) {
+                    const cr = probeResp.headers.get('Content-Range');
+                    if (cr) {
+                        const match = cr.match(/\/(\d+)$/);
+                        if (match) size = parseInt(match[1], 10);
+                    }
+                }
+                
+                if (!isChunked || !size) {
+                    // Fallback to slow linear fetch if server rejects Range
+                    const resp = await spoofedFetch(url, { signal: controller.signal });
+                    if (!resp.ok) throw new Error("Failed to fetch " + url);
+                    
+                    size = +(resp.headers.get('Content-Length') || 0);
+                    totalSize += size;
+                    
+                    const reader = resp.body.getReader();
+                    let chunks = [];
+                    let downloaded = 0;
+
+                    while (true) {
+                        await checkPause(reader);
+                        if (checkCancel()) {
+                            try { reader.cancel(); } catch(e) {}
+                            throw new Error("Cancelled");
+                        }
+                        const {done, value} = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                        downloaded += value.length;
+                        totalDownloaded += value.length;
+                        if (loadingBar && totalSize > 0) {
+                            updateSharedProgress();
+                        }
+                    }
+                    
+                    let pos = 0;
+                    let result = new Uint8Array(downloaded);
+                    for(let chunk of chunks) {
+                        result.set(chunk, pos);
+                        pos += chunk.length;
+                    }
+                    return result;
+                }
+                
+                // Chunked fast fetch
+                totalSize += size;
+                let result = new Uint8Array(size);
+                
+                for (let start = 0; start < size; start += CHUNK_SIZE) {
+                    await checkPause();
+                    if (checkCancel()) throw new Error("Cancelled");
+                    let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
+                    
+                    let chunkResp;
+                    let retries = 3;
+                    while (retries > 0) {
+                        try {
+                            chunkResp = await spoofedFetch(url, { headers: { "Range": `bytes=${start}-${end}` }, signal: controller.signal });
+                            if (chunkResp.ok || chunkResp.status === 206) break;
+                        } catch (e) {
+                            if (e.name === 'AbortError' || checkCancel()) throw new Error("Cancelled");
+                            console.warn("Chunk fetch failed, retrying...", e);
+                        }
+                        retries--;
+                        if (retries === 0) throw new Error("Failed to fetch chunk " + start);
+                        await new Promise(r => setTimeout(r, 1500));
+                    }
+                    
+                    const arrayBuf = await chunkResp.arrayBuffer();
+                    const chunkData = new Uint8Array(arrayBuf);
+                    
+                    result.set(chunkData, start);
+                    totalDownloaded += chunkData.length;
+                    
+                    if (loadingBar && totalSize > 0) {
+                        updateSharedProgress();
+                    }
+                }
+                
+                return result;
+            } catch (e) {
+                if (e.name === 'AbortError') throw new Error("Cancelled");
+                throw e;
+            } finally {
+                if (window.activeAbortControllers) window.activeAbortControllers.delete(url);
+            }
+        };
+
+        console.log("downloadAndMuxYoutube: Fetching video and audio data...");
+        const [videoData, audioData] = await Promise.all([
+            fetchAsUint8Array(videoUrl).then(data => {
+                console.log("downloadAndMuxYoutube: Video data fetched (" + data.length + " bytes)");
+                return data;
+            }),
+            fetchAsUint8Array(audioUrl).then(data => {
+                console.log("downloadAndMuxYoutube: Audio data fetched (" + data.length + " bytes)");
+                return data;
+            })
+        ]);
+
+        console.log("downloadAndMuxYoutube: Data fetch complete. Starting muxing...");
+
+        if (loadingBar) {
+            loadingBar.removeAttribute('value');
+            loadingBar.setAttribute('indeterminate', 'true');
+        }
+        if (statusInfo) statusInfo.textContent = "Muxing... 0%";
+
+        let durationSeconds = 0;
+        libav.onwrite = (name, pos, data) => {
+            const str = new TextDecoder().decode(data);
+            
+            // Extract total duration
+            if (str.includes("Duration: ")) {
+                const match = str.match(/Duration: (\d+):(\d+):(\d+\.\d+)/);
+                if (match) {
+                    durationSeconds = parseInt(match[1])*3600 + parseInt(match[2])*60 + parseFloat(match[3]);
+                }
+            }
+            
+            // Extract current time progress
+            if (str.includes("time=")) {
+                const match = str.match(/time=(\d+):(\d+):(\d+\.\d+)/);
+                if (match && durationSeconds > 0) {
+                    const timeSeconds = parseInt(match[1])*3600 + parseInt(match[2])*60 + parseFloat(match[3]);
+                    let progress = Math.round((timeSeconds / durationSeconds) * 100);
+                    if (progress > 100) progress = 100;
+                    
+                    if (statusInfo) statusInfo.textContent = `Muxing... ${progress}%`;
+                    if (loadingBar) {
+                        loadingBar.removeAttribute('indeterminate');
+                        loadingBar.max = 100;
+                        loadingBar.value = progress;
+                    }
+                }
+            }
+        };
+
+        // Detect actual container format from URL mime parameter
+        function getExtFromUrl(url) {
+            try {
+                const u = new URL(url);
+                const mime = u.searchParams.get('mime') || '';
+                if (mime.includes('webm')) return '.webm';
+                if (mime.includes('mp4')) return '.mp4';
+                if (mime.includes('3gpp')) return '.3gp';
+            } catch(e) {}
+            // Fallback: guess from URL path
+            if (url.includes('webm')) return '.webm';
+            if (url.includes('mp4')) return '.mp4';
+            return '.mkv'; // universal fallback
+        }
+
+        const videoExt = getExtFromUrl(videoUrl);
+        const audioExt = getExtFromUrl(audioUrl);
+        const videoFile = 'input_video' + videoExt;
+        const audioFile = 'input_audio' + audioExt;
+        const targetExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '.mkv';
+        const outputFile = 'output' + targetExt;
+        
+        console.log("LibAV: videoExt=" + videoExt + ", audioExt=" + audioExt + ", output=" + outputFile);
+
+        await libav.writeFile(videoFile, videoData);
+        await libav.writeFile(audioFile, audioData);
+        
+        console.log("LibAV: wrote " + videoFile + " size=" + videoData.length + ", " + audioFile + " size=" + audioData.length);
+
+        const exitCode = await libav.ffmpeg([
+            "-y", 
+            "-i", videoFile, 
+            "-i", audioFile, 
+            "-map", "0:v:0", 
+            "-map", "1:a:0", 
+            "-c:v", "copy", 
+            "-c:a", "copy", 
+            outputFile
+        ]);
+        
+        console.log("LibAV ffmpeg exit code:", exitCode);
+        
+        // Try to read the output - if ffmpeg failed, show the log
+        let data;
+        try {
+            data = await libav.readFile(outputFile);
+        } catch (readErr) {
+            throw new Error("Muxing failed: " + outputFile + " not created. Exit code: " + exitCode);
+        }
+        
+        const mimeType = targetExt.includes('mp4') ? 'video/mp4' : 'video/x-matroska';
+        const blob = new Blob([data.buffer], { type: mimeType });
+        
+        // Use the video title as filename
+        const finalFilename = filename.replace(/\.[^/.]+$/, "") + targetExt;
+
+        await finalizeDownload(blob, finalFilename, downloadMethod, loadingBar, false, false);
+    } catch (e) {
+        if (e.message === "Cancelled") {
+            console.log("Download cancelled by user.");
+            if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("downloadCancelled") || "Download cancelled";
+        } else {
+            console.error("FFmpeg muxing failed:", e);
+            alert("FFmpeg Error: " + (e.stack || e.message || e) + "\n\nFFmpeg Log:\n" + (typeof ffmpegLog !== 'undefined' ? ffmpegLog.substring(ffmpegLog.length - 1500) : ''));
+        }
+        throw e;
+    } finally {
+        console.log("downloadAndMuxYoutube: Cleaning up...");
+        console.log = origLog;
+        console.error = origErr;
+        if (libav) {
+            try {
+                // Use a timeout for terminate to avoid hanging forever
+                const terminatePromise = libav.terminate();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("LibAV terminate timeout")), 2000)
+                );
+                await Promise.race([terminatePromise, timeoutPromise]);
+                console.log("downloadAndMuxYoutube: LibAV instance terminated.");
+            } catch (te) {
+                console.warn("downloadAndMuxYoutube: Failed to terminate LibAV instance:", te);
+            }
+        }
+        console.log("downloadAndMuxYoutube: Implementation finished.");
+    }
+}
+
+async function downloadYoutubeChunked(url, filename, downloadMethod, loadingBar) {
+    console.log("Starting YouTube Chunked Download...");
+    if (loadingBar) loadingBar.setAttribute('indeterminate', 'true');
+    const statusInfo = loadingBar ? loadingBar.parentNode.querySelector('.download-status-info') : null;
+
+    const controller = new AbortController();
+    if (window.activeAbortControllers) window.activeAbortControllers.set(url, controller);
+
+    try {
+        const checkCancel = () => {
+            if (window.activeCancellations) {
+                if (window.activeCancellations.has(url)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const checkPause = async (reader = null) => {
+            let firstPaused = true;
+            while (window.activePauses && window.activePauses.has(url)) {
+                if (firstPaused) {
+                    firstPaused = false;
+                    updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+                }
+                if (checkCancel()) {
+                    if (reader) {
+                        try { reader.cancel(); } catch(e) {}
+                    }
+                    throw new Error("Cancelled");
+                }
+                await new Promise(r => setTimeout(r, 200));
+            }
+            if (!firstPaused) {
+                updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+            }
+        };
+
+        if (checkCancel()) throw new Error("Cancelled");
+
+        let totalSize = 0;
+        let totalDownloaded = 0;
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB chunks to bypass throttle
+
+        // Probe size
+        let probeResp = await spoofedFetch(url, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
+        let isChunked = probeResp.status === 206;
+        let size = 0;
+
+        if (isChunked) {
+            const cr = probeResp.headers.get('Content-Range');
+            if (cr) {
+                const match = cr.match(/\/(\d+)$/);
+                if (match) size = parseInt(match[1], 10);
+            }
+        }
+
+        let result;
+        if (!isChunked || !size) {
+            const resp = await spoofedFetch(url, { signal: controller.signal });
+            if (!resp.ok) throw new Error("Failed to fetch " + url);
+
+            size = +(resp.headers.get('Content-Length') || 0);
+            totalSize = size;
+
+            const reader = resp.body.getReader();
+            let chunks = [];
+            let downloaded = 0;
+
+            while (true) {
+                await checkPause(reader);
+                if (checkCancel()) {
+                    try { reader.cancel(); } catch(e) {}
+                    throw new Error("Cancelled");
+                }
+                const {done, value} = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                downloaded += value.length;
+                totalDownloaded += value.length;
+
+                if (loadingBar && totalSize > 0) {
+                    loadingBar.removeAttribute('indeterminate');
+                    loadingBar.max = 100;
+                    updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+                }
+            }
+
+            let pos = 0;
+            result = new Uint8Array(downloaded);
+            for(let chunk of chunks) {
+                result.set(chunk, pos);
+                pos += chunk.length;
+            }
+        } else {
+            totalSize = size;
+            result = new Uint8Array(size);
+            for (let start = 0; start < size; start += CHUNK_SIZE) {
+                await checkPause();
+                if (checkCancel()) throw new Error("Cancelled");
+                let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
+                let chunkResp;
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        chunkResp = await spoofedFetch(url, { headers: { "Range": `bytes=${start}-${end}` }, signal: controller.signal });
+                        if (chunkResp.ok || chunkResp.status === 206) break;
+                    } catch (e) {
+                        if (e.name === 'AbortError' || checkCancel()) throw new Error("Cancelled");
+                        console.warn("Chunk fetch failed, retrying...", e);
+                    }
+                    retries--;
+                    if (retries === 0) throw new Error("Failed to fetch chunk " + start);
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+                const arrayBuf = await chunkResp.arrayBuffer();
+                const chunkData = new Uint8Array(arrayBuf);
+                result.set(chunkData, start);
+                totalDownloaded += chunkData.length;
+                if (loadingBar && totalSize > 0) {
+                    loadingBar.removeAttribute('indeterminate');
+                    loadingBar.max = 100;
+                    updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+                }
+            }
+        }
+
+        const extMatch = filename.match(/\.[a-zA-Z0-9]+$/);
+        const ext = extMatch ? extMatch[0] : '.bin';
+        const mimeType = ext.includes('mp4') ? 'video/mp4' : (ext.includes('webm') ? 'video/webm' : (ext.includes('m4a') ? 'audio/mp4' : 'application/octet-stream'));
+
+        const blob = new Blob([result.buffer], { type: mimeType });
+        await finalizeDownload(blob, filename, downloadMethod, loadingBar, false, false);
+
+    } catch (e) {
+        if (e.name === 'AbortError' || e.message === "Cancelled") {
+            console.log("Download cancelled by user.");
+            if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("downloadCancelled") || "Download cancelled";
+        } else {
+            console.error("YouTube chunked download failed:", e);
+        }
+        throw e;
+    } finally {
+        if (window.activeAbortControllers) window.activeAbortControllers.delete(url);
+    }
+}
+
+
+window.fetchAsUint8ArrayChunked = async (url, loadingBar, statusInfo, onCancel, onPause) => {
+    let totalSize = 0;
+    let totalDownloaded = 0;
+    const CHUNK_SIZE = 5 * 1024 * 1024;
+
+    const controller = new AbortController();
+    if (window.activeAbortControllers) window.activeAbortControllers.set(url, controller);
+
+    const checkPause = async (reader = null) => {
+        let firstPaused = true;
+        while (onPause ? onPause() : (window.activePauses && window.activePauses.has(url))) {
+            if (firstPaused) {
+                firstPaused = false;
+                updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+            }
+            if (onCancel && onCancel()) {
+                if (reader) {
+                    try { reader.cancel(); } catch(e) {}
+                }
+                throw new Error("Cancelled");
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+        if (!firstPaused) {
+            updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+        }
+    };
+
+    try {
+        let probeResp = await spoofedFetch(url, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
+        let isChunked = probeResp.status === 206;
+        let size = 0;
+
+        if (isChunked) {
+            const cr = probeResp.headers.get('Content-Range');
+            if (cr) {
+                const match = cr.match(/\/(\d+)$/);
+                if (match) size = parseInt(match[1], 10);
+            }
+        }
+
+        if (!isChunked || !size) {
+            const resp = await spoofedFetch(url, { signal: controller.signal });
+            if (!resp.ok) throw new Error("Failed to fetch " + url);
+
+            size = +(resp.headers.get('Content-Length') || 0);
+            totalSize = size;
+
+            const reader = resp.body.getReader();
+            let chunks = [];
+            let downloaded = 0;
+
+            while (true) {
+                await checkPause(reader);
+                if (onCancel && onCancel()) {
+                    reader.cancel();
+                    throw new Error("Cancelled");
+                }
+                const {done, value} = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                downloaded += value.length;
+                totalDownloaded += value.length;
+
+                if (loadingBar && totalSize > 0) {
+                    loadingBar.removeAttribute('indeterminate');
+                    loadingBar.max = 100;
+                    updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+                }
+            }
+
+            let pos = 0;
+            let result = new Uint8Array(downloaded);
+            for(let chunk of chunks) {
+                result.set(chunk, pos);
+                pos += chunk.length;
+            }
+            return result;
+        }
+
+        totalSize = size;
+        let result = new Uint8Array(size);
+
+        for (let start = 0; start < size; start += CHUNK_SIZE) {
+            await checkPause();
+            if (onCancel && onCancel()) {
+                throw new Error("Cancelled");
+            }
+            let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
+
+            let chunkResp;
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    chunkResp = await spoofedFetch(url, { headers: { "Range": `bytes=${start}-${end}` }, signal: controller.signal });
+                    if (chunkResp.ok || chunkResp.status === 206) break;
+                } catch (e) {
+                    if (e.name === 'AbortError' || (onCancel && onCancel())) throw new Error("Cancelled");
+                    console.warn("Chunk fetch failed, retrying...", e);
+                }
+                retries--;
+                if (retries === 0) throw new Error("Failed to fetch chunk " + start);
+                await new Promise(r => setTimeout(r, 1500));
+            }
+
+            const arrayBuf = await chunkResp.arrayBuffer();
+            const chunkData = new Uint8Array(arrayBuf);
+
+            result.set(chunkData, start);
+            totalDownloaded += chunkData.length;
+
+            if (loadingBar && totalSize > 0) {
+                loadingBar.removeAttribute('indeterminate');
+                loadingBar.max = 100;
+                updateProgressStatus(loadingBar, totalDownloaded, totalSize, statusInfo, url);
+            }
+        }
+        return result;
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error("Cancelled");
+        throw e;
+    } finally {
+        if (window.activeAbortControllers) window.activeAbortControllers.delete(url);
+    }
+};
+
+
+// Helper for statusInfo
+function updateProgressStatus(loadingBar, downloaded, total, statusInfo, url = null) {
+    loadingBar.value = Math.round((downloaded / total) * 100);
+    let targetStatusInfo = statusInfo;
+    if (!targetStatusInfo && loadingBar && loadingBar.parentNode) {
+        targetStatusInfo = loadingBar.parentNode.querySelector('.download-status-info');
+    }
+    if (targetStatusInfo) {
+        const percent = Math.round((downloaded / total) * 100);
+        const loadedMB = (downloaded / 1048576).toFixed(1);
+        const totalMB = (total / 1048576).toFixed(1);
+        const isPaused = url && window.activePauses && window.activePauses.has(url);
+        const statusPrefix = isPaused ? `[${browser.i18n.getMessage("pausedStatus") || "Paused"}] ` : "Downloading: ";
+        targetStatusInfo.textContent = `${statusPrefix}${percent}% (${loadedMB}MB / ${totalMB}MB)`;
+    }
+}

@@ -1825,5 +1825,11 @@
   "supportedFormats": {
     "message": "Ekstensi ini bisa mendeteksi dan mengunduh otomatis format {type} berikut:",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "Deteksi YouTube"
+  },
+  "youtubeDetectionExplain": {
+    "message": "Deteksi canggih untuk video dan format audio YouTube."
   }
 }

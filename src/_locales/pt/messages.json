@@ -1820,5 +1820,11 @@
   "supportedFormats": {
     "message": "Esta extensão detecta e suporta automaticamente o download dos seguintes formatos de {type}:",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "Detecção do YouTube"
+  },
+  "youtubeDetectionExplain": {
+    "message": "Detecção avançada para vídeos e formatos de áudio do YouTube."
   }
 }

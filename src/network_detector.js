@@ -132,7 +132,7 @@ async function resumeInterruptedDownloads() {
         for (const id of ids) {
             const data = pending[id];
 
-            // If auto-resume is off OR the download was explicitly paused, keep it paused.
+
             const shouldBePaused = !autoResumeEnabled || data.isPaused === true || data.isPaused === 'true';
 
             if (shouldBePaused) {
@@ -414,13 +414,14 @@ browser.webRequest.onBeforeSendHeaders.addListener(
 
 function getSettings(callback) {
     browser.storage.local.get([
-        'mime-detection', 'url-detection', 'media-notification', 'hide-segments', 'hide-page-components',
+        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
         'filename-template', 'theme-color'
     ], function (result) {
         callback({
             mimeDetection: isFlagEnabled(result['mime-detection']),
             urlDetection: isFlagEnabled(result['url-detection']),
+            youtubeDetection: isFlagEnabled(result['youtube-detection']),
             mediaNotification: isFlagEnabled(result['media-notification']),
             hideSegments: isFlagEnabled(result['hide-segments']),
             hidePageComponents: isFlagEnabled(result['hide-page-components']),
@@ -448,7 +449,7 @@ browser.tabs.onRemoved.addListener((tabId) => {
 });
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.status === 'loading') {
+    if (changeInfo.status === 'loading' || changeInfo.url) {
         tabMetadata.delete(tabId);
         tabsWithDrm.delete(tabId);
         notifiedUrls.delete(tabId);
@@ -619,6 +620,12 @@ function checkIsSegment(url, contentType, contentLength, currentSettings) {
 
     const isHideSegments = currentSettings?.hideSegments ?? true;
     const isHidePageComponents = currentSettings?.hidePageComponents ?? true;
+
+
+
+    if (urlLower.includes('googlevideo.com/videoplayback')) {
+        return true;
+    }
 
     const path = urlLower.split('?')[0].split('#')[0];
     if (isHidePageComponents && (
@@ -817,7 +824,7 @@ async function showMediaNotification(details, settings) {
 
     if (!mediaType) return;
 
-    if (checkIsSegment(url, contentType, contentLength, settings)) return;
+    if (!details.isYtNotification && checkIsSegment(url, contentType, contentLength, settings)) return;
 
     const now = Date.now();
 
@@ -833,6 +840,24 @@ async function showMediaNotification(details, settings) {
 
     if (settings.filenameTemplate) {
         displayFilename = await generateTemplateName(settings.filenameTemplate, url, originalFilename, tabId);
+    } else if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+        let pageTitle = "";
+        try {
+            if (tabId && tabId >= 0) {
+                const metadata = tabMetadata.get(tabId);
+                if (metadata && metadata.title) {
+                    pageTitle = metadata.title;
+                } else {
+                    const tab = await browser.tabs.get(tabId);
+                    if (tab && tab.title) pageTitle = tab.title;
+                }
+            }
+        } catch (e) {}
+        if (pageTitle) {
+            const cleanTitle = pageTitle.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
+            const isAudio = getMediaType(url, contentType) === 'audio';
+            displayFilename = cleanTitle + (isAudio ? '.mp3' : '.mp4');
+        }
     }
 
     let pageUrl = "";
@@ -1062,6 +1087,8 @@ function initListener() {
                 if (details.requestHeaders) {
                     temporaryHeaderMap.set(details.requestId, details.requestHeaders);
                 }
+
+                if (details.url.toLowerCase().includes('googlevideo.com/videoplayback')) return;
 
                 const urlMatches = detectionRegex.test(decodeURI(details.url));
 
@@ -1382,59 +1409,327 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         return;
     }
-    if (message.action === 'reportDetectedMedia') {
-        const { urls, pageTitle, pageUrl } = message;
-        if (!urls || !Array.isArray(urls)) return;
+    if (message.msg && message.msg.name === 'on_media') {
+        try {
+            let media = message.msg.data.media;
 
-        const senderReferer = pageUrl || sender.tab?.url || "";
-        const tabId = sender.tab?.id;
-        
-        if (tabId && pageTitle) {
-            tabMetadata.set(tabId, { title: pageTitle, url: pageUrl || sender.tab?.url });
-        }
 
-        const isDrmTab = tabId && tabsWithDrm.has(tabId);
-        let senderOrigin = "";
-        try { if (senderReferer) senderOrigin = new URL(senderReferer).origin; } catch(e) {}
-
-        browser.storage.session.get(null, (items) => {
-            const updates = {};
-            let hasNew = false;
-
-            urls.forEach(url => {
-                const mType = getMediaType(url);
-                const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
-
-                if (senderReferer && !urlToHeaderMap.has(url)) {
-                    urlToHeaderMap.set(url, {
-                        referer: senderReferer,
-                        origin: senderOrigin,
-                        'user-agent': navigator.userAgent
-                    });
-                    savePersistentHeaders();
+            function deserializeSerde(obj) {
+                if (obj === null || obj === undefined) return obj;
+                if (typeof obj !== 'object') return obj;
+                if (obj.__serde_tag) {
+                    switch (obj.__serde_tag) {
+                        case 'primitive': return obj.__serde_val;
+                        case 'object': {
+                            let result = {};
+                            for (let [k, v] of Object.entries(obj.__serde_val || {})) {
+                                result[k] = deserializeSerde(v);
+                            }
+                            return result;
+                        }
+                        case 'array': return (obj.__serde_val || []).map(deserializeSerde);
+                        case 'some': return deserializeSerde(obj.__serde_val);
+                        case 'none': return null;
+                        case 'url': return obj.__serde_val;
+                        case 'map': return new Map((obj.__serde_val || []).map(([k, v]) => [deserializeSerde(k), deserializeSerde(v)]));
+                        case 'headers': return obj.__serde_val;
+                        case 'ok': return deserializeSerde(obj.__serde_val);
+                        case 'err': return null;
+                        default: return obj.__serde_val;
+                    }
                 }
 
-                if (!items[url] && !isDrmMedia) {
-                    updates[url] = [{
-                        url: url,
-                        method: 'GET',
-                        requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
-                        responseHeaders: null,
-                        requestBody: null,
-                        cookie: '',
-                        size: 'unknown',
-                        timeStamp: Date.now(),
-                        tabId: tabId,
-                        pageTitle: pageTitle || sender.tab?.title || "",
-                        pageUrl: pageUrl || sender.tab?.url || ""
-                    }];
-                    hasNew = true;
+                if (Array.isArray(obj)) return obj.map(deserializeSerde);
+                let result = {};
+                for (let [k, v] of Object.entries(obj)) {
+                    result[k] = deserializeSerde(v);
+                }
+                return result;
+            }
+
+
+            if (media && media.__serde_tag) {
+                media = deserializeSerde(media);
+            }
+
+            let pageTitle = media.title;
+            let pageUrl = media.initiator || (sender.tab ? sender.tab.url : "");
+            let urls = [];
+            let ytFormats = [];
+
+
+            if (media.type === 'youtube_format' && Array.isArray(media.playlist)) {
+                for (let entry of media.playlist) {
+                    if (!entry || !entry.av || !entry.av.video) continue;
+                    let videoUrl = typeof entry.av.video === 'object' ? entry.av.video.url : entry.av.video;
+                    let audioUrl = entry.av.audio ? (typeof entry.av.audio === 'object' ? entry.av.audio.url : entry.av.audio) : null;
+                    if (!videoUrl) continue;
+
+                    let width = 0, height = 0, bitrate = 0, contentLength = 0;
+                    if (entry.quality) {
+                        if (entry.quality.size) {
+                            width = entry.quality.size.width || 0;
+                            height = entry.quality.size.height || 0;
+                        }
+                        bitrate = entry.quality.bitrate || 0;
+                    }
+                    if (entry.av.video.content_length) contentLength = entry.av.video.content_length;
+
+                    let label = '';
+                    if (height > 0) {
+                        if (height >= 2160) label = '4K';
+                        else if (height >= 1440) label = '1440p';
+                        else label = height + 'p';
+                    }
+
+
+                    let ext = 'mp4';
+                    if (entry.mime_type && entry.mime_type.includes('webm')) ext = 'webm';
+                    
+                    let taggedVideoUrl = videoUrl;
+                    if (!taggedVideoUrl.includes('.mp4') && !taggedVideoUrl.includes('.webm') && !taggedVideoUrl.includes('.m3u8') && !taggedVideoUrl.includes('.m4a') && !taggedVideoUrl.includes('.mp3')) {
+                        if (taggedVideoUrl.includes('mime=audio')) {
+                            taggedVideoUrl += '#audio.' + (ext === 'webm' ? 'webm' : 'm4a');
+                        } else {
+                            taggedVideoUrl += '#video.' + ext;
+                        }
+                    }
+
+                    let codec = 'unknown';
+                    if (entry.mime_type) {
+                        let match = entry.mime_type.match(/codecs="([^"]+)"/);
+                        if (match) {
+                            let rawCodec = match[1].split('.')[0].toUpperCase();
+                            if (rawCodec.startsWith('VP09') || rawCodec.startsWith('VP9')) codec = 'VP9';
+                            else if (rawCodec.startsWith('AVC')) codec = 'H264';
+                            else if (rawCodec.startsWith('HEVC') || rawCodec.startsWith('HVC')) codec = 'H265';
+                            else if (rawCodec.startsWith('AV01')) codec = 'AV1';
+                            else codec = rawCodec;
+                        }
+                    }
+
+                    let taggedAudioUrl = audioUrl;
+                    if (taggedAudioUrl && !taggedAudioUrl.includes('.m4a') && !taggedAudioUrl.includes('.webm') && !taggedAudioUrl.includes('.mp3')) {
+                        if (taggedAudioUrl.includes('mime=audio%2Fwebm') || taggedAudioUrl.includes('mime=audio/webm')) {
+                            taggedAudioUrl += '#audio.webm';
+                        } else {
+                            taggedAudioUrl += '#audio.m4a';
+                        }
+                    }
+
+                    ytFormats.push({
+                        videoUrl: taggedVideoUrl,
+                        audioUrl: taggedAudioUrl,
+                        width: width,
+                        height: height,
+                        bitrate: bitrate,
+                        contentLength: contentLength,
+                        demuxer: entry.demuxer || 'mp4',
+                        codec: codec,
+                        label: label,
+                        hasAudio: !!entry.av.audio
+                    });
+
+                    if (!urls.includes(taggedVideoUrl)) urls.push(taggedVideoUrl);
+                }
+            }
+
+
+            if (urls.length === 0) {
+                function extractUrls(obj) {
+                    let results = [];
+                    if (typeof obj === 'string') {
+                        if (obj.includes('googlevideo.com/videoplayback') || obj.endsWith('.mp4') || obj.endsWith('.m3u8') || obj.endsWith('.m4a')) {
+                            results.push(obj);
+                        }
+                    } else if (Array.isArray(obj)) {
+                        for (let item of obj) {
+                            results = results.concat(extractUrls(item));
+                        }
+                    } else if (obj !== null && typeof obj === 'object') {
+                        for (let key in obj) {
+                            results = results.concat(extractUrls(obj[key]));
+                        }
+                    }
+                    return results;
+                }
+                
+                let rawUrls = extractUrls(media);
+                for (let mUrl of rawUrls) {
+                    if (!mUrl.includes('.mp4') && !mUrl.includes('.webm') && !mUrl.includes('.m3u8') && !mUrl.includes('.m4a') && !mUrl.includes('.mp3')) {
+                        let ext = 'mp4';
+                        if (mUrl.includes('webm')) ext = 'webm';
+                        if (mUrl.includes('mime=audio')) {
+                            mUrl += '#audio.' + (ext === 'webm' ? 'webm' : 'm4a');
+                        } else {
+                            mUrl += '#video.' + ext;
+                        }
+                    }
+                    if (!urls.includes(mUrl)) urls.push(mUrl);
+                }
+            }
+
+            if (urls.length > 0) {
+
+                if (ytFormats.length > 0) {
+                    ytFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
+                }
+                message = {
+                    action: 'reportDetectedMedia',
+                    urls: urls,
+                    pageTitle: pageTitle,
+                    pageUrl: pageUrl,
+                    is_youtube: true,
+                    ytFormats: ytFormats.length > 0 ? ytFormats : undefined
+                };
+            } else {
+                return;
+            }
+        } catch (err) {}
+    }
+
+    if (message.action === 'reportDetectedMedia') {
+        getSettings(function(settings) {
+            const { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
+            if (!urls || !Array.isArray(urls)) return;
+            if (is_youtube && !settings.youtubeDetection) return;
+
+            let senderReferer = pageUrl || sender.tab?.url || "";
+            if (is_youtube || urls.some(u => u.includes('googlevideo.com'))) {
+                senderReferer = "";
+            }
+            
+            const tabId = sender.tab?.id;
+            
+            if (tabId && pageTitle) {
+                tabMetadata.set(tabId, { title: pageTitle, url: pageUrl || sender.tab?.url });
+            }
+
+            const isDrmTab = tabId && tabsWithDrm.has(tabId);
+            let senderOrigin = "";
+            try { if (senderReferer) senderOrigin = new URL(senderReferer).origin; } catch(e) {}
+
+            browser.storage.session.get(null, (items) => {
+                const updates = {};
+                let hasNew = false;
+
+
+                if (ytFormats && ytFormats.length > 0) {
+
+                    const videoFormats = ytFormats.filter(f => f.height > 0);
+                    const audioOnlyUrls = urls.filter(u => u.includes('mime=audio') || u.includes('#audio'));
+
+
+                    if (videoFormats.length > 0) {
+                        const bestFormat = videoFormats[0]; // Already sorted by height desc
+                        const representativeUrl = bestFormat.videoUrl;
+
+                        if (!items[representativeUrl]) {
+                            updates[representativeUrl] = [{
+                                url: representativeUrl,
+                                method: 'GET',
+                                requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                responseHeaders: null,
+                                requestBody: null,
+                                cookie: '',
+                                size: bestFormat.contentLength || 'unknown',
+                                timeStamp: Date.now(),
+                                tabId: tabId,
+                                pageTitle: pageTitle || sender.tab?.title || "",
+                                pageUrl: pageUrl || sender.tab?.url || "",
+                                ytFormats: videoFormats
+                            }];
+                            hasNew = true;
+                        }
+                    }
+
+
+                    if (!is_youtube || videoFormats.length === 0) {
+                        audioOnlyUrls.forEach(url => {
+                            const mType = getMediaType(url);
+                            const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
+
+                            if (!items[url] && !isDrmMedia) {
+                                updates[url] = [{
+                                    url: url,
+                                    method: 'GET',
+                                    requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                    responseHeaders: null,
+                                    requestBody: null,
+                                    cookie: '',
+                                    size: 'unknown',
+                                    timeStamp: Date.now(),
+                                    tabId: tabId,
+                                    pageTitle: pageTitle || sender.tab?.title || "",
+                                    pageUrl: pageUrl || sender.tab?.url || ""
+                                }];
+                                hasNew = true;
+                            }
+                        });
+                    }
+                } else {
+
+                    urls.forEach(url => {
+                        const mType = getMediaType(url);
+                        const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
+
+                        if (senderReferer && !urlToHeaderMap.has(url)) {
+                            urlToHeaderMap.set(url, {
+                                referer: senderReferer,
+                                origin: senderOrigin,
+                                'user-agent': navigator.userAgent
+                            });
+                            savePersistentHeaders();
+                        }
+
+                        if (!items[url] && !isDrmMedia) {
+                            updates[url] = [{
+                                url: url,
+                                method: 'GET',
+                                requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                responseHeaders: null,
+                                requestBody: null,
+                                cookie: '',
+                                size: 'unknown',
+                                timeStamp: Date.now(),
+                                tabId: tabId,
+                                pageTitle: pageTitle || sender.tab?.title || "",
+                                pageUrl: pageUrl || sender.tab?.url || ""
+                            }];
+                            hasNew = true;
+                        }
+                    });
+                }
+
+                if (hasNew) {
+                    browser.storage.session.set(updates);
+
+                    if (settings.mediaNotification) {
+                        for (const url in updates) {
+                            const req = updates[url][0];
+                            let type = 'video';
+                            if (url.includes('mime=audio') || url.includes('#audio')) {
+                                type = 'audio';
+                            } else {
+                                const detectedType = getMediaType(url);
+                                if (detectedType) {
+                                    type = detectedType;
+                                }
+                            }
+
+                            const details = {
+                                url: url,
+                                tabId: tabId || req.tabId,
+                                isYtNotification: true,
+                                responseHeaders: [
+                                    { name: 'content-type', value: type === 'video' ? 'video/mp4' : (type === 'audio' ? 'audio/mp4' : 'application/octet-stream') }
+                                ]
+                            };
+                            showMediaNotification(details, settings);
+                        }
+                    }
                 }
             });
-
-            if (hasNew) {
-                browser.storage.session.set(updates);
-            }
         });
         return;
     }
@@ -1529,7 +1824,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 item.isPaused = true;
                 item.cloudController.pause();
                 
-                // For cloud upload, send immediate status update to popup
+
                 browser.runtime.sendMessage({
                     action: item.isZip ? 'zipProgress' : 'downloadProgress',
                     id: id,
@@ -1558,7 +1853,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const item = activeDownloads.get(id);
         if (item && item.isPaused) {
             item.isPaused = false;
-            // Mark as manual resume so we can decide whether to use speed-boost-resume
+
             item.isManualResume = true;
             if (item.cloudController) {
                 item.cloudController.resume();
@@ -1602,8 +1897,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             activeDownloads.delete(id);
             removeDownloadState(id);
             
-            // Only cleanup immediately if it's a cloud upload or background process
-            // For regular tab-based downloads, we wait until the tab is closed.
+
+
             if (message.cloud || message.background) {
                 cleanupDownload(id);
             }
@@ -2014,8 +2309,12 @@ async function triggerHiddenDownload(id, filename) {
 
             if (chunks.length === 0 && (!item || !item.data)) return false;
 
+            let blobType = (item && item.mime) || "application/octet-stream";
+            if (filename.toLowerCase().endsWith('.m4a') && blobType.includes('mp4')) {
+                blobType = "application/octet-stream";
+            }
             const finalBlob = chunks.length > 0
-                ? new Blob(chunks, { type: (item && item.mime) || "application/octet-stream" })
+                ? new Blob(chunks, { type: blobType })
                 : item.data;
 
             const blobUrl = URL.createObjectURL(finalBlob);
@@ -2909,7 +3208,7 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
                 if (controller && controller.cancelled) {
                     reject(new Error("Upload cancelled"));
                 } else if (controller && controller.paused) {
-                    // If we paused during an active chunk, set the resume hook to retry this chunk
+
                     controller.onResume = () => {
                         controller.onResume = null;
                         uploadNextChunk();
@@ -3091,7 +3390,7 @@ async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
         const end = offset + chunk.byteLength;
         contentRange = `bytes ${offset}-${end - 1}/${total}`;
     } else {
-        // Finalization without data or empty chunk
+
         contentRange = `bytes */${total}`;
         if (total === '*') return; // Cannot finalize with unknown size and no data
         chunk = new Uint8Array(0);
@@ -3131,7 +3430,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
     const gdriveEnabled = settings['save-to-gdrive'] === '1';
     const gdriveStreamEnabled = settings['save-to-gdrive'] === '1' && settings['gdrive-stream'] === '1' && settings['gdrive_token'] && !isResuming;
     const dropboxStreamEnabled = settings['save-to-dropbox'] === '1' && settings['dropbox-stream'] === '1' && settings['dropbox_token']; // Allowed during resume!
- // Stream upload doesn't support resume yet
+
 
     const abortController = new AbortController();
     const downloadId = providedId || ('dl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
@@ -3191,7 +3490,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                     countReq.onerror = () => resolve(0);
                 });
 
-                // Only override if DB has more progress or we had nothing
+
                 if (dbResumeOffset > resumeOffset) {
                     resumeOffset = dbResumeOffset;
                     isByteOffsetMode = dbIsByteOffsetMode;
@@ -3393,7 +3692,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 gdriveSessionUri = await startGDriveStreamUpload(filename || getFileName(url), total, contentType);
             } catch (e) {
                 console.error("Failed to start GDrive stream upload:", e);
-                // Fallback to regular download
+
             }
         }
 
@@ -3432,7 +3731,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 currentBuffer = [];
                 currentBufferSize = 0;
             } else {
-                // Align to 256KB for GDrive
+
                 uploadSize = Math.floor(currentBufferSize / GDRIVE_CHUNK_UNIT) * GDRIVE_CHUNK_UNIT;
                 if (uploadSize === 0) return; // Not enough data yet
 
@@ -3445,10 +3744,10 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
             let usedIndex;
             if (activeByteOffsetMode) {
                 usedIndex = loaded - (fullData.length - (fullData.length - uploadSize)); // Corrected below
-                // Actually easier to track via a separate variable for cached bytes
+
             }
             
-            // To keep it simple and correct, we use the global 'loaded' minus what's left in buffer
+
             const byteOffset = loaded - currentBufferSize - uploadSize;
             
             if (dataToUpload.length > 0) {
@@ -3556,14 +3855,14 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
             }
         }
 
-        // Finalize total if unknown
+
         if (total <= 0) total = loaded;
         
         await flushBuffer(true);
 
         await Promise.all(writeQueue);
 
-        // Finalize GDrive status if successful
+
         
         if (dropboxSessionId) {
             try {

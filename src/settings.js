@@ -52,6 +52,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        const gdriveStream = document.getElementById('gdrive-stream');
+        const dropboxStream = document.getElementById('dropbox-stream');
+
+        if (gdriveStream) {
+            gdriveStream.disabled = val !== 'gdrive';
+            if (gdriveStream.disabled && gdriveStream.checked) {
+                gdriveStream.checked = false;
+                gdriveStream.dispatchEvent(new Event('change'));
+            }
+        }
+        if (dropboxStream) {
+            dropboxStream.disabled = val !== 'dropbox';
+            if (dropboxStream.disabled && dropboxStream.checked) {
+                dropboxStream.checked = false;
+                dropboxStream.dispatchEvent(new Event('change'));
+            }
+        }
+
         if (val === 'gdrive') {
             if (gdriveDetails) gdriveDetails.style.display = 'flex';
             if (dropboxDetails) dropboxDetails.style.display = 'none';
@@ -152,7 +170,7 @@ function showApplyBar() {
 async function initializeSettings() {
     isInitializing = true;
     const settings = [
-        'url-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
+        'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
         'media-notification', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
         'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
@@ -166,7 +184,7 @@ async function initializeSettings() {
 
         if (value === undefined) {
             const defaultsEnabled = [
-                'url-detection', 'mime-detection', 'hide-page-components',
+                'url-detection', 'youtube-detection', 'mime-detection', 'hide-page-components',
                 'media-notification', 'only-video', 'only-audio', 'only-stream',
                 'background-download', 'auto-resume', 'only-file', 'stream-to-mp4'
             ];
@@ -203,7 +221,7 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                 const gdriveStream = document.getElementById('gdrive-stream');
                 const onlyFile = document.getElementById('only-file');
 
-                if (setting === 'gdrive-stream') {
+                if (setting === 'gdrive-stream' || setting === 'dropbox-stream') {
                     if (speedBoost) {
                         if (element.checked) {
                             speedBoost.checked = false;
@@ -418,23 +436,22 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
                     const gdriveStream = document.getElementById('gdrive-stream');
                     const backgroundDownload = document.getElementById('background-download');
                     const autoResume = document.getElementById('auto-resume');
-                    const saveToGDrive = document.getElementById('save-to-gdrive');
+                    const cloudSaveLocation = document.getElementById('cloud-save-location');
                     const detectDownloadLinks = document.getElementById('detect-download-links');
                     const onlyFile = document.getElementById('only-file');
                     const optimizeLowEnd = document.getElementById('optimize-low-end');
                     const limitSelect = document.getElementById('limit-media-list');
                     const limitCustom = document.getElementById('limit-media-list-custom');
 
-                    if (speedBoost && speedBoostResume && connections && gdriveStream && backgroundDownload && autoResume && saveToGDrive && detectDownloadLinks && onlyFile) {
-                        const saveToDropbox = document.getElementById('save-to-dropbox');
+                    if (speedBoost && speedBoostResume && connections && gdriveStream && backgroundDownload && autoResume && cloudSaveLocation && detectDownloadLinks && onlyFile) {
                         const dropboxStream = document.getElementById('dropbox-stream');
                         
-                        if (gdriveStream && saveToGDrive) {
-                            gdriveStream.disabled = !saveToGDrive.checked;
+                        if (gdriveStream) {
+                            gdriveStream.disabled = cloudSaveLocation.value !== 'gdrive';
                             if (gdriveStream.disabled) gdriveStream.checked = false;
                         }
-                        if (dropboxStream && saveToDropbox) {
-                            dropboxStream.disabled = !saveToDropbox.checked;
+                        if (dropboxStream) {
+                            dropboxStream.disabled = cloudSaveLocation.value !== 'dropbox';
                             if (dropboxStream.disabled) dropboxStream.checked = false;
                         }
 
@@ -954,7 +971,7 @@ if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'cl
     }
 
     const cleanViewResult = await browser.storage.local.get('clean-view');
-    updateCleanViewUI(cleanViewResult['clean-view'] === '1');
+    updateCleanViewUI(cleanViewResult['clean-view'] === '1', true);
 
     setupCollapsibleLogic();
 
@@ -1085,11 +1102,15 @@ function updatePopupState(value) {
     }
 }
 
-function updateCleanViewUI(isEnabled) {
+function updateCleanViewUI(isEnabled, isInit = false) {
     const container = document.getElementById('settings-container');
     const groups = document.querySelectorAll('.settings-group');
     const icons = document.querySelectorAll('.collapse-icon');
     
+    if (isInit) {
+        document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = 'none');
+    }
+
     if (container) {
         if (isEnabled) container.classList.add('clean-view-enabled');
         else container.classList.remove('clean-view-enabled');
@@ -1108,6 +1129,13 @@ function updateCleanViewUI(isEnabled) {
         icon.style.display = isEnabled ? 'block' : 'none';
     });
 
+    if (isInit) {
+        document.body.offsetHeight; // Force reflow
+        setTimeout(() => {
+            document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = '');
+        }, 50);
+    }
+
     setTimeout(enforceUIConstraints, 50);
 }
 
@@ -1120,8 +1148,9 @@ function enforceUIConstraints() {
         if (limitCustom) limitCustom.disabled = true;
     }
     const gdriveStream = document.getElementById('gdrive-stream');
+    const dropboxStream = document.getElementById('dropbox-stream');
     const speedBoost = document.getElementById('speed-boost');
-    if (gdriveStream && gdriveStream.checked && speedBoost) {
+    if (((gdriveStream && gdriveStream.checked) || (dropboxStream && dropboxStream.checked)) && speedBoost) {
         speedBoost.disabled = true;
     }
 }

@@ -1820,5 +1820,11 @@
   "supportedFormats": {
     "message": "Это расширение автоматически обнаруживает и поддерживает загрузку следующих форматов {type}:",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "Обнаружение YouTube"
+  },
+  "youtubeDetectionExplain": {
+    "message": "Расширенное обнаружение видео и аудио форматов YouTube."
   }
 }

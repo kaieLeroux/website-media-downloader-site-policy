@@ -1820,5 +1820,11 @@
   "supportedFormats": {
     "message": "Diese Erweiterung erkennt und unterstützt automatisch das Herunterladen der folgenden {type}-Formate:",
     "description": "Title for the list of supported file formats, {type} is the media type (e.g. Video, Audio)"
+  },
+  "youtubeDetectionCheckbox": {
+    "message": "YouTube-Erkennung"
+  },
+  "youtubeDetectionExplain": {
+    "message": "Erweiterte Erkennung für YouTube-Videos und Audioformate."
   }
 }
