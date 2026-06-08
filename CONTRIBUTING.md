@@ -1,35 +1,50 @@
 # Contributing
 
-## Using the issue tracker
-The [issue tracker](https://github.com/anpa26/website-media-downloader/issues) is the preferred channel for bug reports, feature requests and submitting pull requests, but please follow these rules:
+Thank you for your interest in contributing to this project. We welcome bug reports, feature suggestions, and pull requests from the community.
 
-* Please **do not** derail or troll issues. Keep the discussion on topic and respect the opinions of others.
+## Using the Issue Tracker
 
-* Please **do not** post comments consisting solely of "+1" or "👍". Use [GitHub's "reactions" feature](https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments) instead.
+The issue tracker is the preferred place for reporting bugs, requesting features, and discussing potential improvements. To keep discussions productive, please follow these guidelines:
 
-* Please **do not** write [enhancement]/[bug]/[feature request] or similar stuff in the title of issues, as there are labels for that purpose that will be added by devs or collaborators.
+* Stay on topic and remain respectful in all discussions.
+* Avoid posting comments that consist only of "+1", "👍", or similar reactions. Instead, use GitHub's built-in Reactions feature.
+* Do not include prefixes such as `[Bug]`, `[Feature Request]`, or `[Enhancement]` in issue titles. Appropriate labels will be assigned by project maintainers.
 
-## Bug reports
-A bug is a _demonstrable problem_. Good bug reports are extremely helpful, so thanks!
+## Reporting Bugs
 
-Guidelines for bug reports:
+A bug report should describe a reproducible and verifiable problem. High-quality reports help maintainers identify and resolve issues more efficiently.
 
-* Use the GitHub issue search, check if the issue has already been reported both in the open issues and in the closed ones, if there are some missing details, add them in issue comments, without creating a new one
-* Check if the issue has been fixed — try to reproduce it using the latest available build
-* Isolate the problem — ideally create a reproducible scenario and a live example
-* Do not report multiple bugs in a single ticket, otherwise it will be confusing.
+Before opening a new bug report:
 
-A good bug report shouldn't leave others needing to chase you up for more information. Please try to be as detailed as possible in your report.
+1. Search existing issues, both open and closed, to determine whether the problem has already been reported.
+2. Verify that the issue still occurs in the latest available version.
+3. Isolate the problem and provide clear steps to reproduce it.
+4. Submit separate reports for separate issues. Combining multiple bugs into a single report makes troubleshooting more difficult.
 
+When submitting a report, provide as much relevant information as possible, including:
 
-## Feature requests
-Feature requests are welcome, please make sure to be as detailed as possible and use screenshots, videos, GIFs, to demonstrate it better, if possible.
+* Steps to reproduce the issue.
+* Expected behavior.
+* Actual behavior.
+* Screenshots, logs, or error messages when applicable.
+* Environment details, such as browser, operating system, and extension version.
 
+## Feature Requests
 
-## Pull requests
-**Please ask first** before embarking on any significant pull request (e.g. implementing features, refactoring code), otherwise you risk spending a lot of time working on something that developers might not want to merge into the project. To avoid that you can open an issue.
+Feature requests are welcome.
+
+To help maintainers evaluate your proposal, provide a clear description of the feature, the problem it solves, and the value it would add to the project. When possible, include screenshots, mockups, videos, or GIFs to illustrate the idea.
+
+## Pull Requests
+
+Before starting work on a significant change, such as a new feature, major refactor, or architectural modification, please open an issue and discuss the proposal with the maintainers.
+
+This helps ensure that your contribution aligns with the project's goals and prevents unnecessary effort on changes that may not be accepted.
 
 ## License
-By contributing your code, you agree to license your contribution under the [GNU General Public License](https://github.com/anpa26/website-media-downloader/blob/master/LICENSE.md). 
 
-Please note we have a code of conduct, please follow it in all your interactions with the project.
+By contributing code to this project, you agree that your contributions will be licensed under the GNU General Public License (GPL).
+
+## Code of Conduct
+
+This project is governed by a Code of Conduct. By participating in the community, you agree to follow it and help maintain a welcoming, inclusive, and respectful environment for everyone.
