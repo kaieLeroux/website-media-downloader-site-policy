@@ -248,7 +248,7 @@ const imageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".gif"];
 const allExtensions = videoExtensions.concat(audioExtensions, streamExtensions, subtitleExtensions, imageExtensions);
 
 const extPattern = allExtensions.map(e => e.replace(/^\./, '').replace(/\+/g, '\\+')).join('|');
-const detectionRegex = new RegExp('\\.(?:' + extPattern + ')(?:[?#].*)?$', 'i');
+const detectionRegex = new RegExp('\\.(?:' + extPattern + ')\\b', 'i');
 const temporaryHeaderMap = new Map();
 const temporaryRequestBodyMap = new Map();
 const temporaryCookieMap = new Map();
@@ -967,9 +967,9 @@ let beforeRequestListener, beforeSendHeadersListener;
 function initListener() {
 
     openCacheDB().then(db => {
-        const tx = db.transaction([STORE_NAME], "readwrite");
-        const store = tx.objectStore(STORE_NAME);
-        store.clear();
+        const tx = db.transaction([STORE_NAME, CHUNK_STORE_NAME], "readwrite");
+        tx.objectStore(STORE_NAME).clear();
+        tx.objectStore(CHUNK_STORE_NAME).clear();
     }).catch(e => {
         console.error("Failed to clear IndexedDB cache on init:", e);
     });
