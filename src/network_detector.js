@@ -3982,9 +3982,44 @@ browser.runtime.onMessage.addListener((message) => {
         });
 
         openCacheDB().then(db => {
-            const tx = db.transaction([STORE_NAME], "readwrite");
+            const activeKeys = new Set();
+            for (const [key, value] of activeDownloads) {
+                activeKeys.add(key);
+                if (value.url) activeKeys.add(value.url);
+            }
+            for (const dlId of downloadTabs.values()) {
+                activeKeys.add(dlId);
+            }
+            for (const item of pendingSaveQueue) {
+                if (item.id) activeKeys.add(item.id);
+                if (item.url) activeKeys.add(item.url);
+            }
+
+            const tx = db.transaction([STORE_NAME, CHUNK_STORE_NAME], "readwrite");
             const store = tx.objectStore(STORE_NAME);
-            store.clear();
+            const chunkStore = tx.objectStore(CHUNK_STORE_NAME);
+
+            store.openCursor().onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const key = cursor.key;
+                    if (!activeKeys.has(key)) {
+                        cursor.delete();
+                    }
+                    cursor.continue();
+                }
+            };
+
+            chunkStore.openCursor().onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const downloadId = cursor.key[0];
+                    if (!activeKeys.has(downloadId)) {
+                        cursor.delete();
+                    }
+                    cursor.continue();
+                }
+            };
         }).catch(e => {
             console.error("Failed to clear IndexedDB cache:", e);
         });
