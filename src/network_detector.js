@@ -1897,7 +1897,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             activeDownloads.delete(id);
             removeDownloadState(id);
             
-
+            if (message.url) {
+                removeMediaRequest(message.url);
+            } else if (id && id.startsWith('http')) {
+                removeMediaRequest(id);
+            }
 
             if (message.cloud || message.background) {
                 cleanupDownload(id);
