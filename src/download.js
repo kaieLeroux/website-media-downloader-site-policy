@@ -780,6 +780,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (targetUrl) {
         browser.runtime.sendMessage({ action: 'registerDownloadTab', id: cacheKey }).catch(() => {});
+        
+        // Keep service worker alive during download and assembly
+        const heartbeatInterval = setInterval(() => {
+            browser.runtime.sendMessage({ action: 'heartbeat' }).catch(() => {});
+        }, 15000);
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(heartbeatInterval);
+        });
+
         triggerDownload();
     } else {
         window.close();

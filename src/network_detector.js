@@ -1311,6 +1311,10 @@ browser.downloads.onChanged.addListener((delta) => {
 });
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'heartbeat') {
+        sendResponse({ status: 'alive' });
+        return true;
+    }
     if (message.action === 'drmDetected' && sender.tab) {
         const tabId = sender.tab.id;
         if (tabsWithDrm.has(tabId)) return;
@@ -4091,7 +4095,7 @@ function attachCacheListener() {
             }
 
             const downloadId = details.url;
-            requestBuffers.set(details.requestId, { chunks: [], size: 0, index: 0 });
+            requestBuffers.set(details.requestId, { chunks: [], size: 0, totalCached: 0, index: 0 });
 
             const flushBuffer = async (reqId) => {
                 const state = requestBuffers.get(reqId);
@@ -4114,8 +4118,16 @@ function attachCacheListener() {
                     if (state) {
                         state.chunks.push(event.data);
                         state.size += event.data.byteLength;
+                        state.totalCached += event.data.byteLength;
 
-                        if (state.size >= 1024 * 1024) {
+                        let currentThreshold = 1024 * 1024; // 1MB
+                        if (state.totalCached > 50 * 1024 * 1024) {
+                            currentThreshold = 4 * 1024 * 1024; // 4MB
+                        } else if (state.totalCached > 10 * 1024 * 1024) {
+                            currentThreshold = 2 * 1024 * 1024; // 2MB
+                        }
+
+                        if (state.size >= currentThreshold) {
                             flushBuffer(details.requestId).catch(err => console.error("Failed to flush buffer:", err));
                         }
                     }

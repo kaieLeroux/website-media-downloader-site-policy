@@ -21,6 +21,15 @@ if (typeof browser === 'undefined') {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Keep service worker alive during download
+    const heartbeatInterval = setInterval(() => {
+        browser.runtime.sendMessage({ action: 'heartbeat' }).catch(() => {});
+    }, 15000);
+
+    window.addEventListener('beforeunload', () => {
+        clearInterval(heartbeatInterval);
+    });
+
     const colorResult = await browser.storage.local.get('theme-color');
     mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
 
