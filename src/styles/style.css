@@ -68,6 +68,7 @@ mdui-tab-panel {
     animation: fadeIn 0.3s ease;
 }
 
+mdui-tab-panel[value="history"],
 mdui-tab-panel[value="settings"] {
     padding-bottom: 100px;
 }
