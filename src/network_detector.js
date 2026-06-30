@@ -1093,7 +1093,7 @@ function initListener() {
                 const urlMatches = detectionRegex.test(decodeURI(details.url));
 
                 if (!mimeEnabled && !urlEnabled) {
-
+                    return;
                 } else {
 
                     if (!urlEnabled || (urlEnabled && !urlMatches)) {
@@ -1206,7 +1206,7 @@ function initListener() {
 
                         const shouldSaveNow = (() => {
                             if (checkIsSegment(details.url, contentType, size, currentSettings)) return false;
-                            if (!mimeEnabledNow && !urlEnabledNow) return true;
+                            if (!mimeEnabledNow && !urlEnabledNow) return false;
                             if (mimeEnabledNow && mimeMatches) return true;
                             if (urlEnabledNow && urlMatches) return true;
                             return false;
@@ -1596,7 +1596,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         getSettings(function(settings) {
             const { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
             if (!urls || !Array.isArray(urls)) return;
-            if (is_youtube && !settings.youtubeDetection) return;
+            const isYtPage = (pageUrl && pageUrl.includes('youtube.com')) || (sender.tab?.url && sender.tab.url.includes('youtube.com'));
+            if ((is_youtube || isYtPage) && !settings.youtubeDetection) return;
 
             let senderReferer = pageUrl || sender.tab?.url || "";
             if (is_youtube || urls.some(u => u.includes('googlevideo.com'))) {
