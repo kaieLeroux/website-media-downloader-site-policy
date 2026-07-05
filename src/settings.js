@@ -1190,48 +1190,121 @@ function setupSpeedTest() {
     const resultsDiv = document.getElementById('speed-test-results');
     const dlValue = document.getElementById('download-speed-value');
     const dlProgress = document.getElementById('download-test-progress');
+    const dlBoostValue = document.getElementById('download-boost-speed-value');
+    const dlBoostProgress = document.getElementById('download-boost-test-progress');
     const ulValue = document.getElementById('upload-speed-value');
     const ulProgress = document.getElementById('upload-test-progress');
+    const ulBoostValue = document.getElementById('upload-boost-speed-value');
+    const ulBoostProgress = document.getElementById('upload-boost-test-progress');
     const statusText = document.getElementById('speed-test-status');
+
+    const speedometerContainer = document.getElementById('speedometer-container');
+    const speedometerProgress = document.getElementById('speedometer-progress');
+    const speedometerValue = document.getElementById('speedometer-value');
+
+    function updateSpeedometer(bps, type) {
+        if (!speedometerProgress || !speedometerValue) return;
+        const Mbps = bps / 1000000;
+        speedometerValue.textContent = Mbps.toFixed(2);
+        
+        const maxSpeed = 150;
+        const progressFraction = Math.min(Math.sqrt(Mbps / maxSpeed), 1);
+        const dashLength = progressFraction * 376.99;
+        speedometerProgress.style.strokeDasharray = `${dashLength} 502.65`;
+        
+        if (type === 'download') {
+            speedometerProgress.style.stroke = 'rgb(var(--mdui-color-primary))';
+            speedometerProgress.style.filter = 'drop-shadow(0 0 6px rgba(var(--mdui-color-primary), 0.6))';
+        } else {
+            speedometerProgress.style.stroke = 'rgb(var(--mdui-color-secondary))';
+            speedometerProgress.style.filter = 'drop-shadow(0 0 6px rgba(var(--mdui-color-secondary), 0.6))';
+        }
+    }
 
     startBtn.addEventListener('click', async () => {
         startBtn.disabled = true;
         resultsDiv.style.display = 'flex';
         dlValue.textContent = '-';
+        dlBoostValue.textContent = '-';
         ulValue.textContent = '-';
+        ulBoostValue.textContent = '-';
         
         dlProgress.style.display = 'block';
         dlProgress.value = 0;
+        dlBoostProgress.style.display = 'none';
+        dlBoostProgress.value = 0;
         ulProgress.style.display = 'none';
         ulProgress.value = 0;
+        ulBoostProgress.style.display = 'none';
+        ulBoostProgress.value = 0;
+
+        if (speedometerContainer) speedometerContainer.style.display = 'flex';
+        if (speedometerProgress) speedometerProgress.style.strokeDasharray = '0 502.65';
+        if (speedometerValue) speedometerValue.textContent = '0.00';
         
-        statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingDownload") || "Testing download speed...";
+        const localSettings = await browser.storage.local.get(['connections']);
+        const concurrency = parseInt(localSettings['connections'] || '4', 10);
 
         try {
-            // 1. Run Download Test
+            // 1. Run Download Test (Normal)
+            statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingDownload") || "Testing download speed...";
             const downloadBps = await runDownloadTest((progress, currentBps) => {
                 dlProgress.value = progress;
                 dlValue.textContent = formatSpeed(currentBps);
+                updateSpeedometer(currentBps, 'download');
             });
             dlValue.textContent = formatSpeed(downloadBps);
+            updateSpeedometer(downloadBps, 'download');
             dlProgress.style.display = 'none';
 
-            // 2. Run Upload Test
+            // 2. Run Download Test (Speed Boost)
+            dlBoostProgress.style.display = 'block';
+            statusText.textContent = `Testing download speed boost (using ${concurrency} connections)...`;
+            const downloadBoostBps = await runParallelDownloadTest(concurrency, (progress, currentBps) => {
+                dlBoostProgress.value = progress;
+                dlBoostValue.textContent = formatSpeed(currentBps);
+                updateSpeedometer(currentBps, 'download');
+            });
+            dlBoostValue.textContent = formatSpeed(downloadBoostBps);
+            updateSpeedometer(downloadBoostBps, 'download');
+            dlBoostProgress.style.display = 'none';
+
+            // 3. Run Upload Test (Normal)
             ulProgress.style.display = 'block';
             statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingUpload") || "Testing upload speed...";
             const uploadBps = await runUploadTest((progress, currentBps) => {
                 ulProgress.value = progress;
                 ulValue.textContent = formatSpeed(currentBps);
+                updateSpeedometer(currentBps, 'upload');
             });
             ulValue.textContent = formatSpeed(uploadBps);
+            updateSpeedometer(uploadBps, 'upload');
             ulProgress.style.display = 'none';
+
+            // 4. Run Upload Test (Speed Boost)
+            ulBoostProgress.style.display = 'block';
+            statusText.textContent = `Testing upload speed boost (using ${concurrency} connections)...`;
+            const uploadBoostBps = await runParallelUploadTest(concurrency, (progress, currentBps) => {
+                ulBoostProgress.value = progress;
+                ulBoostValue.textContent = formatSpeed(currentBps);
+                updateSpeedometer(currentBps, 'upload');
+            });
+            ulBoostValue.textContent = formatSpeed(uploadBoostBps);
+            updateSpeedometer(uploadBoostBps, 'upload');
+            ulBoostProgress.style.display = 'none';
 
             statusText.textContent = browser.i18n.getMessage("speedTestStatusCompleted") || "Test completed!";
         } catch (error) {
             console.error("Speed Test Error:", error);
-            statusText.textContent = (browser.i18n.getMessage("speedTestStatusFailed") || "Test failed.") + " (" + error.message + ")";
+            if (error.message && error.message.includes("429")) {
+                statusText.textContent = "Rate limit aktif (HTTP 429). Harap tunggu 1-2 menit sebelum mencoba lagi.";
+            } else {
+                statusText.textContent = (browser.i18n.getMessage("speedTestStatusFailed") || "Test failed.") + " (" + error.message + ")";
+            }
             dlProgress.style.display = 'none';
+            dlBoostProgress.style.display = 'none';
             ulProgress.style.display = 'none';
+            ulBoostProgress.style.display = 'none';
         } finally {
             startBtn.disabled = false;
         }
@@ -1252,21 +1325,21 @@ function formatSpeed(bps) {
 
 async function runDownloadTest(onProgress) {
     const startTime = performance.now();
-    const durationMs = 15000;
+    const durationMs = 10000;
     let totalReceived = 0;
 
     while (performance.now() - startTime < durationMs) {
         const controller = new AbortController();
         let response;
         try {
-            response = await fetch('https://speed.cloudflare.com/__down?bytes=25000000', { signal: controller.signal });
+            response = await fetch('https://speed.cloudflare.com/__down?bytes=50000000', { signal: controller.signal });
         } catch (e) {
             if (totalReceived > 0) break;
-            throw new Error("Failed to download test file");
+            throw new Error("Failed to download test file: " + e.message);
         }
         if (!response.ok) {
             if (totalReceived > 0) break;
-            throw new Error("Failed to download test file");
+            throw new Error("Failed to download test file: HTTP status " + response.status);
         }
 
         const reader = response.body.getReader();
@@ -1298,9 +1371,66 @@ async function runDownloadTest(onProgress) {
     return (totalReceived * 8) / finalElapsed;
 }
 
+async function runParallelDownloadTest(concurrency, onProgress) {
+    const startTime = performance.now();
+    const durationMs = 10000;
+    let totalReceived = 0;
+    let hasError = false;
+
+    const downloadJobs = Array.from({ length: concurrency }).map(async () => {
+        while (performance.now() - startTime < durationMs && !hasError) {
+            const controller = new AbortController();
+            let response;
+            try {
+                response = await fetch('https://speed.cloudflare.com/__down?bytes=50000000', { signal: controller.signal });
+            } catch (e) {
+                if (e.name === 'AbortError' || (e.message && e.message.includes('aborted'))) {
+                    break;
+                }
+                hasError = true;
+                throw new Error("Parallel download failed: " + e.message);
+            }
+            if (!response.ok) {
+                hasError = true;
+                throw new Error("Parallel download response error");
+            }
+
+            const reader = response.body.getReader();
+            try {
+                while (true) {
+                    const elapsed = performance.now() - startTime;
+                    if (elapsed >= durationMs || hasError) {
+                        controller.abort();
+                        break;
+                    }
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    totalReceived += value.length;
+                    
+                    if (elapsed > 0) {
+                        const bps = (totalReceived * 8) / (elapsed / 1000);
+                        const progress = Math.min((elapsed / durationMs) * 100, 100);
+                        onProgress(progress, bps);
+                    }
+                }
+            } catch (e) {
+                if (!(e.name === 'AbortError' || (e.message && e.message.includes('aborted')))) {
+                    hasError = true;
+                    throw e;
+                }
+            }
+        }
+    });
+
+    await Promise.all(downloadJobs);
+
+    const finalElapsed = (performance.now() - startTime) / 1000;
+    return (totalReceived * 8) / finalElapsed;
+}
+
 async function runUploadTest(onProgress) {
     const startTime = performance.now();
-    const durationMs = 15000;
+    const durationMs = 10000;
     let totalUploaded = 0;
     
     const chunk = new Uint8Array(2 * 1024 * 1024); // 2MB chunk
@@ -1337,6 +1467,56 @@ async function runUploadTest(onProgress) {
         });
     }
     
+    const finalElapsed = (performance.now() - startTime) / 1000;
+    return (totalUploaded * 8) / finalElapsed;
+}
+
+async function runParallelUploadTest(concurrency, onProgress) {
+    const startTime = performance.now();
+    const durationMs = 10000;
+    let totalUploaded = 0;
+    let hasError = false;
+    const chunk = new Uint8Array(1 * 1024 * 1024); // 1MB chunk for parallel upload
+
+    const uploadJobs = Array.from({ length: concurrency }).map(async () => {
+        while (performance.now() - startTime < durationMs && !hasError) {
+            await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://speed.cloudflare.com/__up");
+                
+                let lastLoaded = 0;
+                xhr.upload.onprogress = (event) => {
+                    const elapsed = performance.now() - startTime;
+                    if (elapsed >= durationMs || hasError) {
+                        xhr.abort();
+                        resolve();
+                        return;
+                    }
+                    const chunkUploaded = event.loaded - lastLoaded;
+                    lastLoaded = event.loaded;
+                    totalUploaded += chunkUploaded;
+                    
+                    if (elapsed > 0) {
+                        const bps = (totalUploaded * 8) / (elapsed / 1000);
+                        const progress = Math.min((elapsed / durationMs) * 100, 100);
+                        onProgress(progress, bps);
+                    }
+                };
+                
+                xhr.onload = () => resolve();
+                xhr.onerror = () => {
+                    hasError = true;
+                    reject(new Error("Parallel upload failed"));
+                };
+                xhr.onabort = () => resolve();
+                
+                xhr.send(chunk);
+            });
+        }
+    });
+
+    await Promise.all(uploadJobs);
+
     const finalElapsed = (performance.now() - startTime) / 1000;
     return (totalUploaded * 8) / finalElapsed;
 }

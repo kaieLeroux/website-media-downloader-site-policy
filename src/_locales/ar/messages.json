@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "حفظ $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "حفظ",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "ملف وسائط",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "اكتشاف متقدم لمقاطع فيديو وتنسيقات الصوت في يوتيوب."
+  },
+  "sortSizeDesc": {
+    "message": "الحجم (الأكبر أولاً)"
+  },
+  "sortSizeAsc": {
+    "message": "الحجم (الأصغر أولاً)"
+  },
+  "downloadNormal": {
+    "message": "تنزيل (عادي)"
+  },
+  "downloadSpeedBoost": {
+    "message": "تنزيل (تسريع السرعة)"
+  },
+  "uploadNormal": {
+    "message": "تحميل (عادي)"
+  },
+  "uploadSpeedBoost": {
+    "message": "تحميل (تسريع السرعة)"
+  },
+  "downloadManagerTitle": {
+    "message": "مدير التنزيلات"
+  },
+  "deleteSelected": {
+    "message": "حذف المحدد"
+  },
+  "closeAll": {
+    "message": "إغلاق الكل"
+  },
+  "saveAllZip": {
+    "message": "حفظ الكل كملف ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "حفظ المحدد كملف ZIP"
+  },
+  "allCaughtUp": {
+    "message": "كل شيء جاهز!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "لا توجد تنزيلات أو مهام نشطة في الوقت الحالي. ابدأ بتنزيل الوسائط لرؤيتها هنا."
+  },
+  "closePreview": {
+    "message": "إغلاق المعاينة"
+  },
+  "downloadAssemblingParts": {
+    "message": "جارٍ تجميع $1 أجزاء..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "جارٍ إعادة بناء المقطع $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "لم يتم العثور على رمز Dropbox. يرجى تسجيل الدخول في الإعدادات."
+  },
+  "dropboxSessionExpired": {
+    "message": "انتهت صلاحية جلسة Dropbox. يرجى إعادة تسجيل الدخول في الإعدادات."
+  },
+  "uploadFailedDropbox": {
+    "message": "فشل التحميل إلى Dropbox"
+  },
+  "uploadSuccessDropbox": {
+    "message": "تم حفظ $1 بنجاح في Dropbox!"
   }
 }

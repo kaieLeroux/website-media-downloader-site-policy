@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "Enregistrer $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "Enregistrer",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Fichier média",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "Détection avancée pour les vidéos et formats audio YouTube."
+  },
+  "sortSizeDesc": {
+    "message": "Taille (Plus grande en premier)"
+  },
+  "sortSizeAsc": {
+    "message": "Taille (Plus petite en premier)"
+  },
+  "downloadNormal": {
+    "message": "Téléchargement (Normal)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Téléchargement (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Téléversement (Normal)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Téléversement (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Gestionnaire de téléchargement"
+  },
+  "deleteSelected": {
+    "message": "Supprimer la sélection"
+  },
+  "closeAll": {
+    "message": "Tout fermer"
+  },
+  "saveAllZip": {
+    "message": "Tout enregistrer en ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "Enregistrer la sélection en ZIP"
+  },
+  "allCaughtUp": {
+    "message": "Tout est à jour !"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "Aucun téléchargement ou tâche active pour le moment. Commencez à télécharger des médias pour les voir s'afficher ici."
+  },
+  "closePreview": {
+    "message": "Fermer l'aperçu"
+  },
+  "downloadAssemblingParts": {
+    "message": "Assemblage de $1 parties..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Reconstruction du segment $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Jeton Dropbox introuvable. Veuillez vous connecter dans les paramètres."
+  },
+  "dropboxSessionExpired": {
+    "message": "Session Dropbox expirée. Veuillez vous reconnecter dans les paramètres."
+  },
+  "uploadFailedDropbox": {
+    "message": "L'envoi vers Dropbox a échoué"
+  },
+  "uploadSuccessDropbox": {
+    "message": "Le fichier $1 a été enregistré avec succès dans Dropbox !"
   }
 }

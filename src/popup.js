@@ -74,25 +74,34 @@ async function checkForUpdates() {
   const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
   
-  try {
-    const response = await fetch(MANIFEST_URL + '?t=' + Date.now());
-    if (!response.ok) throw new Error('Failed to fetch manifest from GitHub');
-    
-    const data = await response.json();
-    const latestVersion = data.version;
-    const currentVersion = browser.runtime.getManifest().version;
+  let nativeUpdateFound = false;
 
-    if (compareVersions(latestVersion, currentVersion) > 0) {
-      showUpdateNotification(RELEASES_URL, latestVersion);
+  if (browser.runtime.requestUpdateCheck) {
+    try {
+      const [status, details] = await browser.runtime.requestUpdateCheck();
+      if (status === 'update_available') {
+        showUpdateNotification(AMO_URL, details.version || 'new');
+        nativeUpdateFound = true;
+      }
+    } catch (err) {
+      console.warn('Native update check failed, trying GitHub fallback:', err);
     }
-  } catch (error) {
-    console.warn('Manual update check failed, falling back to native check:', error);
-    if (browser.runtime.requestUpdateCheck) {
-      browser.runtime.requestUpdateCheck().then(([status, details]) => {
-        if (status === 'update_available') {
-          showUpdateNotification(AMO_URL, details.version || 'new');
-        }
-      }).catch(err => console.error('Native update check failed:', err));
+  }
+
+  if (!nativeUpdateFound) {
+    try {
+      const response = await fetch(MANIFEST_URL + '?t=' + Date.now());
+      if (!response.ok) throw new Error('Failed to fetch manifest from GitHub');
+      
+      const data = await response.json();
+      const latestVersion = data.version;
+      const currentVersion = browser.runtime.getManifest().version;
+
+      if (compareVersions(latestVersion, currentVersion) > 0) {
+        showUpdateNotification(RELEASES_URL, latestVersion);
+      }
+    } catch (error) {
+      console.error('GitHub update check failed:', error);
     }
   }
 }
@@ -795,7 +804,9 @@ function updateDownloadingCount(change) {
 
   const cancelAllBtn = document.getElementById('cancel-all');
   if (cancelAllBtn) {
-    cancelAllBtn.style.display = downloadingCount > 0 ? 'inline-flex' : 'none';
+    const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
+    const hasSelection = Array.from(allCheckboxes).some(cb => cb.checked);
+    cancelAllBtn.style.display = (downloadingCount > 0 && !hasSelection) ? 'inline-flex' : 'none';
   }
 }
 
@@ -1048,14 +1059,23 @@ function updateSelectedCount() {
 
   document.getElementById('selected-count').textContent = browser.i18n.getMessage("selectedCount", [selectedCount.toString()]);
 
+  const downloadAllBtn = document.getElementById('download-all');
+  const cancelAllBtn = document.getElementById('cancel-all');
+
   if (selectedCount > 0) {
     downloadSelectedBtn.style.display = 'inline-flex';
     deleteSelectedBtn.style.display = 'inline-flex';
     cancelSelectedBtn.style.display = hasActiveSelected ? 'inline-flex' : 'none';
+    if (downloadAllBtn) downloadAllBtn.style.display = 'none';
+    if (cancelAllBtn) cancelAllBtn.style.display = 'none';
   } else {
     downloadSelectedBtn.style.display = 'none';
     deleteSelectedBtn.style.display = 'none';
     cancelSelectedBtn.style.display = 'none';
+    if (downloadAllBtn) downloadAllBtn.style.display = 'inline-flex';
+    if (cancelAllBtn) {
+      cancelAllBtn.style.display = downloadingCount > 0 ? 'inline-flex' : 'none';
+    }
   }
 }
 
@@ -1859,6 +1879,14 @@ async function loadMediaList() {
         if (isNumA && !isNumB) return -1;
         if (!isNumA && isNumB) return 1;
         return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+      } else if (sortOrder === 'size_desc') {
+        const sizeA = parseInt(a.bestRequest.size) || 0;
+        const sizeB = parseInt(b.bestRequest.size) || 0;
+        return sizeB - sizeA;
+      } else if (sortOrder === 'size_asc') {
+        const sizeA = parseInt(a.bestRequest.size) || 0;
+        const sizeB = parseInt(b.bestRequest.size) || 0;
+        return sizeA - sizeB;
       } else { // newest
         return (b.bestRequest.timeStamp || b.bestRequest.timestamp || 0) - (a.bestRequest.timeStamp || a.bestRequest.timestamp || 0);
       }
@@ -2228,6 +2256,25 @@ async function loadAboutPage() {
         if (statusText) {
           statusText.style.display = 'none';
           statusText.textContent = '';
+        }
+
+        let nativeUpdateFound = false;
+        if (browser.runtime.requestUpdateCheck) {
+          try {
+            const [status, details] = await browser.runtime.requestUpdateCheck();
+            if (status === 'update_available') {
+              showUpdateDialog('https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader', details.version || 'new');
+              nativeUpdateFound = true;
+            }
+          } catch (err) {
+            console.warn('Native update check failed, trying GitHub fallback:', err);
+          }
+        }
+
+        if (nativeUpdateFound) {
+          checkBtn.loading = false;
+          checkBtn.disabled = false;
+          return;
         }
 
         const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';

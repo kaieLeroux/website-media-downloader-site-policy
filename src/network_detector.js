@@ -1917,7 +1917,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.action === 'registerDownloadTab') {
         if (sender.tab && message.id) {
-            downloadTabs.set(sender.tab.id, message.id);
+            if (!downloadTabs.has(sender.tab.id)) {
+                downloadTabs.set(sender.tab.id, new Set());
+            }
+            downloadTabs.get(sender.tab.id).add(message.id);
+        }
+        return;
+    }
+
+    if (message.action === 'registerDownloadManagerTab') {
+        if (sender.tab) {
+            activeBridgeTabId = sender.tab.id;
         }
         return;
     }
@@ -2557,7 +2567,25 @@ async function assembleBlobFromCache(downloadId) {
 }
 
 async function processSaveQueue() {
-    if (activeBridgeTabId !== null || pendingSaveQueue.length === 0) return;
+    if (pendingSaveQueue.length === 0) return;
+
+    if (activeBridgeTabId !== null) {
+        const nextDownload = pendingSaveQueue.shift();
+        try {
+            await browser.tabs.sendMessage(activeBridgeTabId, {
+                action: 'startDownload',
+                id: nextDownload.id,
+                url: nextDownload.url,
+                filename: nextDownload.filename
+            });
+            setTimeout(processSaveQueue, 100);
+        } catch (err) {
+            pendingSaveQueue.unshift(nextDownload);
+            activeBridgeTabId = null;
+            setTimeout(processSaveQueue, 500);
+        }
+        return;
+    }
 
     const nextDownload = pendingSaveQueue.shift();
     const { id, url, filename, isStreamUploaded, cloud } = nextDownload;
@@ -2609,18 +2637,15 @@ async function processSaveQueue() {
             removeDownloadState(id);
             removeMediaRequest(url);
 
-            
             setTimeout(processSaveQueue, 1000);
             return;
         } catch (error) {
             console.error("GDrive upload failed, falling back to local download:", error);
-            
         }
     }
 
     const hiddenSuccess = await triggerHiddenDownload(id, filename);
     if (hiddenSuccess) {
-        
         activeDownloads.delete(id);
         removeDownloadState(id);
         removeMediaRequest(url);
@@ -2640,14 +2665,19 @@ async function processSaveQueue() {
 
 browser.tabs.onRemoved.addListener((tabId) => {
     if (downloadTabs.has(tabId)) {
-        const dlId = downloadTabs.get(tabId);
-        cleanupDownload(dlId);
+        const dlIds = downloadTabs.get(tabId);
+        if (dlIds instanceof Set) {
+            for (const dlId of dlIds) {
+                cleanupDownload(dlId);
+            }
+        } else if (dlIds) {
+            cleanupDownload(dlIds);
+        }
         downloadTabs.delete(tabId);
     }
 
     if (tabId === activeBridgeTabId) {
         activeBridgeTabId = null;
-
         setTimeout(processSaveQueue, 1000);
     }
 });
@@ -3992,8 +4022,14 @@ browser.runtime.onMessage.addListener((message) => {
                 activeKeys.add(key);
                 if (value.url) activeKeys.add(value.url);
             }
-            for (const dlId of downloadTabs.values()) {
-                activeKeys.add(dlId);
+            for (const dlIds of downloadTabs.values()) {
+                if (dlIds instanceof Set) {
+                    for (const dlId of dlIds) {
+                        activeKeys.add(dlId);
+                    }
+                } else if (dlIds) {
+                    activeKeys.add(dlIds);
+                }
             }
             for (const item of pendingSaveQueue) {
                 if (item.id) activeKeys.add(item.id);

@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "$FILENAME$ を保存",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "を保存",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "メディアファイル",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "YouTubeの動画および音声フォーマットの高度な検出。"
+  },
+  "sortSizeDesc": {
+    "message": "サイズ (大きい順)"
+  },
+  "sortSizeAsc": {
+    "message": "サイズ (小さい順)"
+  },
+  "downloadNormal": {
+    "message": "ダウンロード (通常)"
+  },
+  "downloadSpeedBoost": {
+    "message": "ダウンロード (スピードブースト)"
+  },
+  "uploadNormal": {
+    "message": "アップロード (通常)"
+  },
+  "uploadSpeedBoost": {
+    "message": "アップロード (スピードブースト)"
+  },
+  "downloadManagerTitle": {
+    "message": "ダウンロードマネージャー"
+  },
+  "deleteSelected": {
+    "message": "選択項目を削除"
+  },
+  "closeAll": {
+    "message": "すべて閉じる"
+  },
+  "saveAllZip": {
+    "message": "すべてZIPとして保存"
+  },
+  "saveSelectedZip": {
+    "message": "選択項目をZIPとして保存"
+  },
+  "allCaughtUp": {
+    "message": "完了しました！"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "現在、アクティブなダウンロードやタスクはありません。メディアのダウンロードを開始すると、ここに表示されます。"
+  },
+  "closePreview": {
+    "message": "プレビューを閉じる"
+  },
+  "downloadAssemblingParts": {
+    "message": "$1 個のパーツを組み立て中..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "セグメント $1 を再構築中..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Dropboxトークンが見つかりません。設定でログインしてください。"
+  },
+  "dropboxSessionExpired": {
+    "message": "Dropboxセッションの有効期限が切れました。設定で再度ログインしてください。"
+  },
+  "uploadFailedDropbox": {
+    "message": "Dropboxへのアップロードに失敗しました"
+  },
+  "uploadSuccessDropbox": {
+    "message": "$1 をDropboxに正常に保存しました！"
   }
 }

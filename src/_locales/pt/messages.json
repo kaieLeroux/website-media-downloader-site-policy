@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "Salvar $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "Salvar",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Arquivo de Mídia",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "Detecção avançada para vídeos e formatos de áudio do YouTube."
+  },
+  "sortSizeDesc": {
+    "message": "Tamanho (Maior primeiro)"
+  },
+  "sortSizeAsc": {
+    "message": "Tamanho (Menor primeiro)"
+  },
+  "downloadNormal": {
+    "message": "Download (Normal)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Download (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Upload (Normal)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Upload (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Gerenciador de Downloads"
+  },
+  "deleteSelected": {
+    "message": "Excluir Selecionados"
+  },
+  "closeAll": {
+    "message": "Fechar Todos"
+  },
+  "saveAllZip": {
+    "message": "Salvar Todos como ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "Salvar Selecionados como ZIP"
+  },
+  "allCaughtUp": {
+    "message": "Tudo pronto!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "Nenhum download ou tarefa ativa no momento. Comece a baixar mídias para visualizá-las aqui."
+  },
+  "closePreview": {
+    "message": "Fechar visualização"
+  },
+  "downloadAssemblingParts": {
+    "message": "Montando $1 partes..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Reconstruindo segmento $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Token do Dropbox não encontrado. Por favor, inicie sessão nas definições."
+  },
+  "dropboxSessionExpired": {
+    "message": "A sessão do Dropbox expirou. Por favor, inicie sessão novamente nas definições."
+  },
+  "uploadFailedDropbox": {
+    "message": "Falha na transferência para o Dropbox"
+  },
+  "uploadSuccessDropbox": {
+    "message": "$1 guardado com sucesso no Dropbox!"
   }
 }

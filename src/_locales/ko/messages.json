@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "$FILENAME$ 저장",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "저장",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "미디어 파일",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "YouTube 동영상 및 오디오 형식의 고급 감지 기능."
+  },
+  "sortSizeDesc": {
+    "message": "크기 (가장 큰 순서)"
+  },
+  "sortSizeAsc": {
+    "message": "크기 (가장 작은 순서)"
+  },
+  "downloadNormal": {
+    "message": "다운로드 (일반)"
+  },
+  "downloadSpeedBoost": {
+    "message": "다운로드 (스피드 부스트)"
+  },
+  "uploadNormal": {
+    "message": "업로드 (일반)"
+  },
+  "uploadSpeedBoost": {
+    "message": "업로드 (스피드 부스트)"
+  },
+  "downloadManagerTitle": {
+    "message": "다운로드 관리자"
+  },
+  "deleteSelected": {
+    "message": "선택 항목 삭제"
+  },
+  "closeAll": {
+    "message": "모두 닫기"
+  },
+  "saveAllZip": {
+    "message": "모두 ZIP으로 저장"
+  },
+  "saveSelectedZip": {
+    "message": "선택 항목 ZIP으로 저장"
+  },
+  "allCaughtUp": {
+    "message": "모두 완료되었습니다!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "현재 진행 중인 다운로드나 작업이 없습니다. 미디어 다운로드를 시작하면 여기에 표시됩니다."
+  },
+  "closePreview": {
+    "message": "미리보기 닫기"
+  },
+  "downloadAssemblingParts": {
+    "message": "$1개 부품 조립 중..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "세그먼트 $1 재구성 중..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Dropbox 토큰을 찾을 수 없습니다. 설정에서 로그인하세요."
+  },
+  "dropboxSessionExpired": {
+    "message": "Dropbox 세션이 만료되었습니다. 설정에서 다시 로그인하세요."
+  },
+  "uploadFailedDropbox": {
+    "message": "Dropbox 업로드 실패"
+  },
+  "uploadSuccessDropbox": {
+    "message": "Dropbox에 $1 저장 완료!"
   }
 }

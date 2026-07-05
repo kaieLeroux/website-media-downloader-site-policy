@@ -1059,14 +1059,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "Save $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "Save",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Media File",
@@ -1750,6 +1744,12 @@
   "sortNumberAsc": {
     "message": "Number (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "Size (Largest first)"
+  },
+  "sortSizeAsc": {
+    "message": "Size (Smallest first)"
+  },
   "optimizeLowEndTitle": {
     "message": "Optimize for low-end devices",
     "description": "Setting title for optimizing on low-end devices"
@@ -1831,5 +1831,59 @@
   },
   "youtubeDetectionExplain": {
     "message": "Advanced detection for YouTube videos and audio formats."
+  },
+  "downloadNormal": {
+    "message": "Download (Normal)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Download (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Upload (Normal)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Upload (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Download Manager"
+  },
+  "deleteSelected": {
+    "message": "Delete Selected"
+  },
+  "closeAll": {
+    "message": "Close All"
+  },
+  "saveAllZip": {
+    "message": "Save All as ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "Save Selected as ZIP"
+  },
+  "allCaughtUp": {
+    "message": "All Caught Up!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "No active downloads or tasks at the moment. Start downloading media to see them here."
+  },
+  "closePreview": {
+    "message": "Close Preview"
+  },
+  "downloadAssemblingParts": {
+    "message": "Assembling $1 parts..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Reconstructing segment $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Dropbox token not found. Please login in settings."
+  },
+  "dropboxSessionExpired": {
+    "message": "Dropbox session expired. Please re-login in settings."
+  },
+  "uploadFailedDropbox": {
+    "message": "Dropbox Upload Failed"
+  },
+  "uploadSuccessDropbox": {
+    "message": "Successfully saved $1 to Dropbox!"
   }
 }

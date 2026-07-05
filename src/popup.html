@@ -212,6 +212,8 @@
                     <option value="letter_desc" data-translate="sortLetterDesc">Letter (Z-A)</option>
                     <option value="number_desc" data-translate="sortNumberDesc">Number (9-0)</option>
                     <option value="number_asc" data-translate="sortNumberAsc">Number (0-9)</option>
+                    <option value="size_desc" data-translate="sortSizeDesc">Size (Largest first)</option>
+                    <option value="size_asc" data-translate="sortSizeAsc">Size (Smallest first)</option>
                   </select>
                 </div>
               </div>
@@ -672,11 +674,22 @@
                   <mdui-button id="start-speed-test" variant="filled" style="--mdui-shape-corner-extra-small: 16px; height: 36px; flex-shrink: 0;" data-translate="runSpeedTestBtn">Run Test</mdui-button>
                 </div>
                 
+                <div id="speedometer-container" style="display: none; justify-content: center; align-items: center; margin: 16px auto; position: relative; width: 160px; height: 160px;">
+                  <svg width="160" height="160" viewBox="0 0 200 200" style="transform: rotate(135deg);">
+                    <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(var(--mdui-color-on-surface), 0.08)" stroke-width="12" stroke-dasharray="376.99 502.65" stroke-linecap="round" />
+                    <circle id="speedometer-progress" cx="100" cy="100" r="80" fill="none" stroke="rgb(var(--mdui-color-primary))" stroke-width="12" stroke-dasharray="0 502.65" stroke-linecap="round" style="transition: stroke-dasharray 0.15s ease-out, stroke 0.3s; filter: drop-shadow(0 0 4px rgba(var(--mdui-color-primary), 0.4));" />
+                  </svg>
+                  <div style="position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <span id="speedometer-value" style="font-size: 28px; font-weight: 800; color: rgb(var(--mdui-color-on-surface)); font-family: monospace; letter-spacing: -0.5px; line-height: 1;">0.00</span>
+                    <span id="speedometer-unit" style="font-size: 10px; opacity: 0.6; font-weight: 700; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px;">Mbps</span>
+                  </div>
+                </div>
+                
                 <div id="speed-test-results" style="display: none; flex-direction: column; gap: 12px; margin-top: 8px; border-top: 1px solid rgb(var(--mdui-color-outline-variant)); padding-top: 12px;">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <mdui-icon style="color: rgb(var(--mdui-color-primary));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg></mdui-icon>
-                      <span style="font-weight: 500; font-size: 13px;" data-translate="downloadSpeed">Download Speed</span>
+                      <span style="font-weight: 500; font-size: 13px;" data-translate="downloadNormal">Download (Normal)</span>
                     </div>
                     <span id="download-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace;">-</span>
                   </div>
@@ -684,12 +697,31 @@
 
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
+                      <mdui-icon style="color: rgb(var(--mdui-color-primary)); filter: drop-shadow(0 0 4px rgba(var(--mdui-color-primary), 0.6));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg></mdui-icon>
+                      <span style="font-weight: 700; font-size: 13px; color: rgb(var(--mdui-color-primary));" data-translate="downloadSpeedBoost">Download (Speed Boost)</span>
+                    </div>
+                    <span id="download-boost-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace; color: rgb(var(--mdui-color-primary));">-</span>
+                  </div>
+                  <mdui-linear-progress id="download-boost-test-progress" value="0" style="display: none;"></mdui-linear-progress>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
                       <mdui-icon style="color: rgb(var(--mdui-color-secondary));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v-4h-4v4H7l5 5 5-5h-3z"/></svg></mdui-icon>
-                      <span style="font-weight: 500; font-size: 13px;" data-translate="uploadSpeed">Upload Speed</span>
+                      <span style="font-weight: 500; font-size: 13px;" data-translate="uploadNormal">Upload (Normal)</span>
                     </div>
                     <span id="upload-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace;">-</span>
                   </div>
                   <mdui-linear-progress id="upload-test-progress" value="0" style="display: none;"></mdui-linear-progress>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mdui-icon style="color: rgb(var(--mdui-color-secondary)); filter: drop-shadow(0 0 4px rgba(var(--mdui-color-secondary), 0.6));"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v-4h-4v4H7l5 5 5-5h-3z"/></svg></mdui-icon>
+                      <span style="font-weight: 700; font-size: 13px; color: rgb(var(--mdui-color-secondary));" data-translate="uploadSpeedBoost">Upload (Speed Boost)</span>
+                    </div>
+                    <span id="upload-boost-speed-value" style="font-weight: 800; font-size: 15px; font-family: monospace; color: rgb(var(--mdui-color-secondary));">-</span>
+                  </div>
+                  <mdui-linear-progress id="upload-boost-test-progress" value="0" style="display: none;"></mdui-linear-progress>
+                  <mdui-linear-progress id="upload-boost-test-progress" value="0" style="display: none;"></mdui-linear-progress>
                   
                   <div id="speed-test-status" style="font-size: 11px; opacity: 0.7; text-align: center; margin-top: 4px;"></div>
                 </div>

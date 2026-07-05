@@ -20,12 +20,6 @@ if (typeof browser === 'undefined') {
     var browser = chrome;
 }
 
-const urlParams = new URLSearchParams(window.location.search);
-const downloadId = urlParams.get('id');
-const targetUrl = urlParams.get('url');
-const cacheKey = downloadId || targetUrl;
-const filename = urlParams.get('filename') || browser.i18n.getMessage("defaultMediaName");
-
 const DB_NAME = "MediaCacheDB";
 const STORE_NAME = "network-cache";
 const CHUNK_STORE_NAME = "download-chunks";
@@ -36,8 +30,6 @@ function openCacheDB() {
         request.onerror = (event) => reject(event.target.error || browser.i18n.getMessage("idbOpenError") || "IDB Open Error");
         request.onblocked = () => {
             console.warn("IndexedDB blocked. Please close other tabs of this extension.");
-            const title = document.getElementById('status-title');
-            if (title) title.textContent = browser.i18n.getMessage("downloadWaiting");
         };
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
@@ -86,7 +78,6 @@ async function reauthGDrive() {
     return new Promise((resolve, reject) => {
         try {
             const clientId = "1042907477337-c8h27qniercjia05jqqafgvjao514n28.apps.googleusercontent.com";
-            
             let finalRedirectUri;
             if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
                 finalRedirectUri = browser.identity.getRedirectURL();
@@ -101,7 +92,6 @@ async function reauthGDrive() {
 
             const scope = encodeURIComponent("https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email");
             const normalizedRedirectUri = finalRedirectUri.endsWith('/') ? finalRedirectUri.slice(0, -1) : finalRedirectUri;
-            
             const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(finalRedirectUri)}&scope=${scope}&prompt=none`;
             
             if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
@@ -122,9 +112,7 @@ async function reauthGDrive() {
                     } else {
                         reject(new Error("No redirect URL"));
                     }
-                }).catch(e => {
-                    reject(e);
-                });
+                }).catch(reject);
             } else {
                 let isResolved = false;
                 let authTabId = null;
@@ -136,7 +124,6 @@ async function reauthGDrive() {
                             isResolved = true;
                             browser.tabs.remove(tabId).catch(() => {});
                             cleanup();
-                            
                             const url = new URL(urlString);
                             const hashParams = new URLSearchParams(url.hash.substring(1));
                             const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
@@ -183,12 +170,10 @@ async function reauthGDrive() {
     });
 }
 
-
 async function reauthDropbox() {
     return new Promise((resolve, reject) => {
         try {
             const clientId = "gipboqpkook5oaj";
-            
             let finalRedirectUri;
             if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
                 finalRedirectUri = browser.identity.getRedirectURL();
@@ -221,7 +206,7 @@ async function reauthDropbox() {
                     } else {
                         reject(new Error("No redirect URL returned"));
                     }
-                }).catch(e => reject(e));
+                }).catch(reject);
             } else {
                 let isResolved = false;
                 let authTabId = null;
@@ -233,7 +218,6 @@ async function reauthDropbox() {
                             isResolved = true;
                             browser.tabs.remove(tabId).catch(() => {});
                             cleanup();
-                            
                             const url = new URL(urlString);
                             const hashParams = new URLSearchParams(url.hash.substring(1));
                             const accessToken = hashParams.get('access_token') || url.searchParams.get('access_token');
@@ -284,7 +268,7 @@ function uploadToDropbox(blob, filename, onProgress, controller, isRetry = false
         try {
             const res = await browser.storage.local.get('dropbox_token');
             if (!res.dropbox_token) {
-                return reject(new Error("Dropbox token not found. Please login in settings."));
+                return reject(new Error(browser.i18n.getMessage("dropboxLoginRequired") || "Dropbox token not found. Please login in settings."));
             }
             const token = res.dropbox_token;
 
@@ -320,7 +304,7 @@ function uploadToDropbox(blob, filename, onProgress, controller, isRetry = false
                     reauthDropbox().then(() => {
                         uploadToDropbox(blob, filename, onProgress, controller, true).then(resolve).catch(reject);
                     }).catch(() => {
-                        reject(new Error("Dropbox session expired. Please re-login in settings."));
+                        reject(new Error(browser.i18n.getMessage("dropboxSessionExpired") || "Dropbox session expired. Please re-login in settings."));
                     });
                 } else {
                     reject(new Error("Dropbox Upload Error: " + xhr.statusText));
@@ -350,7 +334,6 @@ function uploadToDropbox(blob, filename, onProgress, controller, isRetry = false
             };
 
             xhr.send(blob);
-
         } catch (error) {
             reject(error);
         }
@@ -424,7 +407,6 @@ function uploadToGDrive(blob, filename, onProgress, controller, isRetry = false)
                 }
             };
             initXhr.send(JSON.stringify(metadata));
-
         } catch (error) {
             reject(error);
         }
@@ -502,7 +484,6 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
                 if (controller && controller.cancelled) {
                     reject(new Error("Upload cancelled"));
                 } else if (controller && controller.paused) {
-                    // If we paused during an active chunk, set the resume hook to retry this chunk
                     controller.onResume = () => {
                         controller.onResume = null;
                         uploadNextChunk();
@@ -523,18 +504,71 @@ function uploadChunks(sessionUri, blob, onProgress, controller) {
     });
 }
 
-async function triggerDownload() {
-    const statusTitle = document.getElementById('status-title');
-    const statusText = document.getElementById('status-text');
-    const saveButton = document.getElementById('save-button');
+const activeJobs = new Map();
+
+async function getStoredDownloads() {
+    const res = await browser.storage.local.get('active_manager_downloads');
+    return res['active_manager_downloads'] || [];
+}
+
+async function saveStoredDownloads(downloads) {
+    await browser.storage.local.set({ 'active_manager_downloads': downloads });
+}
+
+async function removeStoredDownload(id) {
+    const currentStored = await getStoredDownloads();
+    const updated = currentStored.filter(item => item.id !== id);
+    await saveStoredDownloads(updated);
+}
+
+async function deleteDownloadCacheAndStorage(id, url) {
+    await removeStoredDownload(id);
 
     try {
-        statusText.textContent = browser.i18n.getMessage("downloadConnectingDB");
+        const cacheKey = id || url;
         const db = await openCacheDB();
 
-        statusText.textContent = browser.i18n.getMessage("downloadFetchingMetadata");
+        const tx1 = db.transaction([STORE_NAME], "readwrite");
+        tx1.objectStore(STORE_NAME).delete(cacheKey);
+        await new Promise((resolve, reject) => {
+            tx1.oncomplete = resolve;
+            tx1.onerror = () => reject(tx1.error);
+        });
+
+        const tx2 = db.transaction([CHUNK_STORE_NAME], "readwrite");
+        const chunkStore = tx2.objectStore(CHUNK_STORE_NAME);
+        const range = IDBKeyRange.bound([cacheKey, 0], [cacheKey, Infinity]);
+        chunkStore.delete(range);
+        await new Promise((resolve, reject) => {
+            tx2.oncomplete = resolve;
+            tx2.onerror = () => reject(tx2.error);
+        });
+    } catch (e) {
+        console.warn("Failed to clean up cache for", id, e);
+    }
+
+    browser.runtime.sendMessage({ action: 'downloadComplete', id: id || url, url: url }).catch(() => {});
+}
+
+async function triggerDownload(id, url, filename) {
+    const statusText = document.getElementById(`status-text-${id}`);
+    const progressContainer = document.getElementById(`progress-container-${id}`);
+    const progress = document.getElementById(`progress-${id}`);
+    const saveButton = document.getElementById(`save-${id}`);
+    const pauseBtn = document.getElementById(`pause-${id}`);
+    const resumeBtn = document.getElementById(`resume-${id}`);
+    const cancelBtn = document.getElementById(`cancel-${id}`);
+
+    const setStatus = (text) => { if (statusText) statusText.textContent = text; };
+
+    try {
+        setStatus(browser.i18n.getMessage("downloadConnectingDB") || "Connecting to Database...");
+        const db = await openCacheDB();
+
+        setStatus(browser.i18n.getMessage("downloadFetchingMetadata") || "Fetching Metadata...");
         const tx = db.transaction([STORE_NAME], "readonly");
         const store = tx.objectStore(STORE_NAME);
+        const cacheKey = id || url;
         const getRequest = store.get(cacheKey);
 
         getRequest.onsuccess = async (event) => {
@@ -543,13 +577,9 @@ async function triggerDownload() {
                 if (item) {
                     let blob;
                     if (item.data) {
-
                         blob = item.data;
                     } else {
-
-                        statusTitle.textContent = browser.i18n.getMessage("downloadProcessing");
-                        statusText.textContent = browser.i18n.getMessage("downloadReconstructing");
-
+                        setStatus(browser.i18n.getMessage("downloadReconstructing") || "Reconstructing file from segments...");
                         const chunks = [];
                         const chunkTx = db.transaction([CHUNK_STORE_NAME], "readonly");
                         const chunkStore = chunkTx.objectStore(CHUNK_STORE_NAME);
@@ -569,10 +599,9 @@ async function triggerDownload() {
 
                                     const now = Date.now();
                                     if (now - lastUpdate > 500) {
-                                        statusText.textContent = browser.i18n.getMessage("downloadReconstructingSegments", [chunks.length.toString()]);
+                                        setStatus((browser.i18n.getMessage("downloadReconstructingSegment") || "Reconstructing segment $1...").replace("$1", chunks.length));
                                         lastUpdate = now;
                                     }
-
                                     cursor.continue();
                                 } else {
                                     resolveChunk();
@@ -582,216 +611,591 @@ async function triggerDownload() {
                         });
 
                         if (chunks.length === 0) {
-                            throw new Error(browser.i18n.getMessage("downloadMetadataNotFound"));
+                            throw new Error(browser.i18n.getMessage("downloadMetadataNotFound") || "Metadata not found in Database.");
                         }
 
                         chunks.sort((a, b) => a.index - b.index);
-
-                        statusText.textContent = browser.i18n.getMessage("downloadAssembling", [chunks.length.toString()]);
+                        setStatus((browser.i18n.getMessage("downloadAssemblingParts") || "Assembling $1 parts...").replace("$1", chunks.length));
                         const blobData = chunks.map(c => c.data);
                         blob = new Blob(blobData, { type: item.mime || "application/octet-stream" });
                     }
 
                     const objectUrl = URL.createObjectURL(blob);
-
-                    
                     const settings = await browser.storage.local.get(['save-to-gdrive', 'save-to-dropbox']);
+
                     if (settings['save-to-dropbox'] === '1') {
                         const controller = new CloudUploadController();
-                        const cloudControls = document.getElementById('cloud-upload-controls');
-                        const pauseBtn = document.getElementById('pause-upload-button');
-                        const resumeBtn = document.getElementById('resume-upload-button');
-                        const cancelBtn = document.getElementById('cancel-upload-button');
-
-                        if (cloudControls) cloudControls.style.display = 'flex';
-
-                        pauseBtn.onclick = () => {
-                            controller.pause();
-                            pauseBtn.style.display = 'none';
-                            resumeBtn.style.display = 'inline-block';
-                            statusTitle.textContent = browser.i18n.getMessage("uploadPausedTitle") || "Upload Paused";
-                        };
-
-                        resumeBtn.onclick = () => {
-                            controller.resume();
-                            resumeBtn.style.display = 'none';
+                        if (pauseBtn) {
                             pauseBtn.style.display = 'inline-block';
-                            statusTitle.textContent = browser.i18n.getMessage("uploadResumedTitle") || "Upload Resumed";
-                        };
+                            cancelBtn.style.display = 'inline-block';
+                            
+                            pauseBtn.onclick = () => {
+                                controller.pause();
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'inline-block';
+                                setStatus(browser.i18n.getMessage("uploadPausedTitle") || "Upload Paused");
+                            };
 
-                        cancelBtn.onclick = () => {
-                            controller.cancel();
-                        };
+                            resumeBtn.onclick = () => {
+                                controller.resume();
+                                resumeBtn.style.display = 'none';
+                                pauseBtn.style.display = 'inline-block';
+                                setStatus(browser.i18n.getMessage("uploadingToDropbox", [filename]) || `Uploading ${filename} to Dropbox...`);
+                            };
+
+                            cancelBtn.onclick = () => {
+                                controller.cancel();
+                            };
+                        }
 
                         try {
-                            statusTitle.textContent = browser.i18n.getMessage("uploadingToCloudTitle") || "Uploading to Cloud";
-                            statusText.textContent = "Uploading to Dropbox... (0%)";
+                            setStatus((browser.i18n.getMessage("uploadingToDropbox", [filename]) || `Uploading ${filename} to Dropbox...`) + " (0%)");
+                            if (progressContainer) progressContainer.style.display = 'block';
+                            if (progress) progress.style.width = '0%';
                             
                             await uploadToDropbox(blob, filename, (percent) => {
-                                statusText.textContent = "Uploading to Dropbox... (" + percent + "%)";
+                                setStatus((browser.i18n.getMessage("uploadingToDropbox", [filename]) || `Uploading ${filename} to Dropbox...`) + ` (${percent}%)`);
+                                if (progress) progress.style.width = percent + '%';
                             }, controller);
 
-                            if (cloudControls) cloudControls.style.display = 'none';
-                            statusTitle.textContent = "Upload Complete!";
-                            statusText.textContent = "Successfully saved " + filename + " to Dropbox!";
-
-                            browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: targetUrl, cloud: true }).catch(() => {});
-
-                            setTimeout(() => {
-                                window.close();
-                            }, 2000);
+                            if (pauseBtn) {
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'none';
+                                cancelBtn.style.display = 'none';
+                            }
+                            if (progressContainer) progressContainer.style.display = 'none';
+                            setStatus(browser.i18n.getMessage("uploadSuccessDropbox", [filename]) || `Successfully saved ${filename} to Dropbox!`);
+                            browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: url, cloud: true }).catch(() => {});
+                            await removeStoredDownload(id);
                             return;
                         } catch (error) {
-                            if (cloudControls) cloudControls.style.display = 'none';
+                            if (pauseBtn) {
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'none';
+                                cancelBtn.style.display = 'none';
+                            }
+                            if (progressContainer) progressContainer.style.display = 'none';
                             if (error.message === "Upload cancelled") {
-                                statusTitle.textContent = browser.i18n.getMessage("uploadCancelledTitle") || "Upload Cancelled";
-                                statusText.textContent = browser.i18n.getMessage("uploadCancelledText") || "Cloud upload was cancelled.";
+                                setStatus(browser.i18n.getMessage("uploadCancelledTitle") || "Upload Cancelled");
                             } else {
-                                console.error("Dropbox auto-upload failed:", error);
-                                statusTitle.textContent = "Dropbox Upload Failed";
-                                statusText.textContent = error.message;
-                                
-                                const openSettingsBtn = document.createElement('mdui-button');
-                                openSettingsBtn.textContent = browser.i18n.getMessage("openSettingsButton") || "Open Settings";
-                                openSettingsBtn.onclick = () => { browser.tabs.create({ url: 'popup.html?options=true' }); };
-                                document.querySelector('.action-area').appendChild(openSettingsBtn);
+                                setStatus((browser.i18n.getMessage("uploadFailedDropbox") || "Dropbox Upload Failed") + `: ${error.message}`);
                             }
                             return;
                         }
                     } else if (settings['save-to-gdrive'] === '1') {
                         const controller = new CloudUploadController();
-                        const cloudControls = document.getElementById('cloud-upload-controls');
-                        const pauseBtn = document.getElementById('pause-upload-button');
-                        const resumeBtn = document.getElementById('resume-upload-button');
-                        const cancelBtn = document.getElementById('cancel-upload-button');
-
-                        if (cloudControls) cloudControls.style.display = 'flex';
-
-                        pauseBtn.onclick = () => {
-                            controller.pause();
-                            pauseBtn.style.display = 'none';
-                            resumeBtn.style.display = 'inline-block';
-                            statusTitle.textContent = browser.i18n.getMessage("uploadPausedTitle") || "Upload Paused";
-                        };
-
-                        resumeBtn.onclick = () => {
-                            controller.resume();
-                            resumeBtn.style.display = 'none';
+                        if (pauseBtn) {
                             pauseBtn.style.display = 'inline-block';
-                            statusTitle.textContent = browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...";
-                        };
+                            cancelBtn.style.display = 'inline-block';
 
-                        cancelBtn.onclick = () => {
-                            controller.cancel();
-                            if (cloudControls) cloudControls.style.display = 'none';
-                        };
+                            pauseBtn.onclick = () => {
+                                controller.pause();
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'inline-block';
+                                setStatus(browser.i18n.getMessage("uploadPausedTitle") || "Upload Paused");
+                            };
+
+                            resumeBtn.onclick = () => {
+                                controller.resume();
+                                resumeBtn.style.display = 'none';
+                                pauseBtn.style.display = 'inline-block';
+                                setStatus(browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...");
+                            };
+
+                            cancelBtn.onclick = () => {
+                                controller.cancel();
+                            };
+                        }
 
                         try {
-                            statusTitle.textContent = browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...";
-                            statusText.textContent = browser.i18n.getMessage("uploadingToGDrive", [filename]) || `Uploading ${filename} to Google Drive...`;
+                            setStatus(browser.i18n.getMessage("uploadingToGDrive", [filename]) || `Uploading ${filename} to Google Drive...`);
+                            if (progressContainer) progressContainer.style.display = 'block';
+                            if (progress) progress.style.width = '0%';
                             
                             await uploadToGDrive(blob, filename, (percent) => {
-                                statusText.textContent = (browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...") + ` (${percent}%)`;
+                                setStatus((browser.i18n.getMessage("uploadingToGDriveShort") || "Uploading to Cloud...") + ` (${percent}%)`);
+                                if (progress) progress.style.width = percent + '%';
                             }, controller);
                             
-                            if (cloudControls) cloudControls.style.display = 'none';
-                            statusTitle.textContent = browser.i18n.getMessage("uploadSuccessGDriveTitle") || "Upload Complete!";
-                            statusText.textContent = browser.i18n.getMessage("uploadSuccessGDrive", [filename]) || `Successfully saved ${filename} to Google Drive!`;
-                            
-                            browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: targetUrl, cloud: true }).catch(() => {});
-                            
-                            setTimeout(() => {
-                                window.close();
-                            }, 2000);
+                            if (pauseBtn) {
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'none';
+                                cancelBtn.style.display = 'none';
+                            }
+                            if (progressContainer) progressContainer.style.display = 'none';
+                            setStatus(browser.i18n.getMessage("uploadSuccessGDrive", [filename]) || `Successfully saved ${filename} to Google Drive!`);
+                            browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: url, cloud: true }).catch(() => {});
+                            await removeStoredDownload(id);
                             return;
                         } catch (error) {
-                            if (cloudControls) cloudControls.style.display = 'none';
-                            if (error.message === "Upload cancelled") {
-                                statusTitle.textContent = browser.i18n.getMessage("uploadCancelledTitle") || "Upload Cancelled";
-                                statusText.textContent = browser.i18n.getMessage("uploadCancelledText") || "Cloud upload was cancelled.";
-                            } else {
-                                console.error("GDrive auto-upload failed:", error);
+                            if (pauseBtn) {
+                                pauseBtn.style.display = 'none';
+                                resumeBtn.style.display = 'none';
+                                cancelBtn.style.display = 'none';
                             }
+                            if (progressContainer) progressContainer.style.display = 'none';
+                            if (error.message === "Upload cancelled") {
+                                setStatus(browser.i18n.getMessage("uploadCancelledTitle") || "Upload Cancelled");
+                            } else {
+                                setStatus((browser.i18n.getMessage("uploadFailedGDrive") || "Cloud upload failed") + `: ${error.message}`);
+                            }
+                            return;
                         }
                     }
 
-                    statusTitle.textContent = browser.i18n.getMessage("downloadReadyTitle");
-                    saveButton.style.display = "inline-block";
-                    saveButton.textContent = browser.i18n.getMessage("saveFileLabel", [filename]);
-                    statusText.textContent = browser.i18n.getMessage("downloadReadyText");
+                    setStatus(browser.i18n.getMessage("downloadReadyText") || "Ready to Save");
+                    
+                    const previewBtn = document.getElementById(`preview-${id}`);
+                    const previewContainer = document.getElementById(`preview-container-${id}`);
+                    
+                    const mimeType = item.mime || "";
+                    const isVideo = mimeType.startsWith("video/") || /\.(mp4|webm|ogg|mkv|mov|avi|flv)$/i.test(filename);
+                    const isAudio = mimeType.startsWith("audio/") || /\.(mp3|wav|ogg|aac|flac|m4a)$/i.test(filename);
 
-                    const closeButton = document.getElementById('close-button');
-                    closeButton.onclick = () => window.close();
+                    if (previewBtn && previewContainer && (isVideo || isAudio)) {
+                        previewBtn.style.display = "inline-block";
+                        previewBtn.onclick = () => {
+                            if (previewContainer.style.display === "none") {
+                                previewContainer.innerHTML = "";
+                                if (isVideo) {
+                                    const video = document.createElement("video");
+                                    video.src = objectUrl;
+                                    video.controls = true;
+                                    video.style.width = "100%";
+                                    video.style.maxHeight = "360px";
+                                    video.autoplay = true;
+                                    previewContainer.appendChild(video);
+                                } else if (isAudio) {
+                                    const audio = document.createElement("audio");
+                                    audio.src = objectUrl;
+                                    audio.controls = true;
+                                    audio.style.width = "100%";
+                                    audio.style.padding = "10px";
+                                    audio.autoplay = true;
+                                    previewContainer.appendChild(audio);
+                                }
+                                previewContainer.style.display = "block";
+                                previewBtn.textContent = browser.i18n.getMessage("closePreview") || "Close Preview";
+                            } else {
+                                previewContainer.innerHTML = "";
+                                previewContainer.style.display = "none";
+                                previewBtn.textContent = browser.i18n.getMessage("previewMedia") || "Preview";
+                            }
+                        };
+                    }
 
-                    const performDownload = () => {
-                        const a = document.createElement("a");
-                        a.href = objectUrl;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-
-                        statusTitle.textContent = browser.i18n.getMessage("downloadStartedTitle");
-                        statusText.textContent = browser.i18n.getMessage("downloadStartedText");
-                        saveButton.disabled = true;
-                        saveButton.style.opacity = "0.5";
-
-                        browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: targetUrl }).catch(() => {});
+                    if (saveButton) {
+                        saveButton.style.display = "inline-block";
                         
-                        // We no longer automatically close or cleanup here.
-                        // Cleanup happens when the user manually closes the tab.
-                        const closeButton = document.getElementById('close-button');
-                        if (closeButton) {
-                            closeButton.onclick = () => window.close();
-                        }
-                    };
+                        const performDownload = async () => {
+                            const a = document.createElement("a");
+                            a.href = objectUrl;
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
 
-                    saveButton.onclick = performDownload;
-                    performDownload();
+                            setStatus(browser.i18n.getMessage("downloadStartedText") || "Download Started");
+                            saveButton.disabled = true;
+                            saveButton.style.opacity = "0.5";
+                            browser.runtime.sendMessage({ action: 'downloadComplete', id: cacheKey, url: url }).catch(() => {});
+                            await removeStoredDownload(id);
+                        };
+
+                        saveButton.onclick = performDownload;
+                    }
                 } else {
-                    statusTitle.textContent = browser.i18n.getMessage("downloadErrorTitle");
-                    statusText.textContent = browser.i18n.getMessage("downloadMetadataNotFound");
-                    setTimeout(() => window.close(), 5000);
+                    setStatus(browser.i18n.getMessage("downloadMetadataNotFound") || "Metadata not found in Database.");
                 }
             } catch (innerError) {
-                statusTitle.textContent = browser.i18n.getMessage("downloadProcessingError");
-                statusText.textContent = innerError.message;
+                setStatus((browser.i18n.getMessage("downloadProcessingError") || "Processing Error") + `: ${innerError.message}`);
             }
         };
 
-        getRequest.onerror = (e) => {
-            statusTitle.textContent = browser.i18n.getMessage("downloadDatabaseError");
-            statusText.textContent = browser.i18n.getMessage("downloadDatabaseErrorText");
+        getRequest.onerror = () => {
+            setStatus(browser.i18n.getMessage("downloadDatabaseErrorText") || "Database retrieval failed.");
         };
 
     } catch (error) {
-        statusTitle.textContent = browser.i18n.getMessage("downloadUnexpectedError");
-        statusText.textContent = error.message;
-        setTimeout(() => window.close(), 5000);
+        setStatus((browser.i18n.getMessage("downloadUnexpectedError") || "Unexpected Error") + `: ${error.message}`);
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function addNewDownload(id, url, filename) {
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) emptyState.style.display = 'none';
 
+    const list = document.getElementById('downloads-list');
+    
+    if (document.getElementById(`card-${id}`)) return;
+
+    const stored = await getStoredDownloads();
+    if (!stored.some(item => item.id === id)) {
+        stored.push({ id, url, filename });
+        await saveStoredDownloads(stored);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'download-card';
+    card.id = `card-${id}`;
+    card.dataset.id = id;
+    card.innerHTML = `
+      <div class="card-content">
+        <div class="card-header" style="align-items: center;">
+          <mdui-checkbox class="card-select-checkbox" data-id="${id}" style="margin-right: -4px;"></mdui-checkbox>
+          <div class="icon-wrapper">
+            <mdui-icon>
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            </mdui-icon>
+          </div>
+          <div class="info-wrapper">
+            <h4 class="file-name">${filename || browser.i18n.getMessage("defaultMediaName")}</h4>
+            <p class="status-text" id="status-text-${id}">${browser.i18n.getMessage("downloadWaiting") || "Preparing..."}</p>
+          </div>
+        </div>
+        <div class="progress-bar-wrapper">
+          <mdui-linear-progress id="progress-${id}" value="0" style="display: none;"></mdui-linear-progress>
+        </div>
+        <div id="preview-container-${id}" style="display: none; margin-top: 10px; width: 100%; border-radius: 8px; overflow: hidden; background: #000; line-height: 0;"></div>
+        <div class="button-group">
+          <mdui-button id="preview-${id}" variant="tonal" style="display: none; color: rgb(var(--mdui-color-primary));">${browser.i18n.getMessage("previewMedia") || "Preview"}</mdui-button>
+          <div style="flex-grow: 1;"></div>
+          <mdui-button id="save-${id}" variant="filled" style="display: none;">${browser.i18n.getMessage("saveFileLabel") || "Save"}</mdui-button>
+          <mdui-button id="pause-${id}" variant="tonal" style="display: none;">${browser.i18n.getMessage("uploadPausedTitle") || "Pause"}</mdui-button>
+          <mdui-button id="resume-${id}" variant="filled" style="display: none;">${browser.i18n.getMessage("uploadResumedTitle") || "Resume"}</mdui-button>
+          <mdui-button id="cancel-${id}" variant="outlined" style="display: none;">${browser.i18n.getMessage("uploadCancelledTitle") || "Cancel"}</mdui-button>
+          <mdui-button id="close-${id}" variant="text">${browser.i18n.getMessage("closePreview") || "Close"}</mdui-button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+
+    const closeBtn = document.getElementById(`close-${id}`);
+    if (closeBtn) {
+        closeBtn.onclick = async () => {
+            card.remove();
+            activeJobs.delete(id);
+            await deleteDownloadCacheAndStorage(id, url);
+
+            if (list.children.length === 0 && emptyState) {
+                emptyState.style.display = 'flex';
+            }
+            updateSaveAllZipVisibility();
+            updateSelectedCount();
+        };
+    }
+
+    const cardCheckbox = card.querySelector('.card-select-checkbox');
+    if (cardCheckbox) {
+        cardCheckbox.addEventListener('change', () => {
+            updateSelectedCount();
+        });
+    }
+
+    const cacheKey = id || url;
+    browser.runtime.sendMessage({ action: 'registerDownloadTab', id: cacheKey }).catch(() => {});
+
+    activeJobs.set(id, { url, filename });
+    triggerDownload(id, url, filename);
+    
+    updateSaveAllZipVisibility();
+}
+
+// Receive new downloads from background service worker
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'startDownload') {
+        addNewDownload(message.id, message.url, message.filename);
+        if (sendResponse) sendResponse({ success: true });
+    }
+    return true;
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
     const colorResult = await browser.storage.local.get('theme-color');
     if (typeof mdui !== 'undefined') {
         mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
     }
 
-    if (targetUrl) {
-        browser.runtime.sendMessage({ action: 'registerDownloadTab', id: cacheKey }).catch(() => {});
-        
-        // Keep service worker alive during download and assembly
-        const heartbeatInterval = setInterval(() => {
-            browser.runtime.sendMessage({ action: 'heartbeat' }).catch(() => {});
-        }, 15000);
+    browser.runtime.sendMessage({ action: 'registerDownloadManagerTab' }).catch(() => {});
 
-        window.addEventListener('beforeunload', () => {
-            clearInterval(heartbeatInterval);
-        });
+    let stored = await getStoredDownloads();
 
-        triggerDownload();
-    } else {
-        window.close();
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialId = urlParams.get('id');
+    const initialUrl = urlParams.get('url');
+    const initialFilename = urlParams.get('filename') || browser.i18n.getMessage("defaultMediaName");
+
+    if (initialId && initialUrl) {
+        if (!stored.some(item => item.id === initialId)) {
+            stored.push({ id: initialId, url: initialUrl, filename: initialFilename });
+            await saveStoredDownloads(stored);
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    if (stored.length > 0) {
+        for (const item of stored) {
+            addNewDownload(item.id, item.url, item.filename);
+        }
+    }
+    
+    updateSaveAllZipVisibility();
+
+    const saveAllZipBtn = document.getElementById('save-all-zip');
+    if (saveAllZipBtn) {
+        saveAllZipBtn.onclick = async () => {
+            saveAllZipBtn.disabled = true;
+            
+            const checkedBoxes = Array.from(document.querySelectorAll('.card-select-checkbox')).filter(cb => cb.checked);
+            const selectedIds = checkedBoxes.map(cb => cb.dataset.id);
+            const isSelectedMode = selectedIds.length > 0;
+            
+            const originalText = saveAllZipBtn.textContent;
+            saveAllZipBtn.textContent = isSelectedMode ? "Preparing Selected ZIP..." : "Preparing ZIP...";
+            
+            try {
+                let stored = await getStoredDownloads();
+                if (isSelectedMode) {
+                    stored = stored.filter(item => selectedIds.includes(item.id));
+                }
+                
+                if (stored.length === 0) {
+                    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                        mdui.snackbar({ message: "No downloads available to save.", placement: "top" });
+                    }
+                    saveAllZipBtn.disabled = false;
+                    saveAllZipBtn.textContent = originalText;
+                    return;
+                }
+
+                const db = await openCacheDB();
+                const zipEntries = [];
+
+                for (let i = 0; i < stored.length; i++) {
+                    const item = stored[i];
+                    saveAllZipBtn.textContent = `Assembling file ${i+1}/${stored.length}...`;
+                    
+                    try {
+                        const tx = db.transaction([STORE_NAME], "readonly");
+                        const getRequest = tx.objectStore(STORE_NAME).get(item.id || item.url);
+                        
+                        const cacheItem = await new Promise((resolve, reject) => {
+                            getRequest.onsuccess = (e) => resolve(e.target.result);
+                            getRequest.onerror = (e) => reject(e.target.error);
+                        });
+
+                        if (cacheItem) {
+                            let fileBlob;
+                            if (cacheItem.data) {
+                                fileBlob = cacheItem.data;
+                            } else {
+                                const chunks = [];
+                                const chunkTx = db.transaction([CHUNK_STORE_NAME], "readonly");
+                                const range = IDBKeyRange.bound([item.id || item.url, 0], [item.id || item.url, Infinity]);
+                                const cursorRequest = chunkTx.objectStore(CHUNK_STORE_NAME).openCursor(range);
+                                
+                                await new Promise((resolveChunk, rejectChunk) => {
+                                    cursorRequest.onsuccess = (e) => {
+                                        const cursor = e.target.result;
+                                        if (cursor) {
+                                            chunks.push({ index: cursor.value.chunkIndex, data: cursor.value.data });
+                                            cursor.continue();
+                                        } else {
+                                            resolveChunk();
+                                        }
+                                    };
+                                    cursorRequest.onerror = (e) => rejectChunk(e.target.error);
+                                });
+
+                                if (chunks.length > 0) {
+                                    chunks.sort((a, b) => a.index - b.index);
+                                    fileBlob = new Blob(chunks.map(c => c.data), { type: cacheItem.mime || "application/octet-stream" });
+                                }
+                            }
+
+                            if (fileBlob) {
+                                zipEntries.push({
+                                    name: item.filename,
+                                    input: fileBlob
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error reading file for zip generation:", item.filename, err);
+                    }
+                }
+
+                if (zipEntries.length === 0) {
+                    throw new Error("No files could be read from database. Make sure downloads are completed.");
+                }
+
+                saveAllZipBtn.textContent = "Generating ZIP...";
+                const zipBlob = await downloadZip(zipEntries).blob();
+                const zipName = `downloads_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+                
+                const blobUrl = URL.createObjectURL(zipBlob);
+                const a = document.createElement("a");
+                a.href = blobUrl;
+                a.download = zipName;
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                }, 2000);
+
+                if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                    mdui.snackbar({ message: "ZIP file generated successfully!", placement: "top" });
+                }
+
+            } catch (e) {
+                console.error("ZIP Generation error:", e);
+                if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                    mdui.snackbar({ message: `ZIP Error: ${e.message}`, placement: "top" });
+                }
+            } finally {
+                saveAllZipBtn.disabled = false;
+                saveAllZipBtn.textContent = originalText;
+            }
+        };
+    }
+
+    const selectAllCheckbox = document.getElementById('select-all-downloads');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllCheckbox.checked;
+            const checkboxes = document.querySelectorAll('.card-select-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    const deleteSelectedBtn = document.getElementById('delete-selected-downloads');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.onclick = async () => {
+            const checkedBoxes = Array.from(document.querySelectorAll('.card-select-checkbox')).filter(cb => cb.checked);
+            if (checkedBoxes.length === 0) return;
+
+            deleteSelectedBtn.disabled = true;
+            for (const cb of checkedBoxes) {
+                const id = cb.dataset.id;
+                const card = document.getElementById(`card-${id}`);
+                const job = activeJobs.get(id);
+                const url = job ? job.url : "";
+
+                if (card) card.remove();
+                activeJobs.delete(id);
+                await deleteDownloadCacheAndStorage(id, url);
+            }
+
+            const list = document.getElementById('downloads-list');
+            const emptyState = document.getElementById('empty-state');
+            if (list && list.children.length === 0 && emptyState) {
+                emptyState.style.display = 'flex';
+            }
+
+            deleteSelectedBtn.disabled = false;
+            updateSaveAllZipVisibility();
+            updateSelectedCount();
+        };
+    }
+
+    const closeAllBtn = document.getElementById('close-all-downloads');
+    if (closeAllBtn) {
+        closeAllBtn.onclick = async () => {
+            const confirmClose = confirm("Are you sure you want to close and clear all downloads?");
+            if (!confirmClose) return;
+
+            closeAllBtn.disabled = true;
+            const stored = await getStoredDownloads();
+            
+            for (const item of stored) {
+                const card = document.getElementById(`card-${item.id}`);
+                if (card) card.remove();
+                activeJobs.delete(item.id);
+                await deleteDownloadCacheAndStorage(item.id, item.url);
+            }
+
+            const list = document.getElementById('downloads-list');
+            const emptyState = document.getElementById('empty-state');
+            if (list && emptyState) {
+                list.innerHTML = "";
+                emptyState.style.display = 'flex';
+            }
+
+            closeAllBtn.disabled = false;
+            updateSaveAllZipVisibility();
+            updateSelectedCount();
+        };
+    }
+    
+    const heartbeatInterval = setInterval(() => {
+        browser.runtime.sendMessage({ action: 'heartbeat' }).catch(() => {});
+    }, 15000);
+
+    window.addEventListener('beforeunload', () => {
+        clearInterval(heartbeatInterval);
+    });
 });
+
+async function updateSaveAllZipVisibility() {
+    const saveAllZipBtn = document.getElementById('save-all-zip');
+    const listHeader = document.getElementById('list-header');
+    if (!saveAllZipBtn || !listHeader) return;
+    const stored = await getStoredDownloads();
+    if (stored.length > 0) {
+        listHeader.style.display = 'flex';
+        saveAllZipBtn.style.display = 'inline-flex';
+    } else {
+        listHeader.style.display = 'none';
+        saveAllZipBtn.style.display = 'none';
+    }
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.card-select-checkbox');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    
+    const countSpan = document.getElementById('selected-downloads-count');
+    if (countSpan) {
+        countSpan.textContent = browser.i18n.getMessage("selectedCount", [checkedCount.toString()]) || `${checkedCount} selected`;
+    }
+
+    const deleteBtn = document.getElementById('delete-selected-downloads');
+    if (deleteBtn) {
+        deleteBtn.style.display = checkedCount > 0 ? 'inline-flex' : 'none';
+    }
+
+    const selectAllCheckbox = document.getElementById('select-all-downloads');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.style.display = 'inline-block';
+        if (checkboxes.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === checkboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount > 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    }
+
+    const closeAllBtn = document.getElementById('close-all-downloads');
+    if (closeAllBtn) {
+        closeAllBtn.style.display = checkedCount > 0 ? 'none' : 'inline-flex';
+    }
+
+    const saveAllZipBtn = document.getElementById('save-all-zip');
+    if (saveAllZipBtn) {
+        saveAllZipBtn.textContent = checkedCount > 0 
+            ? (browser.i18n.getMessage("saveSelectedZip") || "Save Selected as ZIP") 
+            : (browser.i18n.getMessage("saveAllZip") || "Save All as ZIP");
+    }
+}

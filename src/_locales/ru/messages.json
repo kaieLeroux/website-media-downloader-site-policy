@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "Сохранить $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "Сохранить",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Медиафайл",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "Расширенное обнаружение видео и аудио форматов YouTube."
+  },
+  "sortSizeDesc": {
+    "message": "Размер (Сначала большие)"
+  },
+  "sortSizeAsc": {
+    "message": "Размер (Сначала маленькие)"
+  },
+  "downloadNormal": {
+    "message": "Скачивание (Обычное)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Скачивание (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Загрузка (Обычная)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Загрузка (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Диспетчер загрузок"
+  },
+  "deleteSelected": {
+    "message": "Удалить выбранное"
+  },
+  "closeAll": {
+    "message": "Закрыть все"
+  },
+  "saveAllZip": {
+    "message": "Сохранить все как ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "Сохранить выбранные как ZIP"
+  },
+  "allCaughtUp": {
+    "message": "Всё готово!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "На данный момент нет активных загрузок или задач. Начните скачивать медиафайлы, чтобы они появились здесь."
+  },
+  "closePreview": {
+    "message": "Закрыть предварительный просмотр"
+  },
+  "downloadAssemblingParts": {
+    "message": "Сборка $1 частей..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Восстановление сегмента $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Токен Dropbox не найден. Пожалуйста, войдите в настройки."
+  },
+  "dropboxSessionExpired": {
+    "message": "Срок действия сеанса Dropbox истек. Пожалуйста, войдите снова в настройки."
+  },
+  "uploadFailedDropbox": {
+    "message": "Не удалось загрузить в Dropbox"
+  },
+  "uploadSuccessDropbox": {
+    "message": "Успешно сохранено $1 в Dropbox!"
   }
 }

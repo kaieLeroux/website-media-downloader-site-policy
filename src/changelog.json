@@ -1,101 +1,92 @@
 {
   "en": {
-    "headline": "What's New (v2.0.5)",
+    "headline": "What's New (v2.0.8)",
     "changes": [
-      "Resolved startup storage leak and improved media cache detection coverage.",
-      "Automatically remove successfully downloaded media from the home list.",
-      "Prevent clearing active downloads, open tabs, and queued downloads when clearing the cache list.",
-      "Added bottom padding to history and settings tab panels to prevent content from being covered by the bottom bar.",
-      "Implemented dynamic caching thresholds and service worker heartbeat keep-alive.",
-      "Respected disabled media and YouTube detection settings to prevent unsolicited notifications."
+      "Redesigned the download manager with single page concurrent downloads, preview player, multi-select, and zip packaging.",
+      "Added full localization support for the new download manager and cloud upload features.",
+      "Improved speed test with circular speedometer, reduced duration, and speed boost comparison.",
+      "Added support for sorting media by largest and smallest size.",
+      "Prioritized native Firefox update check before GitHub fallback."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.0.5)",
+    "headline": "Yang Baru (v2.0.8)",
     "changes": [
-      "Memperbaiki kebocoran memori saat startup dan meningkatkan cakupan deteksi cache media.",
-      "Menghapus media yang berhasil diunduh secara otomatis dari daftar utama.",
-      "Mencegah pembersihan unduhan aktif, tab terbuka, dan antrean unduhan saat menghapus daftar cache.",
-      "Menambahkan padding bawah pada panel tab riwayat dan pengaturan agar tidak tertutup oleh bilah bawah.",
-      "Mengimplementasikan ambang batas caching dinamis dan detak jantung service worker (keep-alive).",
-      "Mematuhi konfigurasi penonaktifan deteksi media dan YouTube untuk mencegah notifikasi yang tidak diinginkan."
+      "Mendesain ulang pengelola unduhan dengan unduhan bersamaan dalam satu halaman, pemutar pratinjau, multi-pilih, dan pengemasan ZIP.",
+      "Menambahkan dukungan lokalisasi penuh untuk pengelola unduhan baru dan fitur unggah cloud.",
+      "Meningkatkan tes kecepatan dengan speedometer melingkar, durasi yang lebih singkat, dan perbandingan peningkat kecepatan.",
+      "Menambahkan dukungan untuk mengurutkan media berdasarkan ukuran terbesar dan terkecil.",
+      "Memprioritaskan pemeriksaan pembaruan Firefox bawaan sebelum beralih ke GitHub."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.0.5)",
+    "headline": "新機能 (v2.0.8)",
     "changes": [
-      "起動時のストレージリーкを解決し、メディアキャッシュの検出範囲を向上させました。",
-      "正常にダウンロードされたメディアをホームリストから自動的に削除するようにしました。",
-      "リストクリア時に、アクティブなダウンロード、開いているタブ、およびキュー内のダウンロードがクリアされるのを防ぎます。",
-      "履歴と設定のタブパネルに下部パディングを追加し、コンテンツがボトムバーと重なるのを防ぎました。",
-      "動的キャッシュしきい値とサービスワーカーのハートビートキープアライブを実装しました。",
-      "不要な通知を防ぐため、無効化されたメディアおよびYouTubeの検出設定を尊重するようにしました。"
+      "シングルページでの同時ダウンロード、プレビュープレーヤー、複数選択、ZIPパッケージングを備えたダウンロードマネージャーを再設計しました。",
+      "新しいダウンロードマネージャーとクラウドアップロード機能に完全なローカリゼーションサポートを追加しました。",
+      "円形のスピードメーター、短縮された測定時間、および速度向上の比較により、スピードテストを改善しました。",
+      "メディアを最大サイズおよび最小サイズで並べ替えるサポートを追加しました。",
+      "GitHubフォールバックの前にネイティブFirefox更新チェックを優先するようにしました。"
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.0.5)",
+    "headline": "Was gibt's Neues (v2.0.8)",
     "changes": [
-      "Speicherleck beim Start behoben und die Abdeckung der Medien-Cache-Erkennung verbessert.",
-      "Erfolgreich heruntergeladene Medien automatisch aus der Startliste entfernen.",
-      "Verhindert das Löschen aktiver Downloads, geöffneter Tabs und wartender Downloads beim Leeren der Cache-Liste.",
-      "Abstand nach unten zu den Verlaufs- und Einstellungs-Tabs hinzugefügt, um ein Verdecken durch die untere Leiste zu verhindern.",
-      "Dynamische Caching-Schwellenwerte und Service Worker Heartbeat Keep-Alive implementiert.",
-      "Deaktivierte Medien- und YouTube-Erkennungseinstellungen berücksichtigt, um unerwünschte Benachrichtigungen zu verhindern."
+      "Download-Manager neu gestaltet mit gleichzeitigen Downloads auf einer Seite, Vorschau-Player, Mehrfachauswahl und ZIP-Verpackung.",
+      "Vollständige Lokalisierungsunterstützung für den neuen Download-Manager und Cloud-Upload-Funktionen hinzugefügt.",
+      "Geschwindigkeitstest mit kreisförmigem Tacho, verkürzter Dauer und Geschwindigkeitssteigerungsvergleich verbessert.",
+      "Unterstützung für die Sortierung von Medien nach größter und kleinster Größe hinzugefügt.",
+      "Die native Firefox-Update-Prüfung vor dem GitHub-Fallback priorisiert."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.0.5)",
+    "headline": "Nouveautés (v2.0.8)",
     "changes": [
-      "Résolution de la fuite de stockage au démarrage et amélioration de la couverture de détection du cache multimédia.",
-      "Suppression automatique des médias téléchargés avec succès de la liste d'accueil.",
-      "Empêche la suppression des téléchargements actifs, des onglets ouverts et des téléchargements en file d'attente lors de l'effacement de la liste.",
-      "Ajout d'une marge interne inférieure aux panneaux d'historique et de paramètres pour éviter que le contenu ne soit masqué par la barre inférieure.",
-      "Implémentation de seuils de mise en cache dynamiques et d'un signal d'activation (heartbeat) du service worker.",
-      "Respect des paramètres de détection désactivés pour les médias et YouTube afin d'éviter les notifications non sollicitées."
+      "Refonte du gestionnaire de téléchargement avec des téléchargements simultanés sur une seule page, un lecteur d'aperçu, une sélection multiple et un emballage ZIP.",
+      "Ajout d'une prise en charge complète de la localisation pour le nouveau gestionnaire de téléchargement et les fonctionnalités de téléchargement vers le cloud.",
+      "Amélioration du test de vitesse avec un compteur circulaire, une durée réduite et une comparaison d'augmentation de vitesse.",
+      "Ajout de la prise en charge du tri des médias de la plus grande à la plus petite taille.",
+      "Priorisation de la vérification native des mises à jour de Firefox avant le recours à GitHub."
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.0.5)",
+    "headline": "새로운 기능 (v2.0.8)",
     "changes": [
-      "시작 시 스토리지 누수를 해결하고 미디어 캐시 감지 범위를 향상했습니다.",
-      "성공적으로 다운로드된 미디어를 홈 목록에서 자동으로 제거합니다.",
-      "목록을 비울 때 활성 다운로드, 열린 탭 및 대기 중인 다운로드가 지워지는 것을 방지합니다.",
-      "콘텐츠가 하단 바에 가려지지 않도록 기록 및 설정 탭 패널에 하단 패딩을 추가했습니다.",
-      "동적 캐싱 임계값 및 서비스 워커 하트비트 연결 유지(keep-alive)를 구현했습니다.",
-      "원치 않는 알림을 방지하기 위해 비활성화된 미디어 및 YouTube 감지 설정을 존중하도록 수정했습니다."
+      "단일 페이지 동시 다운로드, 미리보기 플레이어, 다중 선택 및 ZIP 패키징을 갖춘 다운로드 관리자를 재설계했습니다.",
+      "새로운 다운로드 관리자 및 클라우드 업로드 기능에 대한 완벽한 현지화 지원을 추가했습니다.",
+      "원형 속도계, 단축된 측정 시간 및 속도 향상 비교로 속도 테스트를 개선했습니다.",
+      "가장 큰 크기와 가장 작은 크기로 미디어를 정렬하는 지원을 추가했습니다.",
+      "GitHub 대체(fallback) 전 기본 Firefox 업데이트 확인을 우선하도록 수정했습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.0.5)",
+    "headline": "Novidades (v2.0.8)",
     "changes": [
-      "Resolvido vazamento de armazenamento na inicialização e melhorada a cobertura de detecção de cache de mídia.",
-      "Remoção automática de mídia baixada com sucesso da lista inicial.",
-      "Evita a limpeza de downloads ativos, guias abertas e downloads na fila ao limpar a lista de cache.",
-      "Adicionado espaçamento inferior nos painéis de histórico e configurações para evitar que o conteúdo seja coberto pela barra inferior.",
-      "Implementados limites de cache dinâmicos e manutenção de atividade (heartbeat) do service worker.",
-      "Respeito às configurações de detecção desativadas de mídia e YouTube para evitar notificações indesejadas."
+      "O gerenciador de downloads foi reformulado com downloads simultâneos em página única, reprodutor de visualização, seleção múltipla e empacotamento ZIP.",
+      "Adicionado suporte completo de localização para o novo gerenciador de downloads e recursos de upload em nuvem.",
+      "Melhoria no teste de velocidade com velocímetro circular, duração reduzida e comparação de aumento de velocidade.",
+      "Adicionado suporte para classificar mídia por tamanho maior e menor.",
+      "Priorizada a verificação de atualização nativa do Firefox antes de recorrer ao GitHub."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.0.5)",
+    "headline": "Что нового (v2.0.8)",
     "changes": [
-      "Устранена утечка памяти при запуске и улучшено покрытие обнаружения кэша мультимедиа.",
-      "Автоматическое удаление успешно загруженных файлов из главного списка.",
-      "Предотвращение очистки активных загрузок, открытых вкладок и очереди загрузок при очистке списка кэша.",
-      "Добавлен нижний отступ для вкладок истории и настроек, чтобы содержимое не перекрывалось нижней панелью.",
-      "Внедрены динамические пороги кэширования и поддержание активности (heartbeat) сервис-воркера.",
-      "Учтены настройки отключения обнаружения медиа и YouTube для предотвращения нежелательных уведомлений."
+      "Переработан менеджер загрузок: добавлена одновременная загрузка на одной странице, проигрыватель для предварительного просмотра, множественный выбор и создание ZIP-архивов.",
+      "Добавлена полная поддержка локализации для нового менеджера загрузок и функций облачной загрузки.",
+      "Улучшен тест скорости: добавлен круглый спидометр, сокращено время проверки и добавлено сравнение ускорения.",
+      "Добавлена поддержка сортировки мультимедиа по наибольшему и наименьшему размеру.",
+      "Приоритет отдается встроенной проверке обновлений Firefox перед резервной проверкой через GitHub."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.0.5)",
+    "headline": "ما الجديد (v2.0.8)",
     "changes": [
-      "تم إصلاح تسرب الذاكرة عند البدء وتحسين تغطية اكتشاف ذاكرة التخزين المؤقت للوسائط.",
-      "إزالة الوسائط التي تم تنزيلها بنجاح تلقائيًا من القائمة الرئيسية.",
-      "منع مسح التنزيلات النشطة وعلامات التبويب المفتوحة والتنزيلات في قائمة الانتظار عند مسح قائمة التخزين المؤقت.",
-      "إضافة هامش سفلي للوحات سجل التصفح والإعدادات لمنع تغطية المحتوى بشريط التنقل السفلي.",
-      "تطبيق حدود التخزين المؤقت الديناميكية والحفاظ على نشاط الخدمة (heartbeat keep-alive).",
-      "احترام إعدادات إيقاف تشغيل اكتشاف الوسائط ويوتيوب لمنع الإشعارات غير المرغوب فيها."
+      "تم إعادة تصميم مدير التنزيل ليدعم التنزيلات المتزامنة في صفحة واحدة، مشغل معاينة، تحديد متعدد، وتعبئة ZIP.",
+      "تم إضافة دعم كامل للغات لمدير التنزيل الجديد وميزات التحميل السحابي.",
+      "تم تحسين اختبار السرعة باستخدام مقياس سرعة دائري، تقليل مدة الاختبار، ومقارنة تعزيز السرعة.",
+      "تمت إضافة دعم لفرز الوسائط حسب الحجم الأكبر والأصغر.",
+      "تم إعطاء الأولوية للتحقق من تحديث فايرفوكس الأصلي قبل الرجوع إلى GitHub."
     ]
   }
 }

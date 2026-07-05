@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.0.5-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -46,7 +46,7 @@ Designed with a focus on privacy and technical transparency, all operations—in
 
 ---
 
-## What's New in v2.0.5
+## What's New in v2.0.8
 
 - **Fixes**: Respect disabled media and YouTube detection settings to prevent unsolicited notifications.
 - **Performance**: Implement dynamic caching thresholds and service worker heartbeat keep-alive.
@@ -57,7 +57,7 @@ Designed with a focus on privacy and technical transparency, all operations—in
 
 ---
 
-## Technical Features (v2.0.5)
+## Technical Features (v2.0.8)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

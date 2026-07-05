@@ -1039,14 +1039,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "$FILENAME$ speichern",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "speichern",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Mediendatei",
@@ -1826,5 +1820,65 @@
   },
   "youtubeDetectionExplain": {
     "message": "Erweiterte Erkennung für YouTube-Videos und Audioformate."
+  },
+  "sortSizeDesc": {
+    "message": "Größe (Größte zuerst)"
+  },
+  "sortSizeAsc": {
+    "message": "Größe (Kleinste zuerst)"
+  },
+  "downloadNormal": {
+    "message": "Download (Normal)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Download (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Upload (Normal)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Upload (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Download-Manager"
+  },
+  "deleteSelected": {
+    "message": "Auswahl löschen"
+  },
+  "closeAll": {
+    "message": "Alle schließen"
+  },
+  "saveAllZip": {
+    "message": "Alle als ZIP speichern"
+  },
+  "saveSelectedZip": {
+    "message": "Ausgewählte als ZIP speichern"
+  },
+  "allCaughtUp": {
+    "message": "Alles erledigt!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "Derzeit keine aktiven Downloads oder Aufgaben. Starten Sie das Herunterladen von Medien, um sie hier anzuzeigen."
+  },
+  "closePreview": {
+    "message": "Vorschau schließen"
+  },
+  "downloadAssemblingParts": {
+    "message": "$1 Teile zusammenfügen..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Segment $1 rekonstruieren..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Dropbox-Token nicht gefunden. Bitte loggen Sie sich in den Einstellungen ein."
+  },
+  "dropboxSessionExpired": {
+    "message": "Dropbox-Sitzung abgelaufen. Bitte loggen Sie sich in den Einstellungen erneut ein."
+  },
+  "uploadFailedDropbox": {
+    "message": "Dropbox-Upload fehlgeschlagen"
+  },
+  "uploadSuccessDropbox": {
+    "message": "$1 erfolgreich in Dropbox gespeichert!"
   }
 }

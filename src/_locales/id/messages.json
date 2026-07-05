@@ -1059,14 +1059,8 @@
     }
   },
   "saveFileLabel": {
-    "message": "Simpan $FILENAME$",
-    "description": "Label for the save button with filename.",
-    "placeholders": {
-      "FILENAME": {
-        "content": "$1",
-        "example": "video.mp4"
-      }
-    }
+    "message": "Simpan",
+    "description": "Label for the save button with filename."
   },
   "defaultMediaName": {
     "message": "Berkas Media",
@@ -1750,6 +1744,12 @@
   "sortNumberAsc": {
     "message": "Angka (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "Ukuran (Terbesar dulu)"
+  },
+  "sortSizeAsc": {
+    "message": "Ukuran (Terkecil dulu)"
+  },
   "optimizeLowEndTitle": {
     "message": "Optimalkan di perangkat spesifikasi rendah",
     "description": "Setting title for optimizing on low-end devices"
@@ -1831,5 +1831,59 @@
   },
   "youtubeDetectionExplain": {
     "message": "Deteksi canggih untuk video dan format audio YouTube."
+  },
+  "downloadNormal": {
+    "message": "Download (Normal)"
+  },
+  "downloadSpeedBoost": {
+    "message": "Download (Speed Boost)"
+  },
+  "uploadNormal": {
+    "message": "Upload (Normal)"
+  },
+  "uploadSpeedBoost": {
+    "message": "Upload (Speed Boost)"
+  },
+  "downloadManagerTitle": {
+    "message": "Pengelola Unduhan"
+  },
+  "deleteSelected": {
+    "message": "Hapus Terpilih"
+  },
+  "closeAll": {
+    "message": "Tutup Semua"
+  },
+  "saveAllZip": {
+    "message": "Simpan Semua sebagai ZIP"
+  },
+  "saveSelectedZip": {
+    "message": "Simpan Terpilih sebagai ZIP"
+  },
+  "allCaughtUp": {
+    "message": "Semua Selesai!"
+  },
+  "noActiveDownloadsDesc": {
+    "message": "Tidak ada unduhan atau tugas aktif saat ini. Mulai unduh media untuk melihatnya di sini."
+  },
+  "closePreview": {
+    "message": "Tutup Pratinjau"
+  },
+  "downloadAssemblingParts": {
+    "message": "Menggabungkan $1 bagian..."
+  },
+  "downloadReconstructingSegment": {
+    "message": "Merekonstruksi segmen $1..."
+  },
+  "dropboxLoginRequired": {
+    "message": "Token Dropbox tidak ditemukan. Harap login di pengaturan."
+  },
+  "dropboxSessionExpired": {
+    "message": "Sesi Dropbox kedaluwarsa. Harap login ulang di pengaturan."
+  },
+  "uploadFailedDropbox": {
+    "message": "Upload Dropbox Gagal"
+  },
+  "uploadSuccessDropbox": {
+    "message": "Berhasil menyimpan $1 ke Dropbox!"
   }
 }
