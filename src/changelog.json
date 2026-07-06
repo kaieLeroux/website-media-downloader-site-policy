@@ -1,92 +1,65 @@
 {
   "en": {
-    "headline": "What's New (v2.0.8)",
+    "headline": "What's New (v2.0.9)",
     "changes": [
-      "Redesigned the download manager with single page concurrent downloads, preview player, multi-select, and zip packaging.",
-      "Added full localization support for the new download manager and cloud upload features.",
-      "Improved speed test with circular speedometer, reduced duration, and speed boost comparison.",
-      "Added support for sorting media by largest and smallest size.",
-      "Prioritized native Firefox update check before GitHub fallback."
+      "Optimized update checking to check the Firefox AMO API, redirecting Firefox users to the official AMO store when the update is live, or falling back to GitHub Releases if the update is still pending approval.",
+      "Improved browser compatibility by skipping the AMO check for non-Firefox environments, directing them immediately to GitHub Releases."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.0.8)",
+    "headline": "Yang Baru (v2.0.9)",
     "changes": [
-      "Mendesain ulang pengelola unduhan dengan unduhan bersamaan dalam satu halaman, pemutar pratinjau, multi-pilih, dan pengemasan ZIP.",
-      "Menambahkan dukungan lokalisasi penuh untuk pengelola unduhan baru dan fitur unggah cloud.",
-      "Meningkatkan tes kecepatan dengan speedometer melingkar, durasi yang lebih singkat, dan perbandingan peningkat kecepatan.",
-      "Menambahkan dukungan untuk mengurutkan media berdasarkan ukuran terbesar dan terkecil.",
-      "Memprioritaskan pemeriksaan pembaruan Firefox bawaan sebelum beralih ke GitHub."
+      "Mengoptimalkan pengecekan pembaruan dengan memeriksa API Firefox AMO, mengarahkan pengguna Firefox ke store resmi AMO jika pembaruan sudah tersedia, atau beralih ke GitHub Releases jika masih menunggu persetujuan.",
+      "Meningkatkan kompatibilitas browser dengan melewatkan pemeriksaan AMO untuk lingkungan non-Firefox dan langsung mengarahkannya ke GitHub Releases."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.0.8)",
+    "headline": "新機能 (v2.0.9)",
     "changes": [
-      "シングルページでの同時ダウンロード、プレビュープレーヤー、複数選択、ZIPパッケージングを備えたダウンロードマネージャーを再設計しました。",
-      "新しいダウンロードマネージャーとクラウドアップロード機能に完全なローカリゼーションサポートを追加しました。",
-      "円形のスピードメーター、短縮された測定時間、および速度向上の比較により、スピードテストを改善しました。",
-      "メディアを最大サイズおよび最小サイズで並べ替えるサポートを追加しました。",
-      "GitHubフォールバックの前にネイティブFirefox更新チェックを優先するようにしました。"
+      "アップデート確認を最適化し、Firefox AMO APIをチェックするようにしました。アップデートが公開されている場合は公式のAMOストアにリダイレクトし、承認待ちの場合はGitHubリリースにフォールバックします。",
+      "Firefox以外の環境ではAMOチェックをスキップし、直接GitHubリリースへリダイレクトすることでブラウザ互換性を向上させました。"
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.0.8)",
+    "headline": "Was gibt's Neues (v2.0.9)",
     "changes": [
-      "Download-Manager neu gestaltet mit gleichzeitigen Downloads auf einer Seite, Vorschau-Player, Mehrfachauswahl und ZIP-Verpackung.",
-      "Vollständige Lokalisierungsunterstützung für den neuen Download-Manager und Cloud-Upload-Funktionen hinzugefügt.",
-      "Geschwindigkeitstest mit kreisförmigem Tacho, verkürzter Dauer und Geschwindigkeitssteigerungsvergleich verbessert.",
-      "Unterstützung für die Sortierung von Medien nach größter und kleinster Größe hinzugefügt.",
-      "Die native Firefox-Update-Prüfung vor dem GitHub-Fallback priorisiert."
+      "Die Update-Prüfung wurde optimiert, um die Firefox AMO-API zu überprüfen. Benutzer von Firefox werden zum offiziellen AMO-Store weitergeleitet, wenn das Update dort live ist, andernfalls wird auf GitHub-Releases ausgewichen.",
+      "Verbesserte Browserkompatibilität durch Überspringen der AMO-Prüfung für Nicht-Firefox-Umgebungen, wodurch diese direkt zu GitHub-Releases weitergeleitet werden."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.0.8)",
+    "headline": "Nouveautés (v2.0.9)",
     "changes": [
-      "Refonte du gestionnaire de téléchargement avec des téléchargements simultanés sur une seule page, un lecteur d'aperçu, une sélection multiple et un emballage ZIP.",
-      "Ajout d'une prise en charge complète de la localisation pour le nouveau gestionnaire de téléchargement et les fonctionnalités de téléchargement vers le cloud.",
-      "Amélioration du test de vitesse avec un compteur circulaire, une durée réduite et une comparaison d'augmentation de vitesse.",
-      "Ajout de la prise en charge du tri des médias de la plus grande à la plus petite taille.",
-      "Priorisation de la vérification native des mises à jour de Firefox avant le recours à GitHub."
+      "Optimisation de la vérification des mises à jour pour interroger l'API Firefox AMO, redirigeant les utilisateurs de Firefox vers la boutique AMO officielle lorsque la mise à jour est disponible, ou vers les versions GitHub si elle est en attente d'approbation.",
+      "Amélioration de la compatibilité du navigateur en ignorant la vérification AMO pour les environnements non-Firefox, les redirigeant immédiatement vers les versions GitHub."
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.0.8)",
+    "headline": "새로운 기능 (v2.0.9)",
     "changes": [
-      "단일 페이지 동시 다운로드, 미리보기 플레이어, 다중 선택 및 ZIP 패키징을 갖춘 다운로드 관리자를 재설계했습니다.",
-      "새로운 다운로드 관리자 및 클라우드 업로드 기능에 대한 완벽한 현지화 지원을 추가했습니다.",
-      "원형 속도계, 단축된 측정 시간 및 속도 향상 비교로 속도 테스트를 개선했습니다.",
-      "가장 큰 크기와 가장 작은 크기로 미디어를 정렬하는 지원을 추가했습니다.",
-      "GitHub 대체(fallback) 전 기본 Firefox 업데이트 확인을 우선하도록 수정했습니다."
+      "Firefox AMO API를 확인하도록 업데이트 검사를 최적화하여, 업데이트가 출시되면 공식 AMO 스토어로 리다이렉트하고 승인 대기 중인 경우 GitHub 릴리스로 대체하도록 했습니다.",
+      "Firefox가 아닌 환경에서는 AMO 검사를 건너뛰고 바로 GitHub 릴리스로 안내하여 브라우저 호환성을 향상시켰습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.0.8)",
+    "headline": "Novidades (v2.0.9)",
     "changes": [
-      "O gerenciador de downloads foi reformulado com downloads simultâneos em página única, reprodutor de visualização, seleção múltipla e empacotamento ZIP.",
-      "Adicionado suporte completo de localização para o novo gerenciador de downloads e recursos de upload em nuvem.",
-      "Melhoria no teste de velocidade com velocímetro circular, duração reduzida e comparação de aumento de velocidade.",
-      "Adicionado suporte para classificar mídia por tamanho maior e menor.",
-      "Priorizada a verificação de atualização nativa do Firefox antes de recorrer ao GitHub."
+      "Otimizada a verificação de atualizações para consultar a API do Firefox AMO, redirecionando usuários do Firefox para a loja oficial do AMO quando a atualização estiver disponível, ou recorrendo ao GitHub Releases se ainda estiver pendente de aprovação.",
+      "Melhoria na compatibilidade de navegador ao pular a verificação do AMO para ambientes não-Firefox, direcionando-os imediatamente ao GitHub Releases."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.0.8)",
+    "headline": "Что нового (v2.0.9)",
     "changes": [
-      "Переработан менеджер загрузок: добавлена одновременная загрузка на одной странице, проигрыватель для предварительного просмотра, множественный выбор и создание ZIP-архивов.",
-      "Добавлена полная поддержка локализации для нового менеджера загрузок и функций облачной загрузки.",
-      "Улучшен тест скорости: добавлен круглый спидометр, сокращено время проверки и добавлено сравнение ускорения.",
-      "Добавлена поддержка сортировки мультимедиа по наибольшему и наименьшему размеру.",
-      "Приоритет отдается встроенной проверке обновлений Firefox перед резервной проверкой через GitHub."
+      "Оптимизирована проверка обновлений через API Firefox AMO: теперь пользователи Firefox перенаправляются в официальный магазин AMO, если обновление там уже доступно, или на релизы GitHub, если оно еще ожидает одобрения.",
+      "Улучшена совместимость с браузерами: для сред, отличных от Firefox, проверка AMO пропускается, и пользователи сразу перенаправляются на релизы GitHub."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.0.8)",
+    "headline": "ما الجديد (v2.0.9)",
     "changes": [
-      "تم إعادة تصميم مدير التنزيل ليدعم التنزيلات المتزامنة في صفحة واحدة، مشغل معاينة، تحديد متعدد، وتعبئة ZIP.",
-      "تم إضافة دعم كامل للغات لمدير التنزيل الجديد وميزات التحميل السحابي.",
-      "تم تحسين اختبار السرعة باستخدام مقياس سرعة دائري، تقليل مدة الاختبار، ومقارنة تعزيز السرعة.",
-      "تمت إضافة دعم لفرز الوسائط حسب الحجم الأكبر والأصغر.",
-      "تم إعطاء الأولوية للتحقق من تحديث فايرفوكس الأصلي قبل الرجوع إلى GitHub."
+      "تم تحسين التحقق من التحديثات لفحص واجهة برمجة تطبيقات Firefox AMO، وتوجيه مستخدمي Firefox إلى متجر AMO الرسمي عندما يكون التحديث متاحًا، أو الرجوع إلى إصدارات GitHub إذا كان لا يزال قيد المراجعة.",
+      "تم تحسين التوافق مع المتصفحات الأخرى من خلال تخطي فحص AMO في بيئات غير فايرفوكس وتوجيههم مباشرة إلى إصدارات GitHub."
     ]
   }
 }

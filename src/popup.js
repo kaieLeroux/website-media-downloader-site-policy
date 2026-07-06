@@ -70,8 +70,6 @@ window.activePauses = new Set();
 window.activeAbortControllers = new Map(); // url -> AbortController
 
 async function checkForUpdates() {
-  const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
-  const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
   
   let nativeUpdateFound = false;
@@ -84,24 +82,18 @@ async function checkForUpdates() {
         nativeUpdateFound = true;
       }
     } catch (err) {
-      console.warn('Native update check failed, trying GitHub fallback:', err);
+      console.warn('Native update check failed, trying custom fallback:', err);
     }
   }
 
   if (!nativeUpdateFound) {
     try {
-      const response = await fetch(MANIFEST_URL + '?t=' + Date.now());
-      if (!response.ok) throw new Error('Failed to fetch manifest from GitHub');
-      
-      const data = await response.json();
-      const latestVersion = data.version;
-      const currentVersion = browser.runtime.getManifest().version;
-
-      if (compareVersions(latestVersion, currentVersion) > 0) {
-        showUpdateNotification(RELEASES_URL, latestVersion);
+      const result = await performUpdateCheck();
+      if (result.updateAvailable) {
+        showUpdateNotification(result.updateUrl, result.latestVersion);
       }
     } catch (error) {
-      console.error('GitHub update check failed:', error);
+      console.error('Update check failed:', error);
     }
   }
 }
@@ -116,6 +108,73 @@ function compareVersions(v1, v2) {
     if (p1 < p2) return -1;
   }
   return 0;
+}
+
+async function performUpdateCheck() {
+  const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
+  const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
+  const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
+  const AMO_API_URL = 'https://addons.mozilla.org/api/v5/addons/addon/website-media-downloader/';
+  
+  const currentVersion = browser.runtime.getManifest().version;
+  const isFirefox = navigator.userAgent.includes('Firefox') || (typeof browser !== 'undefined' && browser.runtime.getURL && browser.runtime.getURL('').startsWith('moz-extension://'));
+
+  if (isFirefox) {
+    let githubVersion = null;
+    let amoVersion = null;
+
+    try {
+      const [githubRes, amoRes] = await Promise.all([
+        fetch(MANIFEST_URL + '?t=' + Date.now()).then(r => r.ok ? r.json() : null),
+        fetch(AMO_API_URL + '?t=' + Date.now()).then(r => r.ok ? r.json() : null)
+      ]);
+
+      if (githubRes) githubVersion = githubRes.version;
+      if (amoRes && amoRes.current_version) amoVersion = amoRes.current_version.version;
+    } catch (e) {
+      console.warn("Parallel fetch failed, trying fallbacks:", e);
+    }
+
+    if (!githubVersion) {
+      try {
+        const res = await fetch(MANIFEST_URL + '?t=' + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          githubVersion = data.version;
+        }
+      } catch (e) {
+        console.error("Fallback GitHub fetch failed:", e);
+      }
+    }
+
+    if (!githubVersion) {
+      throw new Error("Failed to check for updates");
+    }
+
+    if (compareVersions(githubVersion, currentVersion) > 0) {
+      if (amoVersion && compareVersions(amoVersion, githubVersion) === 0) {
+        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL };
+      } else {
+        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+      }
+    }
+  } else {
+    try {
+      const response = await fetch(MANIFEST_URL + '?t=' + Date.now());
+      if (response.ok) {
+        const data = await response.json();
+        const githubVersion = data.version;
+        if (compareVersions(githubVersion, currentVersion) > 0) {
+          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+        }
+      }
+    } catch (e) {
+      console.error("GitHub fetch failed:", e);
+      throw e;
+    }
+  }
+
+  return { updateAvailable: false, latestVersion: currentVersion, updateUrl: '' };
 }
 
 function showTopBarUpdateNotification(url, latestVersion) {
@@ -2277,17 +2336,10 @@ async function loadAboutPage() {
           return;
         }
 
-        const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
         try {
-          const response = await fetch(MANIFEST_URL + '?t=' + Date.now());
-          if (!response.ok) throw new Error('Failed to fetch');
-
-          const data = await response.json();
-          const latestVersion = data.version;
-          const currentVersion = browser.runtime.getManifest().version;
-
-          if (compareVersions(latestVersion, currentVersion) > 0) {
-            showUpdateDialog('https://github.com/anpa26/website-media-downloader/releases', latestVersion);
+          const result = await performUpdateCheck();
+          if (result.updateAvailable) {
+            showUpdateDialog(result.updateUrl, result.latestVersion);
           } else {
             if (statusText) {
               statusText.textContent = browser.i18n.getMessage("alreadyLatestVersion") || "You are using the latest version.";
