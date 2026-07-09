@@ -316,6 +316,50 @@
     "message": "Afficher une notification lorsqu'un média est détecté sur un site web.",
     "description": "The explanation of the media detection notification setting."
   },
+  "stackNotificationsCheckbox": {
+    "message": "Empiler les notifications",
+    "description": "The label of the checkbox to enable stacking media detection notifications."
+  },
+  "stackNotificationsExplain": {
+    "message": "Afficher plusieurs notifications simultanément à l'écran au lieu d'effacer les précédentes.",
+    "description": "The explanation of the stack notifications setting."
+  },
+  "ytModalTitle": {
+    "message": "Choisir la qualité de téléchargement",
+    "description": "Title of YouTube quality modal"
+  },
+  "ytModalTabVideo": {
+    "message": "Vidéo + Audio",
+    "description": "Video + Audio tab label"
+  },
+  "ytModalTabAudio": {
+    "message": "Audio uniquement",
+    "description": "Audio only tab label"
+  },
+  "ytModalFormatLabel": {
+    "message": "Format / Type",
+    "description": "Format label"
+  },
+  "ytModalCodecLabel": {
+    "message": "Codec",
+    "description": "Codec label"
+  },
+  "ytModalQualityLabel": {
+    "message": "Qualité / Résolution",
+    "description": "Quality label"
+  },
+  "ytModalAudioExplain": {
+    "message": "L'audio sera directement extrait et enregistré dans un format audio de haute qualité (.m4a/.webm).",
+    "description": "Audio extraction explanation"
+  },
+  "ytModalCancelBtn": {
+    "message": "Annuler",
+    "description": "Cancel button label"
+  },
+  "ytModalDownloadBtn": {
+    "message": "Télécharger",
+    "description": "Download button label"
+  },
   "hidePageComponentsTitle": {
     "message": "Masquer les composants de la page",
     "description": "Title for the setting to hide html, css, js, and txt files."

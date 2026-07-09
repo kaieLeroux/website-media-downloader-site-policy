@@ -316,6 +316,50 @@
     "message": "웹사이트에서 미디어가 감지되면 알림을 표시합니다.",
     "description": "The explanation of the media detection notification setting."
   },
+  "stackNotificationsCheckbox": {
+    "message": "알림 쌓기",
+    "description": "The label of the checkbox to enable stacking media detection notifications."
+  },
+  "stackNotificationsExplain": {
+    "message": "이전 알림을 지우는 대신 여러 알림을 화면에 동시에 표시합니다.",
+    "description": "The explanation of the stack notifications setting."
+  },
+  "ytModalTitle": {
+    "message": "다운로드 화질 선택",
+    "description": "Title of YouTube quality modal"
+  },
+  "ytModalTabVideo": {
+    "message": "동영상 + 오디오",
+    "description": "Video + Audio tab label"
+  },
+  "ytModalTabAudio": {
+    "message": "오디오만",
+    "description": "Audio only tab label"
+  },
+  "ytModalFormatLabel": {
+    "message": "형식 / 유형",
+    "description": "Format label"
+  },
+  "ytModalCodecLabel": {
+    "message": "코덱",
+    "description": "Codec label"
+  },
+  "ytModalQualityLabel": {
+    "message": "화질 / 해상도",
+    "description": "Quality label"
+  },
+  "ytModalAudioExplain": {
+    "message": "오디오가 직접 추출되어 고품질 오디오 형식(.m4a/.webm)으로 저장됩니다.",
+    "description": "Audio extraction explanation"
+  },
+  "ytModalCancelBtn": {
+    "message": "취소",
+    "description": "Cancel button label"
+  },
+  "ytModalDownloadBtn": {
+    "message": "다운로드",
+    "description": "Download button label"
+  },
   "hidePageComponentsTitle": {
     "message": "페이지 구성 요소 숨기기",
     "description": "Title for the setting to hide html, css, js, and txt files."

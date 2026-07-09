@@ -22,6 +22,51 @@ if (typeof browser === 'undefined') {
 
 const tabMetadata = new Map(); // tabId -> { title, url }
 
+const m3u8VariantsCacheBg = new Map();
+
+async function getM3U8VariantsBg(url) {
+    if (m3u8VariantsCacheBg.has(url)) {
+        return m3u8VariantsCacheBg.get(url);
+    }
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const text = await response.text();
+        if (!text.includes("#EXT-X-STREAM-INF")) {
+            m3u8VariantsCacheBg.set(url, []);
+            return [];
+        }
+
+        const lines = text.split("\n");
+        const baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
+        const variants = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
+                const bwMatch = lines[i].match(/BANDWIDTH=(\d+)/);
+                const resMatch = lines[i].match(/RESOLUTION=(\d+x\d+)/);
+                const bandwidth = bwMatch ? parseInt(bwMatch[1]) : 0;
+                const resolution = resMatch ? resMatch[1] : "unknown";
+                let uri = lines[i + 1];
+                if (uri) {
+                    uri = uri.trim();
+                    variants.push({
+                        bandwidth,
+                        resolution,
+                        uri: uri.startsWith("http") ? uri : baseUrl + uri
+                    });
+                }
+            }
+        }
+        m3u8VariantsCacheBg.set(url, variants);
+        return variants;
+    } catch (e) {
+        console.warn("Failed to parse variants for", url, e);
+        m3u8VariantsCacheBg.set(url, []);
+        return [];
+    }
+}
+
 if (typeof downloadZip === 'undefined') {
     try {
         importScripts('libraries/client-zip.js');
@@ -314,7 +359,8 @@ async function savePersistentHeaders() {
     }
 }
 
-function isFlagEnabled(val) {
+function isFlagEnabled(val, defaultVal = false) {
+    if (val === undefined) return defaultVal;
     return val === '1' || val === 1 || val === true || val === 'true';
 }
 
@@ -414,23 +460,24 @@ browser.webRequest.onBeforeSendHeaders.addListener(
 
 function getSettings(callback) {
     browser.storage.local.get([
-        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'hide-segments', 'hide-page-components',
+        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
         'filename-template', 'theme-color'
     ], function (result) {
         callback({
-            mimeDetection: isFlagEnabled(result['mime-detection']),
-            urlDetection: isFlagEnabled(result['url-detection']),
-            youtubeDetection: isFlagEnabled(result['youtube-detection']),
-            mediaNotification: isFlagEnabled(result['media-notification']),
-            hideSegments: isFlagEnabled(result['hide-segments']),
-            hidePageComponents: isFlagEnabled(result['hide-page-components']),
-            onlyVideo: isFlagEnabled(result['only-video']),
-            onlyAudio: isFlagEnabled(result['only-audio']),
-            onlyStream: isFlagEnabled(result['only-stream']),
-            onlyImage: isFlagEnabled(result['only-image']),
-            onlySubtitle: isFlagEnabled(result['only-subtitle']),
-            filenameTemplate: result['filename-template'] || '',
+            mimeDetection: isFlagEnabled(result['mime-detection'], true),
+            urlDetection: isFlagEnabled(result['url-detection'], true),
+            youtubeDetection: isFlagEnabled(result['youtube-detection'], true),
+            mediaNotification: isFlagEnabled(result['media-notification'], true),
+            stackNotifications: isFlagEnabled(result['stack-notifications'], false),
+            hideSegments: isFlagEnabled(result['hide-segments'], false),
+            hidePageComponents: isFlagEnabled(result['hide-page-components'], true),
+            onlyVideo: isFlagEnabled(result['only-video'], true),
+            onlyAudio: isFlagEnabled(result['only-audio'], true),
+            onlyStream: isFlagEnabled(result['only-stream'], true),
+            onlyImage: isFlagEnabled(result['only-image'], false),
+            onlySubtitle: isFlagEnabled(result['only-subtitle'], false),
+            filenameTemplate: (result['filename-template'] && result['filename-template'] !== '0') ? result['filename-template'] : '',
             themeColor: result['theme-color'] || '#8ab4f8'
         });
     });
@@ -456,17 +503,39 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
     }
 });
 
-function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false) {
+function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false) {
     if (!browser.scripting) return;
+
+    const modalTranslations = {
+        ytModalTitle: browser.i18n.getMessage("ytModalTitle") || "Pilih Kualitas Unduhan",
+        ytModalTabVideo: browser.i18n.getMessage("ytModalTabVideo") || "Video + Audio",
+        ytModalTabAudio: browser.i18n.getMessage("ytModalTabAudio") || "Audio Saja",
+        ytModalFormatLabel: browser.i18n.getMessage("ytModalFormatLabel") || "Format / Tipe",
+        ytModalCodecLabel: browser.i18n.getMessage("ytModalCodecLabel") || "Codec",
+        ytModalQualityLabel: browser.i18n.getMessage("ytModalQualityLabel") || "Kualitas / Resolusi",
+        ytModalAudioExplain: browser.i18n.getMessage("ytModalAudioExplain") || "Audio akan langsung diekstrak dan disimpan dalam format audio kualitas tinggi (.m4a/.webm).",
+        ytModalCancelBtn: browser.i18n.getMessage("ytModalCancelBtn") || "Batal",
+        ytModalDownloadBtn: browser.i18n.getMessage("ytModalDownloadBtn") || "Unduh"
+    };
 
     browser.scripting.executeScript({
         target: { tabId: tabId },
-        func: (name, downloadUrl, dlLabel, type, titleLabel, primaryColor, drm) => {
-            const existingToasts = document.querySelectorAll('.mdu-toast');
-            existingToasts.forEach(t => {
-                const currentBottom = parseInt(t.style.bottom || '24');
-                t.style.bottom = (currentBottom + 90) + 'px';
-            });
+        func: (name, downloadUrl, dlLabel, type, titleLabel, primaryColor, drm, formats, stack, t) => {
+             if (!stack) {
+                 const existingToasts = document.querySelectorAll('.mdu-toast');
+                 existingToasts.forEach(t => {
+                     t.remove();
+                 });
+                 const existingModal = document.querySelector('.mdu-yt-modal-backdrop');
+                 if (existingModal) existingModal.remove();
+             } else {
+                 const existingToasts = document.querySelectorAll('.mdu-toast');
+                 existingToasts.forEach(t => {
+                     const currentBottom = parseInt(t.style.bottom || '24');
+                     t.style.bottom = (currentBottom + 90) + 'px';
+                 });
+             }
+
 
             const toast = document.createElement('div');
             toast.className = 'mdu-toast';
@@ -496,13 +565,14 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
 
             toast.style.cssText = `
                 position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-                background: rgba(25, 25, 25, 0.45); color: white; border-radius: 24px;
+                background: rgba(25, 25, 25, 0.45); color: white; border-radius: 9999px;
                 z-index: 2147483647; width: ${drm ? '420px' : 'auto'}; min-width: 320px; max-width: 480px;
                 box-shadow: 0 12px 40px rgba(0,0,0,0.4); font-family: 'Segoe UI', Roboto, sans-serif;
                 overflow: hidden; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
                 border: 1px solid rgba(255,255,255,0.18);
                 transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 animation: mdu-toast-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                touch-action: pan-y; user-select: none; -webkit-user-select: none;
             `;
 
             const inner = toast.querySelector('.mdu-toast-inner');
@@ -523,6 +593,294 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
             const actions = toast.querySelector('.mdu-toast-actions');
             actions.style.cssText = `display: flex; align-items: center; flex-shrink: 0;`;
 
+            const showYtModal = () => {
+                const existingModal = document.querySelector('.mdu-yt-modal-backdrop');
+                if (existingModal) existingModal.remove();
+
+                const modalBackdrop = document.createElement('div');
+                modalBackdrop.className = 'mdu-yt-modal-backdrop';
+                modalBackdrop.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2147483647;
+                    display: flex; align-items: center; justify-content: center;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    animation: mdu-fade-in 0.3s ease;
+                `;
+
+                modalBackdrop.innerHTML = `
+                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                        <div style="font-size: 18px; font-weight: 600; color: ${primaryColor};">${t.ytModalTitle}</div>
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.7); max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
+                        
+                        <!-- Tab Video / Audio -->
+                        <div style="display: flex; background: rgba(255,255,255,0.08); padding: 4px; border-radius: 12px; gap: 4px;">
+                            <button id="tab-video" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: ${primaryColor}; color: #121212; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabVideo}</button>
+                            <button id="tab-audio" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: transparent; color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabAudio}</button>
+                        </div>
+
+                        <!-- Video Options Container -->
+                        <div id="video-options-container" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label class="mdu-modal-label">${t.ytModalFormatLabel}</label>
+                                <select id="select-demuxer" class="mdu-modal-select"></select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label class="mdu-modal-label">${t.ytModalCodecLabel}</label>
+                                <select id="select-codec" class="mdu-modal-select"></select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label class="mdu-modal-label">${t.ytModalQualityLabel}</label>
+                                <select id="select-quality" class="mdu-modal-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- Audio Options Container -->
+                        <div id="audio-options-container" style="display: none; flex-direction: column; gap: 12px;">
+                            <div style="font-size: 13px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); line-height: 1.4;">
+                                ${t.ytModalAudioExplain}
+                            </div>
+                        </div>
+
+                        <!-- Footer Buttons -->
+                        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;">
+                            <button id="btn-cancel" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalCancelBtn}</button>
+                            <button id="btn-download" style="background: ${primaryColor}; color: #121212; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalDownloadBtn}</button>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        @keyframes mdu-fade-in { from { opacity: 0; } to { opacity: 1; } }
+                        @keyframes mdu-scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+                        .mdu-modal-label {
+                            font-size: 12px !important;
+                            color: rgba(255,255,255,0.5) !important;
+                            font-weight: 600 !important;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            line-height: 1.4 !important;
+                        }
+
+                        .mdu-modal-select {
+                            appearance: none !important;
+                            -webkit-appearance: none !important;
+                            -moz-appearance: none !important;
+                            background-color: rgba(255,255,255,0.08) !important;
+                            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${primaryColor.replace('#', '%23')}"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+                            background-repeat: no-repeat !important;
+                            background-position: right 12px center !important;
+                            background-size: 20px !important;
+                            color: white !important;
+                            border: 1.5px solid rgba(255,255,255,0.15) !important;
+                            padding: 11px 38px 11px 14px !important;
+                            border-radius: 12px !important;
+                            font-size: 13px !important;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                            font-weight: 500 !important;
+                            width: 100% !important;
+                            outline: none !important;
+                            cursor: pointer !important;
+                            transition: all 0.2s ease !important;
+                            box-sizing: border-box !important;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+                            line-height: 1.4 !important;
+                            margin: 0 !important;
+                            min-height: 42px !important;
+                        }
+
+                        .mdu-modal-select:hover {
+                            border-color: rgba(255,255,255,0.3) !important;
+                            background-color: rgba(255,255,255,0.12) !important;
+                            box-shadow: 0 3px 10px rgba(0,0,0,0.2) !important;
+                        }
+
+                        .mdu-modal-select:focus {
+                            border-color: ${primaryColor} !important;
+                            box-shadow: 0 0 0 3px ${primaryColor}33, 0 3px 10px rgba(0,0,0,0.2) !important;
+                        }
+
+                        .mdu-modal-select option {
+                            background: #2a2a2a !important;
+                            color: white !important;
+                            padding: 10px 14px !important;
+                            font-size: 13px !important;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                        }
+
+                        .mdu-modal-select option:hover,
+                        .mdu-modal-select option:checked {
+                            background: ${primaryColor} !important;
+                            color: #121212 !important;
+                        }
+                    </style>
+                `;
+
+                document.body.appendChild(modalBackdrop);
+
+                let activeMode = "video";
+                const tabVideo = modalBackdrop.querySelector('#tab-video');
+                const tabAudio = modalBackdrop.querySelector('#tab-audio');
+                const videoOptions = modalBackdrop.querySelector('#video-options-container');
+                const audioOptions = modalBackdrop.querySelector('#audio-options-container');
+
+                tabVideo.onclick = () => {
+                    activeMode = "video";
+                    tabVideo.style.background = primaryColor;
+                    tabVideo.style.color = '#121212';
+                    tabAudio.style.background = 'transparent';
+                    tabAudio.style.color = 'white';
+                    videoOptions.style.display = 'flex';
+                    audioOptions.style.display = 'none';
+                };
+
+                tabAudio.onclick = () => {
+                    activeMode = "audio";
+                    tabAudio.style.background = primaryColor;
+                    tabAudio.style.color = '#121212';
+                    tabVideo.style.background = 'transparent';
+                    tabVideo.style.color = 'white';
+                    audioOptions.style.display = 'flex';
+                    videoOptions.style.display = 'none';
+                };
+
+                const getHumanReadableSize = (size) => {
+                    const units = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
+                    let sizeInBytes = parseInt(size);
+                    if (isNaN(sizeInBytes)) return "Unknown Size";
+                    let i = 0;
+                    while (sizeInBytes > 1024 && i < units.length - 1) { sizeInBytes /= 1024; i++; }
+                    return `${sizeInBytes.toFixed(2)} ${units[i]}`;
+                };
+
+                const selectDemuxer = modalBackdrop.querySelector('#select-demuxer');
+                const selectCodec = modalBackdrop.querySelector('#select-codec');
+                const selectQuality = modalBackdrop.querySelector('#select-quality');
+
+                const isHlsStream = formats && formats.length > 0 && formats[0].demuxer === 'm3u8';
+
+                if (isHlsStream) {
+                    // Hide tabs and other selectors
+                    modalBackdrop.querySelector('#tab-video').parentNode.style.display = 'none';
+                    selectDemuxer.parentNode.style.display = 'none';
+                    selectCodec.parentNode.style.display = 'none';
+
+                    // Populate HLS resolutions directly
+                    formats.forEach((fmt, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = idx;
+                        let optLabel = fmt.resolution || 'unknown';
+                        if (fmt.bandwidth) {
+                            optLabel += ` (${Math.round(fmt.bandwidth / 1000)} kbps)`;
+                        }
+                        opt.textContent = optLabel;
+                        selectQuality.appendChild(opt);
+                    });
+                } else {
+                    const demuxers = [...new Set(formats.map(fmt => fmt.demuxer))];
+                    demuxers.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d;
+                        opt.textContent = d.toUpperCase();
+                        selectDemuxer.appendChild(opt);
+                    });
+
+                    function updateCodecDropdown() {
+                        selectCodec.innerHTML = '';
+                        const selectedDemuxer = selectDemuxer.value;
+                        const availableCodecs = [...new Set(formats.filter(fmt => fmt.demuxer === selectedDemuxer).map(fmt => fmt.codec || 'UNKNOWN'))];
+                        
+                        availableCodecs.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c;
+                            opt.textContent = c;
+                            selectCodec.appendChild(opt);
+                        });
+
+                        if (availableCodecs.includes('AV1')) selectCodec.value = 'AV1';
+                        else if (availableCodecs.includes('VP9')) selectCodec.value = 'VP9';
+                        else if (availableCodecs.includes('H265')) selectCodec.value = 'H265';
+                        else if (availableCodecs.includes('H264')) selectCodec.value = 'H264';
+                        else selectCodec.value = availableCodecs[0];
+
+                        updateResolutionDropdown();
+                    }
+
+                    function updateResolutionDropdown() {
+                        selectQuality.innerHTML = '';
+                        const selectedDemuxer = selectDemuxer.value;
+                        const selectedCodec = selectCodec.value;
+
+                        const availableFormats = formats.filter(fmt => 
+                            fmt.demuxer === selectedDemuxer && 
+                            (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
+                        );
+                        
+                        availableFormats.forEach((fmt) => {
+                            const opt = document.createElement('option');
+                            opt.value = formats.indexOf(fmt);
+                            let optLabel = fmt.label || `${fmt.width}x${fmt.height}`;
+                            if (fmt.contentLength) {
+                                optLabel += ` • ${getHumanReadableSize(fmt.contentLength)}`;
+                            }
+                            opt.textContent = optLabel;
+                            selectQuality.appendChild(opt);
+                        });
+                    }
+
+                    selectDemuxer.onchange = updateCodecDropdown;
+                    selectCodec.onchange = updateResolutionDropdown;
+
+                    if (demuxers.includes('mp4')) {
+                        selectDemuxer.value = 'mp4';
+                    } else if (demuxers.length > 0) {
+                        selectDemuxer.value = demuxers[0];
+                    }
+                    updateCodecDropdown();
+                }
+
+                const btnCancel = modalBackdrop.querySelector('#btn-cancel');
+                const btnDownload = modalBackdrop.querySelector('#btn-download');
+
+                btnCancel.onclick = () => modalBackdrop.remove();
+
+                btnDownload.onclick = () => {
+                    const selectedIdx = parseInt(selectQuality.value);
+                    const fmt = formats[selectedIdx];
+                    if (fmt) {
+                        if (fmt.demuxer === 'm3u8') {
+                            chrome.runtime.sendMessage({
+                                action: 'downloadHlsStream',
+                                url: fmt.videoUrl,
+                                quality: fmt.resolution && fmt.bandwidth ? `${fmt.resolution}@${fmt.bandwidth}` : (fmt.resolution || fmt.bandwidth?.toString() || 'highest'),
+                                filename: name
+                            });
+                        } else if (activeMode === "video") {
+                            chrome.runtime.sendMessage({
+                                action: 'downloadYoutubeVideo',
+                                videoUrl: fmt.videoUrl,
+                                audioUrl: fmt.audioUrl,
+                                filename: name,
+                                demuxer: fmt.demuxer,
+                                codec: fmt.codec || ''
+                            });
+                        } else {
+                            const firstAudioFmt = formats.find(f => f.audioUrl) || formats[0];
+                            if (firstAudioFmt && firstAudioFmt.audioUrl) {
+                                chrome.runtime.sendMessage({
+                                    action: 'downloadYoutubeAudio',
+                                    audioUrl: firstAudioFmt.audioUrl,
+                                    filename: name
+                                });
+                            }
+                        }
+                    }
+                    modalBackdrop.remove();
+                };
+            };
+
             if (!drm) {
                 const dlBtn = toast.querySelector('.mdu-toast-dl-btn');
                 dlBtn.style.cssText = `
@@ -535,7 +893,11 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 dlBtn.onmousedown = () => dlBtn.style.transform = 'scale(0.95)';
                 dlBtn.onmouseup = () => dlBtn.style.transform = 'scale(1)';
                 dlBtn.onclick = () => {
-                    chrome.runtime.sendMessage({ action: 'startDownloadFromToast', url: downloadUrl });
+                    if (formats && formats.length > 0) {
+                        showYtModal();
+                    } else {
+                        chrome.runtime.sendMessage({ action: 'startDownloadFromToast', url: downloadUrl });
+                    }
                     toast.style.opacity = '0';
                     toast.style.transform = 'translateX(-50%) translateY(10px) scale(0.95)';
                     setTimeout(() => toast.remove(), 300);
@@ -558,6 +920,75 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 }
             `;
             if (!document.getElementById('mdu-toast-style')) document.head.appendChild(style);
+
+            // Swipe / Drag dismiss logic
+            let isDragging = false;
+            let startX = 0;
+            let diffX = 0;
+
+            const handleStart = (clientX) => {
+                isDragging = true;
+                startX = clientX;
+                toast.style.transition = 'none';
+            };
+
+            const handleMove = (clientX) => {
+                if (!isDragging) return;
+                diffX = clientX - startX;
+                const dragOpacity = Math.max(0, 1 - Math.abs(diffX) / 150);
+                toast.style.transform = `translateX(calc(-50% + ${diffX}px))`;
+                toast.style.opacity = dragOpacity;
+            };
+
+            const handleEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                toast.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                if (Math.abs(diffX) > 80) {
+                    const slideDir = diffX > 0 ? 200 : -200;
+                    toast.style.transform = `translateX(calc(-50% + ${slideDir}px))`;
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.remove();
+                    }, 300);
+                } else {
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.opacity = '1';
+                }
+                diffX = 0;
+            };
+
+            toast.addEventListener('touchstart', (e) => {
+                handleStart(e.touches[0].clientX);
+            }, { passive: true });
+
+            toast.addEventListener('touchmove', (e) => {
+                handleMove(e.touches[0].clientX);
+            }, { passive: true });
+
+            toast.addEventListener('touchend', handleEnd, { passive: true });
+
+            toast.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('button') || e.target.closest('select')) {
+                    return;
+                }
+                handleStart(e.clientX);
+                
+                const onMouseMove = (moveEvt) => {
+                    handleMove(moveEvt.clientX);
+                };
+                
+                const onMouseUp = () => {
+                    handleEnd();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
             document.body.appendChild(toast);
 
             setTimeout(() => { progressBar.style.width = '0%'; }, 10);
@@ -569,7 +1000,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 }
             }, 6000);
         },
-        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm]
+        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm, ytFormats, stackNotifications, modalTranslations]
     }).catch(() => {});
 }
 
@@ -799,6 +1230,36 @@ async function showMediaNotification(details, settings) {
     const tabId = details.tabId;
     if (tabId < 0) return;
 
+    // Skip redundant network-based notifications for YouTube when dedicated YouTube detection is enabled
+    const initiator = details.initiator || details.originUrl || '';
+    const isYtRequest = url.includes('googlevideo.com') || url.includes('youtube.com') || initiator.includes('youtube.com');
+    if (isYtRequest && settings.youtubeDetection && !details.isYtNotification) {
+        return;
+    }
+
+    const sessionData = await new Promise(resolve => {
+        browser.storage.session.get(url, (res) => resolve(res[url] || []));
+    });
+    const requestItem = sessionData.length > 0 ? sessionData[sessionData.length - 1] : null;
+    let ytFormats = requestItem ? requestItem.ytFormats : null;
+
+    if (!ytFormats && url.toLowerCase().includes('.m3u8')) {
+        try {
+            const hlsVariants = await getM3U8VariantsBg(url);
+            if (hlsVariants && hlsVariants.length > 0) {
+                ytFormats = hlsVariants.map(v => ({
+                    resolution: v.resolution,
+                    bandwidth: v.bandwidth,
+                    videoUrl: url,
+                    variantUrl: v.uri,
+                    demuxer: 'm3u8'
+                }));
+            }
+        } catch (e) {
+            console.warn("Failed to get HLS variants for notification:", e);
+        }
+    }
+
     const baseUrl = url.split('?')[0].split('#')[0];
 
     if (!notifiedUrls.has(tabId)) notifiedUrls.set(tabId, new Set());
@@ -838,9 +1299,17 @@ async function showMediaNotification(details, settings) {
     const originalFilename = getFileName(url, 50);
     let displayFilename = originalFilename;
 
+    const genericNames = [
+        'master.m3u8', 'index.m3u8', 'playlist.m3u8', 'manifest.mpd', 'manifest.m3u8',
+        'master', 'index', 'playlist', 'manifest',
+        'video.mp4', 'audio.mp3', 'video', 'audio',
+        'stream.m3u8', 'stream.mpd', 'stream'
+    ];
+    const isGenericName = genericNames.includes(originalFilename.toLowerCase());
+
     if (settings.filenameTemplate) {
         displayFilename = await generateTemplateName(settings.filenameTemplate, url, originalFilename, tabId);
-    } else if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+    } else if (url.includes('googlevideo.com') || url.includes('youtube.com') || isGenericName) {
         let pageTitle = "";
         try {
             if (tabId && tabId >= 0) {
@@ -856,7 +1325,12 @@ async function showMediaNotification(details, settings) {
         if (pageTitle) {
             const cleanTitle = pageTitle.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
             const isAudio = getMediaType(url, contentType) === 'audio';
-            displayFilename = cleanTitle + (isAudio ? '.mp3' : '.mp4');
+            const isStream = getMediaType(url, contentType) === 'stream';
+            let ext = isAudio ? '.mp3' : '.mp4';
+            if (isStream) {
+                ext = url.toLowerCase().includes('.mpd') ? '.mpd' : '.m3u8';
+            }
+            displayFilename = cleanTitle + ext;
         }
     }
 
@@ -876,7 +1350,7 @@ async function showMediaNotification(details, settings) {
     const finalDisplayFilename = isDrm ? drmMsg : displayFilename;
     const notificationTitle = isDrm ? (browser.i18n.getMessage("drmWarningTitle") || "DRM Detected") : (browser.i18n.getMessage("mediaNotificationTitle") || "Media detected!");
 
-    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm);
+    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications);
 
     const notificationButtons = isDrm ? [] : [
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
@@ -1219,7 +1693,25 @@ function initListener() {
                         if (shouldSaveNow) {
                             const cachedHeaders = temporaryHeaderMap.get(details.requestId) || null;
                             const cachedBody = temporaryRequestBodyMap.get(details.requestId) || null;
-                            const metadata = details.tabId >= 0 ? tabMetadata.get(details.tabId) : null;
+                            
+                            let pageTitle = "";
+                            let pageUrl = "";
+                            try {
+                                if (details.tabId >= 0) {
+                                    let metadata = tabMetadata.get(details.tabId);
+                                    if (metadata && metadata.title) {
+                                        pageTitle = metadata.title;
+                                        pageUrl = metadata.url;
+                                    } else {
+                                        const tab = await browser.tabs.get(details.tabId);
+                                        if (tab) {
+                                            pageTitle = tab.title || "";
+                                            pageUrl = tab.url || "";
+                                            tabMetadata.set(details.tabId, { title: pageTitle, url: pageUrl });
+                                        }
+                                    }
+                                }
+                            } catch (e) {}
 
                             let mediaRequest = {
                                 url: details.url,
@@ -1231,8 +1723,8 @@ function initListener() {
                                 size: size,
                                 timeStamp: details.timeStamp,
                                 tabId: details.tabId,
-                                pageTitle: metadata ? metadata.title : "",
-                                pageUrl: metadata ? metadata.url : ""
+                                pageTitle: pageTitle,
+                                pageUrl: pageUrl
                             };
                             if (!isDrmMedia) {
                                 existingRequests.push(mediaRequest);
@@ -1376,28 +1868,128 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         addToHistory(message.item);
         return;
     }
+    if (message.action === 'downloadYoutubeVideo') {
+        const pageUrl = sender.tab ? sender.tab.url : "";
+        const pageTitle = sender.tab ? sender.tab.title : "";
+        
+        let finalName = message.filename;
+        const ext = '.' + (message.demuxer || 'mp4');
+        if (!finalName.toLowerCase().endsWith(ext)) {
+            const dotIdx = finalName.lastIndexOf('.');
+            if (dotIdx !== -1) {
+                finalName = finalName.substring(0, dotIdx);
+            }
+            finalName += ext;
+        }
+
+        addToHistory({ url: message.videoUrl, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+
+        let popupUrl = `popup.html?mode=tab&autoDownloadVideoUrl=${encodeURIComponent(message.videoUrl)}&autoDemuxer=${encodeURIComponent(message.demuxer || '')}&autoCodec=${encodeURIComponent(message.codec || '')}`;
+        browser.tabs.create({
+            url: browser.runtime.getURL(popupUrl),
+            active: true
+        });
+        return;
+    }
+    if (message.action === 'downloadYoutubeAudio') {
+        const pageUrl = sender.tab ? sender.tab.url : "";
+        const pageTitle = sender.tab ? sender.tab.title : "";
+        
+        let finalName = message.filename;
+        let audioExt = '.m4a';
+        if (message.audioUrl.includes('mime=audio%2Fwebm') || message.audioUrl.includes('mime=audio/webm')) {
+            audioExt = '.webm';
+        }
+        if (!finalName.toLowerCase().endsWith(audioExt)) {
+            const dotIdx = finalName.lastIndexOf('.');
+            if (dotIdx !== -1) {
+                finalName = finalName.substring(0, dotIdx);
+            }
+            finalName += audioExt;
+        }
+
+        addToHistory({ url: message.audioUrl, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+
+        let popupUrl = `popup.html?mode=tab&autoDownloadAudioUrl=${encodeURIComponent(message.audioUrl)}`;
+        browser.tabs.create({
+            url: browser.runtime.getURL(popupUrl),
+            active: true
+        });
+        return;
+    }
+    if (message.action === 'downloadHlsStream') {
+        const pageUrl = sender.tab ? sender.tab.url : "";
+        const pageTitle = sender.tab ? sender.tab.title : "";
+
+        let finalName = message.filename;
+        if (!finalName.toLowerCase().endsWith('.mp4')) {
+            const dotIdx = finalName.lastIndexOf('.');
+            if (dotIdx !== -1) {
+                finalName = finalName.substring(0, dotIdx);
+            }
+            finalName += '.mp4';
+        }
+
+        addToHistory({ url: message.url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+
+        let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(message.url)}&filename=${encodeURIComponent(finalName)}&quality=${encodeURIComponent(message.quality)}`;
+        browser.tabs.create({
+            url: browser.runtime.getURL(streamTabUrl),
+            active: true
+        });
+        return;
+    }
     if (message.action === 'startDownloadFromToast') {
         const url = message.url;
         const tabId = sender.tab ? sender.tab.id : null;
         browser.storage.session.get(url, (result) => {
             const requests = result[url] || [];
             const request = requests.length > 0 ? requests[requests.length - 1] : null;
-            browser.storage.local.get(['download-method', 'filename-template', 'gdrive-stream', 'save-to-gdrive', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token'], async (res) => {
+            browser.storage.local.get(['download-method', 'filename-template', 'gdrive-stream', 'save-to-gdrive', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token', 'stream-download'], async (res) => {
                 let method = res['download-method'] || 'browser';
                 const isGdriveStream = res['save-to-gdrive'] === '1' && res['gdrive-stream'] === '1' && res['gdrive_token'];
                 if (isGdriveStream) method = 'fetch';
 
-                const template = res['filename-template'];
+                const template = (res['filename-template'] && res['filename-template'] !== '0') ? res['filename-template'] : '';
                 const originalName = getFileName(url);
                 let finalName = originalName;
 
                 let pageUrl = sender.tab ? sender.tab.url : "";
                 let pageTitle = sender.tab ? sender.tab.title : "";
 
+                const genericNames = [
+                    'master.m3u8', 'index.m3u8', 'playlist.m3u8', 'manifest.mpd', 'manifest.m3u8',
+                    'master', 'index', 'playlist', 'manifest',
+                    'video.mp4', 'audio.mp3', 'video', 'audio',
+                    'stream.m3u8', 'stream.mpd', 'stream'
+                ];
+                const isGenericName = genericNames.includes(originalName.toLowerCase());
+
                 if (template) {
                     finalName = await generateTemplateName(template, url, originalName, tabId);
+                } else if ((url.includes('googlevideo.com') || url.includes('youtube.com') || isGenericName) && pageTitle) {
+                    const cleanTitle = pageTitle.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
+                    const isAudio = getMediaType(url) === 'audio';
+                    const isStream = getMediaType(url) === 'stream';
+                    let ext = isAudio ? '.mp3' : '.mp4';
+                    if (isStream) {
+                        ext = url.toLowerCase().includes('.mpd') ? '.mpd' : '.m3u8';
+                    }
+                    finalName = cleanTitle + ext;
                 }
 
+                const streamPref = res['stream-download'] || 'offline';
+                const mType = getMediaType(url);
+
+                if (url.toLowerCase().includes('.m3u8') && streamPref === 'offline') {
+                    addToHistory({ url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+                    let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(finalName)}&quality=highest`;
+                    browser.tabs.create({
+                        url: browser.runtime.getURL(streamTabUrl),
+                        active: true
+                    });
+                    return;
+                }
                 addToHistory({ url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
 
                 if (method === 'fetch') {
@@ -1726,6 +2318,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 url: url,
                                 tabId: tabId || req.tabId,
                                 isYtNotification: true,
+                                ytFormats: ytFormats,
                                 responseHeaders: [
                                     { name: 'content-type', value: type === 'video' ? 'video/mp4' : (type === 'audio' ? 'audio/mp4' : 'application/octet-stream') }
                                 ]
@@ -1971,11 +2564,12 @@ async function handleDownloadAllAsZip(items, downloadId) {
 
         const zipEntriesGenerator = async function* () {
             let skipAllErrors = false;
+            const usedNames = new Set();
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 const url = item.url;
-                const filename = item.filename;
-                const originalRequest = item.request;
+                const originalFileName = item.filename || "file";
+                let filename = originalFileName;
 
                 browser.runtime.sendMessage({
                     action: 'zipProgress',
@@ -2040,6 +2634,23 @@ async function handleDownloadAllAsZip(items, downloadId) {
                         if (result === 'continue') continue;
                         else throw new Error("Cancelled by user after error");
                     }
+
+                    const mimeType = response.headers.get('Content-Type') || '';
+                    const resolvedFileName = ensureFileExtension(originalFileName, mimeType);
+
+                    filename = resolvedFileName;
+                    let counter = 1;
+                    while (usedNames.has(filename)) {
+                        const parts = resolvedFileName.split('.');
+                        if (parts.length > 1) {
+                            const ext = parts.pop();
+                            filename = `${parts.join('.')}_${counter}.${ext}`;
+                        } else {
+                            filename = `${resolvedFileName}_${counter}`;
+                        }
+                        counter++;
+                    }
+                    usedNames.add(filename);
 
                     yield { name: filename, input: response };
 
@@ -2337,11 +2948,12 @@ async function triggerHiddenDownload(id, filename) {
                 : item.data;
 
             const blobUrl = URL.createObjectURL(finalBlob);
+            const finalDownloadFilename = ensureFileExtension(filename, blobType);
 
             try {
                 await browser.downloads.download({
                     url: blobUrl,
-                    filename: filename,
+                    filename: finalDownloadFilename,
                     saveAs: false
                 });
 
@@ -3557,6 +4169,8 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 
         if (resumeOffset > 0) {
             fetchOptions.headers['Range'] = `bytes=${resumeOffset}-`;
+        } else if (speedBoostEnabled && connections > 1 && !gdriveStreamEnabled && !dropboxStreamEnabled) {
+            fetchOptions.headers['Range'] = `bytes=0-`;
         }
 
         if (originalRequest && originalRequest.requestHeaders && Array.isArray(originalRequest.requestHeaders)) {
@@ -4279,3 +4893,71 @@ browser.storage.onChanged.addListener((changes, area) => {
         });
     }
 });
+
+function getExtFromMime(mimeType) {
+    if (!mimeType) return "";
+    const mimeLower = mimeType.toLowerCase().trim();
+    
+    if (mimeLower.includes("video/mp4")) return ".mp4";
+    if (mimeLower.includes("video/webm")) return ".webm";
+    if (mimeLower.includes("video/ogg")) return ".ogg";
+    if (mimeLower.includes("video/quicktime")) return ".mov";
+    if (mimeLower.includes("video/x-matroska")) return ".mkv";
+    if (mimeLower.includes("video/x-msvideo")) return ".avi";
+    if (mimeLower.includes("video/x-flv")) return ".flv";
+    if (mimeLower.includes("video/3gpp")) return ".3gp";
+    
+    if (mimeLower.includes("audio/mpeg") || mimeLower.includes("audio/mp3")) return ".mp3";
+    if (mimeLower.includes("audio/wav") || mimeLower.includes("audio/x-wav")) return ".wav";
+    if (mimeLower.includes("audio/webm")) return ".webm";
+    if (mimeLower.includes("audio/ogg") || mimeLower.includes("audio/opus")) return ".ogg";
+    if (mimeLower.includes("audio/aac")) return ".aac";
+    if (mimeLower.includes("audio/flac")) return ".flac";
+    if (mimeLower.includes("audio/x-m4a") || mimeLower.includes("audio/m4a") || mimeLower.includes("audio/mp4")) return ".m4a";
+    
+    if (mimeLower.includes("image/jpeg") || mimeLower.includes("image/jpg")) return ".jpg";
+    if (mimeLower.includes("image/png")) return ".png";
+    if (mimeLower.includes("image/gif")) return ".gif";
+    if (mimeLower.includes("image/webp")) return ".webp";
+    if (mimeLower.includes("image/svg+xml")) return ".svg";
+    
+    if (mimeLower.includes("application/zip")) return ".zip";
+    if (mimeLower.includes("application/pdf")) return ".pdf";
+    if (mimeLower.includes("text/vtt")) return ".vtt";
+    if (mimeLower.includes("application/x-subrip")) return ".srt";
+    
+    if (mimeLower.startsWith("video/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) return "." + sub;
+    }
+    if (mimeLower.startsWith("audio/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) {
+            if (sub === "mpeg") return ".mp3";
+            return "." + sub;
+        }
+    }
+    if (mimeLower.startsWith("image/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) return "." + sub;
+    }
+
+    return "";
+}
+
+function ensureFileExtension(filename, mimeType) {
+    if (!filename) return filename;
+    filename = filename.trim();
+    
+    const hasExtension = /\.[a-zA-Z0-9]{1,5}$/.test(filename);
+    if (hasExtension) {
+        return filename;
+    }
+    
+    const ext = getExtFromMime(mimeType);
+    if (ext) {
+        return filename + ext;
+    }
+    
+    return filename;
+}

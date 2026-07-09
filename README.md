@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.0.9-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.1.4-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -46,14 +46,18 @@ Designed with a focus on privacy and technical transparency, all operations—in
 
 ---
 
-## What's New in v2.0.9
+## What's New in v2.1.4
 
-- **Update Check Optimization**: Dynamically queries the Mozilla AMO API for Firefox users. Automatically redirects to Firefox Add-ons if the update is live, or falls back to GitHub Releases if approval is pending.
-- **Improved Browser Compatibility**: Skips AMO check for non-Firefox environments, directing them immediately to GitHub Releases.
+- Select your desired YouTube download format, codec, and resolution directly from the new options modal.
+- Dismiss on-screen notification toasts easily by swiping them left or right.
+- Choose whether to stack multiple notifications or only display the latest one with a new setting toggle.
+- Enjoy much faster YouTube video detection and significantly lower CPU and memory usage.
+- Navigating between videos or playing auto-play playlists on YouTube is now smooth and lag-free.
+- Guaranteed download of the exact resolution you selected thanks to our new precise quality matching system.
 
 ---
 
-## Technical Features (v2.0.9)
+## Technical Features (v2.1.4)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

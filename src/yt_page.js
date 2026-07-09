@@ -54,3 +54,11 @@ c((o) => {
   o.name == "youtube_request_visitor_data" && l();
 });
 l();
+
+const fireNav = () => {
+  window.dispatchEvent(new CustomEvent("yt-page-navigation"));
+};
+document.addEventListener("yt-navigate-finish", fireNav);
+document.addEventListener("yt-page-data-updated", fireNav);
+
+

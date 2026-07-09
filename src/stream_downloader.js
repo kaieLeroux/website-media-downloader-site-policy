@@ -55,33 +55,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
 
-        const mediaRequests = await browser.runtime.sendMessage({ action: 'getMediaRequests' });
-        const requests = mediaRequests[streamUrl];
-
-        if (!requests || requests.length === 0) {
-            throw new Error("Request details not found in session storage.");
-        }
-
-        const request = requests.find(r => r.size === size) || requests[0];
-
-        const urlParams = new URLSearchParams(window.location.search);
+        const isYoutube = urlParams.get('youtube') === 'true';
+        const audioUrl = urlParams.get('audioUrl');
         const customFilename = urlParams.get('filename');
         mediaTitle.textContent = customFilename || getFileName(streamUrl);
         statusHeader.textContent = browser.i18n.getMessage("streamDownloadingTitle");
 
-        const headers = request.requestHeaders || [];
-        const downloadMethod = await browser.storage.local.get('download-method').then(res => res['download-method'] || 'fetch');
+        const downloadMethod = await browser.storage.local.get('download-method').then(res => res['download-method'] || 'browser');
 
-        if (streamUrl.toLowerCase().includes('.m3u8')) {
-            await downloadM3U8Offline(streamUrl, headers, downloadMethod, loadingBar, request, customFilename, audioOnly);
-        } else if (streamUrl.toLowerCase().includes('.mpd')) {
-            await downloadMPDOffline(streamUrl, headers, downloadMethod, loadingBar, request, customFilename);
+        if (isYoutube) {
+            if (audioOnly) {
+                await downloadDirectFile(streamUrl, customFilename, downloadMethod, loadingBar);
+            } else {
+                await downloadAndMuxYoutube(streamUrl, audioUrl, customFilename, downloadMethod, loadingBar);
+            }
         } else {
-            throw new Error(browser.i18n.getMessage("audioExtractionNotSupported"));
+            const mediaRequests = await browser.runtime.sendMessage({ action: 'getMediaRequests' });
+            const requests = mediaRequests[streamUrl] || [];
+
+            const request = requests.find(r => r.size === size) || requests[0] || {};
+            const headers = request.requestHeaders || [];
+
+            if (streamUrl.toLowerCase().includes('.m3u8')) {
+                await downloadM3U8Offline(streamUrl, headers, downloadMethod, loadingBar, request, customFilename, audioOnly);
+            } else if (streamUrl.toLowerCase().includes('.mpd')) {
+                await downloadMPDOffline(streamUrl, headers, downloadMethod, loadingBar, request, customFilename);
+            } else {
+                await downloadDirectFile(streamUrl, customFilename || getFileName(streamUrl), downloadMethod, loadingBar, headers, request);
+            }
         }
 
-        statusHeader.textContent = browser.i18n.getMessage("streamDownloadCompleteTitle");
-        statusText.textContent = browser.i18n.getMessage("streamDownloadSaved");
+        statusHeader.textContent = browser.i18n.getMessage("streamDownloadCompleteTitle") || "Download Complete";
+        statusText.textContent = browser.i18n.getMessage("streamDownloadSaved") || "File has been saved.";
         loadingBar.value = 100;
         loadingBar.removeAttribute('indeterminate');
         actionArea.style.display = 'block';
@@ -94,6 +99,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionArea.style.display = 'block';
     }
 });
+
+async function downloadDirectFile(url, filename, downloadMethod, loadingBar, headers = [], request = {}) {
+    const statusInfo = loadingBar ? loadingBar.parentNode.querySelector('.download-status-info') : null;
+    if (statusInfo) statusInfo.textContent = "Downloading...";
+    if (loadingBar) loadingBar.setAttribute('indeterminate', 'true');
+
+    const fetchOptions = {
+        headers: Object.fromEntries((headers || []).map(h => [h.name, h.value])),
+        method: request.method || 'GET',
+        referrer: request.referrer || "",
+    };
+
+    if (request.method && request.method !== 'GET' && request.requestBody) {
+        if (request.requestBody.type === 'formData') {
+            const formData = new FormData();
+            for (const key in request.requestBody.data) {
+                request.requestBody.data[key].forEach(val => formData.append(key, val));
+            }
+            fetchOptions.body = formData;
+        } else if (request.requestBody.type === 'base64') {
+            const bin = atob(request.requestBody.data);
+            const u = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+            fetchOptions.body = u;
+        }
+    }
+
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const contentLength = response.headers.get('content-length');
+    const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+
+    if (totalSize && loadingBar) {
+        loadingBar.removeAttribute('indeterminate');
+        loadingBar.max = totalSize;
+        loadingBar.value = 0;
+    }
+
+    const reader = response.body.getReader();
+    let receivedLength = 0;
+    const chunks = [];
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedLength += value.length;
+
+        if (totalSize && loadingBar) {
+            loadingBar.value = receivedLength;
+        }
+        if (statusInfo) {
+            const loadedMB = (receivedLength / 1048576).toFixed(1);
+            const totalMB = totalSize ? (totalSize / 1048576).toFixed(1) : 'unknown';
+            statusInfo.textContent = `Downloading: ${loadedMB}MB / ${totalMB}MB`;
+        }
+    }
+
+    const blob = new Blob(chunks);
+    const blobUrl = URL.createObjectURL(blob);
+
+    await browser.downloads.download({
+        url: blobUrl,
+        filename: filename,
+        saveAs: false
+    });
+}
 
 function getFileName(url, maxLength = 30) {
     try {

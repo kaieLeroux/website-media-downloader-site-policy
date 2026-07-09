@@ -316,6 +316,50 @@
     "message": "ウェブサイトでメディアが検出されたときに通知を表示します。",
     "description": "The explanation of the media detection notification setting."
   },
+  "stackNotificationsCheckbox": {
+    "message": "通知をスタックする",
+    "description": "The label of the checkbox to enable stacking media detection notifications."
+  },
+  "stackNotificationsExplain": {
+    "message": "前の通知を消去する代わりに、複数の通知を画面に同時に表示します。",
+    "description": "The explanation of the stack notifications setting."
+  },
+  "ytModalTitle": {
+    "message": "ダウンロード画質を選択",
+    "description": "Title of YouTube quality modal"
+  },
+  "ytModalTabVideo": {
+    "message": "動画 + 音声",
+    "description": "Video + Audio tab label"
+  },
+  "ytModalTabAudio": {
+    "message": "音声のみ",
+    "description": "Audio only tab label"
+  },
+  "ytModalFormatLabel": {
+    "message": "フォーマット / タイプ",
+    "description": "Format label"
+  },
+  "ytModalCodecLabel": {
+    "message": "コーデック",
+    "description": "Codec label"
+  },
+  "ytModalQualityLabel": {
+    "message": "画質 / 解像度",
+    "description": "Quality label"
+  },
+  "ytModalAudioExplain": {
+    "message": "音声は直接抽出され、高音質オーディオ形式（.m4a/.webm）で保存されます。",
+    "description": "Audio extraction explanation"
+  },
+  "ytModalCancelBtn": {
+    "message": "キャンセル",
+    "description": "Cancel button label"
+  },
+  "ytModalDownloadBtn": {
+    "message": "ダウンロード",
+    "description": "Download button label"
+  },
   "hidePageComponentsTitle": {
     "message": "ページコンポーネントを非表示にする",
     "description": "Title for the setting to hide html, css, js, and txt files."

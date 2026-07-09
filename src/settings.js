@@ -169,10 +169,17 @@ function showApplyBar() {
 
 async function initializeSettings() {
     isInitializing = true;
+
+    // Self-healing: if filename-template was incorrectly set to '0', reset it to empty string
+    const tempRes = await browser.storage.local.get('filename-template');
+    if (tempRes['filename-template'] === '0') {
+        await browser.storage.local.set({ 'filename-template': '' });
+    }
+
     const settings = [
         'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
-        'media-notification', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
+        'media-notification', 'stack-notifications', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
         'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
         'filename-template', 'disable-rename-dialog', 'history-page', 'clean-view', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream'
@@ -191,17 +198,13 @@ async function initializeSettings() {
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            }
-if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'clean-view', 'audio-to-mp3', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream'].includes(setting)) {
-    value = '0';
-} else {
-                browser.storage.local.set({ [setting]: value });
-            }
-            if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
+            } else if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'clean-view', 'audio-to-mp3', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
-            }
-            if (setting === 'connections') {
+            } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
+                value = '0';
+                browser.storage.local.set({ [setting]: value });
+            } else if (setting === 'connections') {
                 value = '4';
                 browser.storage.local.set({ [setting]: value });
             }

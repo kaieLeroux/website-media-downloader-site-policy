@@ -521,8 +521,10 @@ async function removeStoredDownload(id) {
     await saveStoredDownloads(updated);
 }
 
-async function deleteDownloadCacheAndStorage(id, url) {
-    await removeStoredDownload(id);
+async function deleteDownloadCacheAndStorage(id, url, { skipStorageRemoval = false } = {}) {
+    if (!skipStorageRemoval) {
+        await removeStoredDownload(id);
+    }
 
     try {
         const cacheKey = id || url;
@@ -548,6 +550,74 @@ async function deleteDownloadCacheAndStorage(id, url) {
     }
 
     browser.runtime.sendMessage({ action: 'downloadComplete', id: id || url, url: url }).catch(() => {});
+}
+
+function getExtFromMime(mimeType) {
+    if (!mimeType) return "";
+    const mimeLower = mimeType.toLowerCase().trim();
+    
+    if (mimeLower.includes("video/mp4")) return ".mp4";
+    if (mimeLower.includes("video/webm")) return ".webm";
+    if (mimeLower.includes("video/ogg")) return ".ogg";
+    if (mimeLower.includes("video/quicktime")) return ".mov";
+    if (mimeLower.includes("video/x-matroska")) return ".mkv";
+    if (mimeLower.includes("video/x-msvideo")) return ".avi";
+    if (mimeLower.includes("video/x-flv")) return ".flv";
+    if (mimeLower.includes("video/3gpp")) return ".3gp";
+    
+    if (mimeLower.includes("audio/mpeg") || mimeLower.includes("audio/mp3")) return ".mp3";
+    if (mimeLower.includes("audio/wav") || mimeLower.includes("audio/x-wav")) return ".wav";
+    if (mimeLower.includes("audio/webm")) return ".webm";
+    if (mimeLower.includes("audio/ogg") || mimeLower.includes("audio/opus")) return ".ogg";
+    if (mimeLower.includes("audio/aac")) return ".aac";
+    if (mimeLower.includes("audio/flac")) return ".flac";
+    if (mimeLower.includes("audio/x-m4a") || mimeLower.includes("audio/m4a") || mimeLower.includes("audio/mp4")) return ".m4a";
+    
+    if (mimeLower.includes("image/jpeg") || mimeLower.includes("image/jpg")) return ".jpg";
+    if (mimeLower.includes("image/png")) return ".png";
+    if (mimeLower.includes("image/gif")) return ".gif";
+    if (mimeLower.includes("image/webp")) return ".webp";
+    if (mimeLower.includes("image/svg+xml")) return ".svg";
+    
+    if (mimeLower.includes("application/zip")) return ".zip";
+    if (mimeLower.includes("application/pdf")) return ".pdf";
+    if (mimeLower.includes("text/vtt")) return ".vtt";
+    if (mimeLower.includes("application/x-subrip")) return ".srt";
+    
+    if (mimeLower.startsWith("video/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) return "." + sub;
+    }
+    if (mimeLower.startsWith("audio/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) {
+            if (sub === "mpeg") return ".mp3";
+            return "." + sub;
+        }
+    }
+    if (mimeLower.startsWith("image/")) {
+        const sub = mimeLower.substring(6);
+        if (/^[a-z0-9]+$/.test(sub)) return "." + sub;
+    }
+
+    return "";
+}
+
+function ensureFileExtension(filename, mimeType) {
+    if (!filename) return filename;
+    filename = filename.trim();
+    
+    const hasExtension = /\.[a-zA-Z0-9]{1,5}$/.test(filename);
+    if (hasExtension) {
+        return filename;
+    }
+    
+    const ext = getExtFromMime(mimeType);
+    if (ext) {
+        return filename + ext;
+    }
+    
+    return filename;
 }
 
 async function triggerDownload(id, url, filename) {
@@ -618,6 +688,36 @@ async function triggerDownload(id, url, filename) {
                         setStatus((browser.i18n.getMessage("downloadAssemblingParts") || "Assembling $1 parts...").replace("$1", chunks.length));
                         const blobData = chunks.map(c => c.data);
                         blob = new Blob(blobData, { type: item.mime || "application/octet-stream" });
+                    }
+
+                    const mimeType = item.mime || blob.type || "";
+                    const originalFilename = filename;
+                    filename = ensureFileExtension(filename, mimeType);
+
+                    if (filename !== originalFilename) {
+                        const card = document.getElementById(`card-${id}`);
+                        if (card) {
+                            const nameEl = card.querySelector('.file-name');
+                            if (nameEl) {
+                                nameEl.textContent = filename;
+                            }
+                        }
+                        activeJobs.set(id, { url, filename });
+                        try {
+                            const stored = await getStoredDownloads();
+                            let updated = false;
+                            for (const storedItem of stored) {
+                                if (storedItem.id === id) {
+                                    storedItem.filename = filename;
+                                    updated = true;
+                                }
+                            }
+                            if (updated) {
+                                await saveStoredDownloads(stored);
+                            }
+                        } catch (e) {
+                            console.warn("Failed to update stored download filename extension:", e);
+                        }
                     }
 
                     const objectUrl = URL.createObjectURL(blob);
@@ -748,7 +848,6 @@ async function triggerDownload(id, url, filename) {
                     const previewBtn = document.getElementById(`preview-${id}`);
                     const previewContainer = document.getElementById(`preview-container-${id}`);
                     
-                    const mimeType = item.mime || "";
                     const isVideo = mimeType.startsWith("video/") || /\.(mp4|webm|ogg|mkv|mov|avi|flv)$/i.test(filename);
                     const isAudio = mimeType.startsWith("audio/") || /\.(mp3|wav|ogg|aac|flac|m4a)$/i.test(filename);
 
@@ -1014,8 +1113,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
 
                             if (fileBlob) {
+                                let originalFileName = item.filename || "file";
+                                const mimeType = cacheItem.mime || fileBlob.type || "";
+                                originalFileName = ensureFileExtension(originalFileName, mimeType);
+                                
+                                let filename = originalFileName;
+                                let counter = 1;
+                                while (zipEntries.some(e => e.name === filename)) {
+                                    const parts = originalFileName.split('.');
+                                    if (parts.length > 1) {
+                                        const ext = parts.pop();
+                                        filename = `${parts.join('.')}_${counter}.${ext}`;
+                                    } else {
+                                        filename = `${originalFileName}_${counter}`;
+                                    }
+                                    counter++;
+                                }
                                 zipEntries.push({
-                                    name: item.filename,
+                                    name: filename,
                                     input: fileBlob
                                 });
                             }
@@ -1080,16 +1195,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (checkedBoxes.length === 0) return;
 
             deleteSelectedBtn.disabled = true;
-            for (const cb of checkedBoxes) {
-                const id = cb.dataset.id;
-                const card = document.getElementById(`card-${id}`);
-                const job = activeJobs.get(id);
-                const url = job ? job.url : "";
 
+            const selectedIds = checkedBoxes.map(cb => cb.dataset.id);
+            const selectedUrlMap = {};
+            for (const id of selectedIds) {
+                const job = activeJobs.get(id);
+                selectedUrlMap[id] = job ? job.url : "";
+                const card = document.getElementById(`card-${id}`);
                 if (card) card.remove();
                 activeJobs.delete(id);
-                await deleteDownloadCacheAndStorage(id, url);
             }
+
+            // Batch-remove selected items from storage in one write to avoid race conditions
+            const currentStored = await getStoredDownloads();
+            const selectedSet = new Set(selectedIds);
+            const remaining = currentStored.filter(item => !selectedSet.has(item.id));
+            await saveStoredDownloads(remaining);
+
+            // Now clean cache entries in parallel (skip per-item storage removal since we already did it)
+            const deletePromises = selectedIds.map(id =>
+                deleteDownloadCacheAndStorage(id, selectedUrlMap[id], { skipStorageRemoval: true })
+            );
 
             const list = document.getElementById('downloads-list');
             const emptyState = document.getElementById('empty-state');
@@ -1097,9 +1223,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 emptyState.style.display = 'flex';
             }
 
-            deleteSelectedBtn.disabled = false;
             updateSaveAllZipVisibility();
             updateSelectedCount();
+
+            await Promise.all(deletePromises);
+            deleteSelectedBtn.disabled = false;
         };
     }
 
@@ -1111,12 +1239,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             closeAllBtn.disabled = true;
             const stored = await getStoredDownloads();
-            
+
+            // Clear all items from storage in one write first to prevent stale entries on reload
+            await saveStoredDownloads([]);
+
+            // Remove cards from DOM and clear activeJobs
             for (const item of stored) {
                 const card = document.getElementById(`card-${item.id}`);
                 if (card) card.remove();
                 activeJobs.delete(item.id);
-                await deleteDownloadCacheAndStorage(item.id, item.url);
             }
 
             const list = document.getElementById('downloads-list');
@@ -1126,9 +1257,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 emptyState.style.display = 'flex';
             }
 
-            closeAllBtn.disabled = false;
             updateSaveAllZipVisibility();
             updateSelectedCount();
+
+            // Clean cache entries in parallel (skip per-item storage removal since we already cleared all)
+            const deletePromises = stored.map(item =>
+                deleteDownloadCacheAndStorage(item.id, item.url, { skipStorageRemoval: true })
+            );
+            await Promise.all(deletePromises);
+            closeAllBtn.disabled = false;
         };
     }
     
