@@ -176,6 +176,18 @@
     "message": "Segarkan daftar",
     "description": "The label of the button to refresh the media list."
   },
+  "addManualUrlButton": {
+    "message": "Tambah URL",
+    "description": "The label of the button to add a manual URL for download."
+  },
+  "addManualUrlHeadline": {
+    "message": "Tambah URL untuk Diunduh",
+    "description": "The headline of the dialog to add a manual URL."
+  },
+  "addManualUrlFieldLabel": {
+    "message": "URL File Langsung",
+    "description": "The label of the text field to enter the direct file URL."
+  },
   "settingsDetectionSectionTitle": {
     "message": "Pengaturan Deteksi",
     "description": "The title of the detection settings section in the settings tab."
@@ -275,6 +287,14 @@
   "hideSegmentsCheckbox": {
     "message": "Sembunyikan segmen siaran di daftar media",
     "description": "The label of the checkbox to hide stream segments."
+  },
+  "disableDeduplicationTitle": {
+    "message": "Jangan deduplikasi daftar yang terdeteksi",
+    "description": "Judul opsi untuk mematikan deduplikasi file media yang terdeteksi."
+  },
+  "disableDeduplicationExplain": {
+    "message": "Matikan penggabungan duplikat untuk menampilkan semua file yang terdeteksi secara terpisah.",
+    "description": "Penjelasan opsi untuk mematikan deduplikasi."
   },
   "onlyVideoTitle": {
     "message": "Tampilkan video",
@@ -1591,6 +1611,66 @@
   "cleanViewExplain": {
     "message": "Menyembunyikan pengaturan yang jarang digunakan ke dalam menu lipat agar tampilan lebih bersih dan rapi.",
     "description": "The explanation of the clean settings view option."
+  },
+  "settingsLayoutTitle": {
+    "message": "Tampilan menu pengaturan",
+    "description": "Title of the setting that controls the presentation layout of settings."
+  },
+  "settingsLayoutExplain": {
+    "message": "Pilih cara menampilkan menu pengaturan.",
+    "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "layoutDefault": {
+    "message": "Biasa",
+    "description": "Label for the default settings layout."
+  },
+  "layoutClean": {
+    "message": "Clean (Lipat)",
+    "description": "Label for the clean (collapsible) settings layout."
+  },
+  "layoutSidebar": {
+    "message": "Sidebar (Samping)",
+    "description": "Label for the sidebar settings layout."
+  },
+  "layoutTabs": {
+    "message": "Tabs (Teks)",
+    "description": "Label for the tabbed settings layout (Text-only)."
+  },
+  "layoutTabsIcons": {
+    "message": "Tabs (Ikon)",
+    "description": "Label for the tabbed settings layout (Icons-only)."
+  },
+  "groupByTypeTitle": {
+    "message": "Grup berdasarkan tipe media",
+    "description": "Title of the setting that groups media by type on the home tab."
+  },
+  "groupByTypeExplain": {
+    "message": "Mengelompokkan media yang terdeteksi ke dalam folder kategori di tab Beranda.",
+    "description": "Description of the setting that groups media by type on the home tab."
+  },
+  "groupByVideoTitle": {
+    "message": "Video",
+    "description": "Folder title for videos."
+  },
+  "groupByAudioTitle": {
+    "message": "Audio",
+    "description": "Folder title for audio files."
+  },
+  "groupByStreamTitle": {
+    "message": "Siaran",
+    "description": "Folder title for streams."
+  },
+  "groupByImageTitle": {
+    "message": "Gambar",
+    "description": "Folder title for images."
+  },
+  "groupBySubtitleTitle": {
+    "message": "Subtitel",
+    "description": "Folder title for subtitles."
+  },
+  "groupByFileTitle": {
+    "message": "Berkas Lainnya",
+    "description": "Folder title for generic files."
   },
   "downloadTransmuxing": {
     "message": "Mengonversi ke MP4...",

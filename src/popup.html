@@ -191,6 +191,14 @@
                 </div>
                 <mdui-switch id="hide-page-components"></mdui-switch>
               </div>
+              
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="disableDeduplicationTitle">Jangan deduplikasi daftar yang terdeteksi</h3>
+                  <p data-translate="disableDeduplicationExplain">Tampilkan semua file terdeteksi secara terpisah tanpa menyembunyikan duplikat.</p>
+                </div>
+                <mdui-switch id="disable-deduplication"></mdui-switch>
+              </div>
               <div class="setting-item">
                 <div class="setting-text">
                   <h3 data-translate="mediaNotificationCheckbox">Enable detection notification</h3>
@@ -607,10 +615,18 @@
             <div class="settings-items-container">
               <div class="setting-item">
                 <div class="setting-text">
-                  <h3 data-translate="cleanViewTitle">Clean settings view</h3>
-                  <p data-translate="cleanViewExplain">Groups settings into dropdowns for a cleaner look.</p>
+                  <h3 data-translate="settingsLayoutTitle">Settings view layout</h3>
+                  <p data-translate="settingsLayoutExplain">Choose how settings are presented.</p>
                 </div>
-                <mdui-switch id="clean-view"></mdui-switch>
+                <div class="pill-select-wrapper">
+                  <select id="settings-layout" class="pill-select">
+                    <option value="default" data-translate="layoutDefault">Default</option>
+                    <option value="clean" data-translate="layoutClean">Clean</option>
+                    <option value="sidebar" data-translate="layoutSidebar">Sidebar</option>
+                    <option value="tabs" data-translate="layoutTabs">Tabs (Text)</option>
+                    <option value="tabs-icons" data-translate="layoutTabsIcons">Tabs (Icons)</option>
+                  </select>
+                </div>
               </div>
 
               <div class="setting-item">
@@ -630,6 +646,14 @@
                   <p data-translate="historyPageExplain">Keep a local record of your downloads.</p>
                 </div>
                 <mdui-switch id="history-page"></mdui-switch>
+              </div>
+              
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="groupByTypeTitle">Group by media type</h3>
+                  <p data-translate="groupByTypeExplain">Groups detected media into folders on the Home tab.</p>
+                </div>
+                <mdui-switch id="group-by-type"></mdui-switch>
               </div>
               
               <div class="setting-item vertical">

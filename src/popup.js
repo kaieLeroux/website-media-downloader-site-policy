@@ -42,6 +42,16 @@ let renderedCount = 0;
 const CHUNK_SIZE = 20;
 let intersectionObserver = null;
 const uiCache = new Map();
+let isGroupingEnabled = false;
+let activeGroup = null;
+let activeDownloadingElements = [];
+const selectedUrls = new Set();
+
+function getActiveRequests() {
+  return (isGroupingEnabled && activeGroup !== null)
+    ? allFilteredRequests.filter(item => item.type === activeGroup)
+    : allFilteredRequests;
+}
 
 async function spoofedFetch(url, options = {}) {
   try {
@@ -68,18 +78,18 @@ window.activeCancellations.setRestoreCallback = (url, cb) => {
   window.activeCancellations.restoreCallbacks.set(url, cb);
 };
 window.activePauses = new Set();
-window.activeAbortControllers = new Map(); // url -> AbortController
+window.activeAbortControllers = new Map();
 
 async function checkForUpdates() {
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
-  
+
   let nativeUpdateFound = false;
 
   if (browser.runtime.requestUpdateCheck) {
     try {
-      const [status, details] = await browser.runtime.requestUpdateCheck();
-      if (status === 'update_available') {
-        showUpdateNotification(AMO_URL, details.version || 'new');
+      const result = await browser.runtime.requestUpdateCheck();
+      if (result && result.status === 'update_available') {
+        showUpdateNotification(AMO_URL, result.version || 'new');
         nativeUpdateFound = true;
       }
     } catch (err) {
@@ -116,7 +126,7 @@ async function performUpdateCheck() {
   const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
   const AMO_API_URL = 'https://addons.mozilla.org/api/v5/addons/addon/website-media-downloader/';
-  
+
   const currentVersion = browser.runtime.getManifest().version;
   const isFirefox = navigator.userAgent.includes('Firefox') || (typeof browser !== 'undefined' && browser.runtime.getURL && browser.runtime.getURL('').startsWith('moz-extension://'));
 
@@ -181,24 +191,24 @@ async function performUpdateCheck() {
 function showTopBarUpdateNotification(url, latestVersion) {
   const notification = document.getElementById('update-notification');
   if (!notification) return;
-  
+
   notification.style.display = 'flex';
-  
+
   const textSpan = notification.querySelector('[data-translate="updateAvailable"]');
   if (textSpan) {
     textSpan.textContent = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
   }
-  
+
   const updateLink = document.getElementById('update-link');
   if (updateLink) {
-    
+
     const newUpdateLink = updateLink.cloneNode(true);
     updateLink.parentNode.replaceChild(newUpdateLink, updateLink);
     newUpdateLink.addEventListener('click', () => {
       browser.tabs.create({ url: url });
     });
   }
-  
+
   const closeBtn = document.getElementById('close-update-notification');
   if (closeBtn) {
     const newCloseBtn = closeBtn.cloneNode(true);
@@ -213,7 +223,7 @@ function showTopBarUpdateNotification(url, latestVersion) {
 function showUpdateDialog(url, latestVersion) {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
-  
+
   const description = document.createElement('div');
   description.setAttribute('slot', 'description');
   description.innerHTML = browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`;
@@ -250,7 +260,7 @@ function showUpdateDialog(url, latestVersion) {
 
 function showUpdateNotification(url, latestVersion) {
   if (sessionStorage.getItem('update-topbar-closed') === 'true') return;
-  
+
   if (sessionStorage.getItem('update-dismissed') === 'true') {
     showTopBarUpdateNotification(url, latestVersion);
     return;
@@ -303,7 +313,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('select-all-checkbox').addEventListener('change', (e) => {
     const isChecked = e.target.checked;
-    const items = document.querySelectorAll('.media-item:not([style*="display: none"])');
+    const activeRequests = getActiveRequests();
+    if (isChecked) {
+      activeRequests.forEach(item => {
+        selectedUrls.add(item.bestRequest.originalUrl);
+      });
+    } else {
+      activeRequests.forEach(item => {
+        selectedUrls.delete(item.bestRequest.originalUrl);
+      });
+    }
+    const items = document.querySelectorAll('.media-item');
     items.forEach(item => {
       const cb = item.querySelector('.media-checkbox');
       if (cb) cb.checked = isChecked;
@@ -312,42 +332,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('download-selected').addEventListener('click', async () => {
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
-    const selectedCheckboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
+    const activeRequests = getActiveRequests();
+    const selectedActiveRequests = activeRequests.filter(req => selectedUrls.has(req.bestRequest.originalUrl));
+    if (selectedActiveRequests.length === 0) return;
 
-    if (selectAllCheckbox && selectAllCheckbox.checked) {
-      if (allFilteredRequests.length === 0) return;
-      if (allFilteredRequests.length > 1) {
-        await downloadAllAsZip(allFilteredRequests);
-      } else {
-        const item = allFilteredRequests[0];
-        await downloadFile(item.bestRequest.originalUrl, null, item.bestRequest.size, true);
-      }
-      return;
-    }
-
-    if (selectedCheckboxes.length === 0) return;
-
-    if (selectedCheckboxes.length > 1) {
-      const items = selectedCheckboxes.map(cb => cb.closest('.media-item'));
-      await downloadAllAsZip(items);
+    if (selectedActiveRequests.length > 1) {
+      await downloadAllAsZip(selectedActiveRequests);
     } else {
-      const cb = selectedCheckboxes[0];
-      const itemElement = cb.closest('.media-item');
-      const url = itemElement.dataset.url;
-      const size = itemElement.dataset.size;
-      await downloadFile(url, itemElement, size, true);
+      const item = selectedActiveRequests[0];
+      const url = item.bestRequest.originalUrl;
+      const itemElement = Array.from(document.querySelectorAll('.media-item')).find(el => el.dataset.url === url);
+      await downloadFile(url, itemElement, item.bestRequest.size, true);
     }
   });
 
   document.getElementById('download-all').addEventListener('click', async () => {
-    if (allFilteredRequests.length === 0) return;
+    const activeRequests = getActiveRequests();
+    if (activeRequests.length === 0) return;
 
-    if (allFilteredRequests.length > 1) {
-      await downloadAllAsZip(allFilteredRequests);
+    if (activeRequests.length > 1) {
+      await downloadAllAsZip(activeRequests);
     } else {
-      const item = allFilteredRequests[0];
+      const item = activeRequests[0];
       const url = item.bestRequest.originalUrl;
       const size = item.bestRequest.size;
 
@@ -358,58 +364,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('delete-selected').addEventListener('click', async () => {
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const activeRequests = getActiveRequests();
+    const selectedActiveRequests = activeRequests.filter(req => selectedUrls.has(req.bestRequest.originalUrl));
+    if (selectedActiveRequests.length === 0) return;
 
-    if (selectAllCheckbox && selectAllCheckbox.checked) {
-      await mdui.confirm({
-        headline: browser.i18n.getMessage("deleteAllConfirmTitle") || "Confirm Deletion",
-        description: browser.i18n.getMessage("deleteAllConfirm") || "Are you sure you want to delete all detected media?",
-        confirmText: browser.i18n.getMessage("deleteSelectedButton") || "Delete",
-        cancelText: browser.i18n.getMessage("cancelButton") || "Cancel",
-        onConfirm: async () => {
-          for (const item of allFilteredRequests) {
-            browser.runtime.sendMessage({ action: 'removeMedia', url: item.bestRequest.originalUrl });
-          }
-          loadMediaList();
+    await mdui.confirm({
+      headline: browser.i18n.getMessage("deleteAllConfirmTitle") || "Confirm Deletion",
+      description: browser.i18n.getMessage("deleteAllConfirm") || "Are you sure you want to delete all selected media?",
+      confirmText: browser.i18n.getMessage("deleteSelectedButton") || "Delete",
+      cancelText: browser.i18n.getMessage("cancelButton") || "Cancel",
+      onConfirm: async () => {
+        for (const item of selectedActiveRequests) {
+          const url = item.bestRequest.originalUrl;
+          browser.runtime.sendMessage({ action: 'removeMedia', url: url });
+          selectedUrls.delete(url);
+          allMediaRequests = allMediaRequests.filter(x => x.bestRequest.originalUrl !== url);
+          allFilteredRequests = allFilteredRequests.filter(x => x.bestRequest.originalUrl !== url);
+
+          const itemElement = Array.from(document.querySelectorAll('.media-item')).find(el => el.dataset.url === url);
+          if (itemElement) itemElement.remove();
         }
-      });
-      return;
-    }
 
-    const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
-    const selectedCheckboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
-    if (selectedCheckboxes.length === 0) return;
+        updateSelectedCount();
 
-    for (const cb of selectedCheckboxes) {
-      const itemElement = cb.closest('.media-item');
-      const url = itemElement.dataset.url;
-
-      browser.runtime.sendMessage({ action: 'removeMedia', url: url });
-
-      allMediaRequests = allMediaRequests.filter(item => item.bestRequest.originalUrl !== url);
-      allFilteredRequests = allFilteredRequests.filter(item => item.bestRequest.originalUrl !== url);
-
-      itemElement.remove();
-    }
-
-    updateSelectedCount();
-
-    const mediaContainer = document.getElementById('media-list');
-    if (allFilteredRequests.length === 0 && mediaContainer.querySelectorAll('.media-item').length === 0) {
-      mediaContainer.innerHTML = getNoMediaDetectedHTML();
-    }
+        const mediaContainer = document.getElementById('media-list');
+        if (mediaContainer && mediaContainer.querySelectorAll('.media-item').length === 0) {
+          renderInitialList();
+        }
+      }
+    });
   });
 
   document.getElementById('cancel-selected').addEventListener('click', () => {
-    const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
-    const selectedCheckboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
-    selectedCheckboxes.forEach(cb => {
-      const itemElement = cb.closest('.media-item');
-      if (itemElement.querySelector('mdui-linear-progress')) {
-        const url = itemElement.dataset.url;
+    const activeRequests = getActiveRequests();
+    const selectedActiveRequests = activeRequests.filter(req => selectedUrls.has(req.bestRequest.originalUrl));
+    selectedActiveRequests.forEach(item => {
+      const url = item.bestRequest.originalUrl;
+      const itemElement = Array.from(document.querySelectorAll('.media-item')).find(el => el.dataset.url === url);
+      if (itemElement && itemElement.querySelector('mdui-linear-progress')) {
         const dlId = itemElement.dataset.downloadId;
         browser.runtime.sendMessage({ action: 'cancelDownload', url: url, id: dlId });
-        
         finishDownloadUI(dlId || url, false);
       }
     });
@@ -427,12 +421,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('navbar').addEventListener('change', (event) => {
-    const selectedTab = document.getElementById('navbar').value;
+
+    const navbar = document.getElementById('navbar');
+    if (event.target !== navbar && event.target.tagName !== 'MDUI-TAB') return;
+    const selectedTab = navbar.value;
     sessionStorage.setItem('activeTab', selectedTab);
     if (selectedTab === 'history') {
       loadHistoryList();
     } else if (selectedTab === 'about') {
       loadAboutPage();
+    } else if (selectedTab === 'home') {
+      activeGroup = null;
+      loadMediaList();
     }
   });
 
@@ -440,10 +440,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (area !== 'local') return;
 
     const mediaFilterSettings = [
-      'only-video', 'only-audio', 'only-stream', 'only-image', 
-      'only-subtitle', 'only-file', 'hide-segments'
+      'only-video', 'only-audio', 'only-stream', 'only-image',
+      'only-subtitle', 'only-file', 'hide-segments', 'disable-deduplication'
     ];
-    
+
     if (mediaFilterSettings.some(s => Object.prototype.hasOwnProperty.call(changes, s))) {
       if (document.getElementById('navbar').value === 'home') {
         loadMediaList();
@@ -468,11 +468,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('refresh-list').addEventListener('click', () => loadMediaList());
   document.getElementById('clear-list').addEventListener('click', () => clearMediaList());
+  document.getElementById('media-list').addEventListener('click', async (e) => {
+    const btn = e.target.closest('#add-manual-url-btn-empty');
+    if (btn) {
+      const url = await showAddManualUrlDialog();
+      if (url) {
+        addManualUrl(url);
+      }
+    }
+  });
 
   document.getElementById('help-button').addEventListener('click', async () => {
     const CHANGELOG_REMOTE_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json';
     const CHANGELOG_LOCAL_URL = browser.runtime.getURL('changelog.json');
-    
+
     try {
       let response;
       try {
@@ -482,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn("Failed to fetch remote changelog, using local fallback:", remoteError);
         response = await fetch(CHANGELOG_LOCAL_URL);
       }
-      
+
       const data = await response.json();
       const lang = browser.i18n.getUILanguage().split('-')[0];
       const content = data[lang] || data['en'];
@@ -541,7 +550,7 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.action === 'downloadProgress') {
     updateProgressUI(message.id || message.url, message.loaded, message.total, message.isParallel, message.isPaused, message.status, message.percent, message.finishedParts, message.totalParts);
   } else if (message.action === 'downloadPaused') {
-    updateProgressUI(message.id, message.loaded, message.total, false, true); 
+    updateProgressUI(message.id, message.loaded, message.total, false, true);
   } else if (message.action === 'zipProgress') {
     const progressContainer = document.getElementById('global-progress-container');
     const progressBar = document.getElementById('global-progress-bar');
@@ -578,7 +587,7 @@ browser.runtime.onMessage.addListener((message) => {
     if (cancelGlobalBtn) cancelGlobalBtn.style.display = 'none';
     progressBar.value = 1;
     progressBar.indeterminate = false;
-    
+
     if (message.cloud) {
        let successMsg = browser.i18n.getMessage("uploadSuccessGDrive", [message.filename]) || `Successfully saved ${message.filename} to Google Drive!`;
        if (message.cloud === 'dropbox') {
@@ -613,11 +622,11 @@ browser.runtime.onMessage.addListener((message) => {
   } else if (message.action === 'downloadComplete') {
     const dlId = message.id || message.url;
     finishDownloadUI(dlId, true);
-    // Also try matching by URL in case the id was a download-manager-specific key
+
     if (message.url && message.url !== dlId) {
       finishDownloadUI(message.url, true);
     }
-    // Remove from in-memory lists so it won't reappear on filter/search
+
     if (message.url) {
       allMediaRequests = allMediaRequests.filter(item => item.bestRequest.originalUrl !== message.url);
       allFilteredRequests = allFilteredRequests.filter(item => item.bestRequest.originalUrl !== message.url);
@@ -703,7 +712,7 @@ function updateProgressUI(id, loaded, total, isParallel = false, isPaused = fals
         updatePausePlayUI(dlBtn, isPaused);
         if (cancelBtn) {
           cancelBtn.style.display = 'inline-flex';
-          dlBtn.style.borderRadius = ''; 
+          dlBtn.style.borderRadius = '';
         }
         if (audioBtn) audioBtn.style.display = 'none';
     }
@@ -764,7 +773,7 @@ function updateProgressUI(id, loaded, total, isParallel = false, isPaused = fals
       const totalMB = (total / (1024 * 1024)).toFixed(2);
       const percent = Math.round((loaded / total) * 100);
       const remainingMB = ((total - loaded) / (1024 * 1024)).toFixed(2);
-      
+
       let text;
       if (isParallel && finishedParts !== null && totalParts !== null) {
           const partsPercent = Math.round((finishedParts / totalParts) * 100);
@@ -796,10 +805,10 @@ function finishDownloadUI(id, isSuccess = false) {
 
       if (isSuccess) {
           element.remove();
-          
+
           const mediaContainer = document.getElementById('media-list');
           if (mediaContainer && mediaContainer.querySelectorAll('.media-item').length === 0) {
-            mediaContainer.innerHTML = getNoMediaDetectedHTML();
+            renderInitialList();
           }
       } else {
           if (progressContainer) progressContainer.remove();
@@ -809,7 +818,7 @@ function finishDownloadUI(id, isSuccess = false) {
             dlBtn.innerHTML = `<mdui-icon slot="icon"><svg viewBox="0 -960 960 960"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg></mdui-icon>${browser.i18n.getMessage("downloadButton") || "Download"}`;
             dlBtn.classList.remove('is-playing', 'is-paused');
             dlBtn.disabled = false;
-            
+
             const type = element.dataset.type;
             if (type === 'subtitle' || type === 'file') {
               dlBtn.style.borderRadius = '100px';
@@ -834,10 +843,10 @@ function finishDownloadUI(id, isSuccess = false) {
     if (item.dataset.downloadId === id || item.dataset.url === id) {
       if (isSuccess) {
         item.remove();
-        
+
         const mediaContainer = document.getElementById('media-list');
         if (mediaContainer && mediaContainer.querySelectorAll('.media-item').length === 0) {
-          mediaContainer.innerHTML = getNoMediaDetectedHTML();
+          renderInitialList();
         }
       } else {
         const progressContainer = item.querySelector('.download-progress-container');
@@ -848,7 +857,7 @@ function finishDownloadUI(id, isSuccess = false) {
           dlBtn.innerHTML = `<mdui-icon slot="icon"><svg viewBox="0 -960 960 960"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg></mdui-icon>${browser.i18n.getMessage("downloadButton") || "Download"}`;
           dlBtn.classList.remove('is-playing', 'is-paused');
           dlBtn.disabled = false;
-          
+
           const type = item.dataset.type;
           if (type === 'subtitle' || type === 'file') {
             dlBtn.style.borderRadius = '100px';
@@ -1083,16 +1092,16 @@ function showQRCode(url) {
         overlay.style.alignItems = 'center';
         overlay.style.justifyContent = 'center';
         overlay.style.cursor = 'zoom-out';
-        
+
         const fullImg = document.createElement('img');
         fullImg.src = imgEl.src;
         fullImg.style.width = '95vmin';
         fullImg.style.height = '95vmin';
         fullImg.style.imageRendering = 'pixelated';
-        
+
         overlay.appendChild(fullImg);
         document.body.appendChild(overlay);
-        
+
         overlay.addEventListener('click', () => overlay.remove());
       });
     }
@@ -1104,28 +1113,30 @@ function getNoMediaDetectedHTML() {
     <div class="end-of-list-container no-media-container">
       <div class="end-of-list-title">${browser.i18n.getMessage("errorTitle4") || 'Info'}</div>
       <div class="end-of-list-text">${browser.i18n.getMessage("noMediaDetected")}</div>
+      <mdui-button variant="tonal" id="add-manual-url-btn-empty" style="margin-top: 12px; --mdui-shape-corner-extra-small: 16px;"><mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></mdui-icon><span data-translate="addManualUrlButton">Add URL</span></mdui-button>
     </div>
   `;
 }
 
 function updateSelectedCount() {
   const selectAllCheckbox = document.getElementById('select-all-checkbox');
-  const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
-  const renderedSelected = Array.from(allCheckboxes).filter(cb => cb.checked);
+  const activeReqs = getActiveRequests();
+  const selectedInActive = activeReqs.filter(req => selectedUrls.has(req.bestRequest.originalUrl));
+  const selectedCount = selectedInActive.length;
 
   const downloadSelectedBtn = document.getElementById('download-selected');
   const deleteSelectedBtn = document.getElementById('delete-selected');
   const cancelSelectedBtn = document.getElementById('cancel-selected');
 
-  let selectedCount = renderedSelected.length;
+  if (selectAllCheckbox) {
+    selectAllCheckbox.checked = activeReqs.length > 0 && selectedCount === activeReqs.length;
+  }
+
+  const allCheckboxes = document.querySelectorAll('.media-item .media-checkbox');
+  const renderedSelected = Array.from(allCheckboxes).filter(cb => cb.checked);
   let hasActiveSelected = renderedSelected.some(cb =>
     cb.closest('.media-item').querySelector('mdui-linear-progress')
   );
-
-  if (selectAllCheckbox && selectAllCheckbox.checked) {
-    selectedCount = allFilteredRequests.length;
-
-  }
 
   document.getElementById('selected-count').textContent = browser.i18n.getMessage("selectedCount", [selectedCount.toString()]);
 
@@ -1157,15 +1168,109 @@ function filterAndRenderMediaList(query = '') {
   } else {
     allFilteredRequests = allMediaRequests.filter(item => {
       const { bestRequest } = item;
-      const headline = getFileName(bestRequest.originalUrl).toLowerCase();
+      const pageTitle = (bestRequest.pageTitle || '').toLowerCase();
+      const headline = getFileName(bestRequest.originalUrl, 200).toLowerCase();
       const url = bestRequest.originalUrl.toLowerCase();
-      const hostname = new URL(bestRequest.originalUrl).hostname.toLowerCase();
+      const type = (item.type || '').toLowerCase();
+      let hostname = '';
+      try { hostname = new URL(bestRequest.originalUrl).hostname.toLowerCase(); } catch(e) {}
 
-      return headline.includes(lowerQuery) || url.includes(lowerQuery) || hostname.includes(lowerQuery);
+      return pageTitle.includes(lowerQuery) || headline.includes(lowerQuery) || url.includes(lowerQuery) || hostname.includes(lowerQuery) || type.includes(lowerQuery);
     });
   }
 
   renderInitialList();
+}
+
+function getGroupCounts(activeItems) {
+  const counts = {
+    video: 0,
+    audio: 0,
+    stream: 0,
+    image: 0,
+    subtitle: 0,
+    file: 0
+  };
+
+  allFilteredRequests.forEach(item => {
+    const type = item.type || 'file';
+    if (counts[type] !== undefined) {
+      counts[type]++;
+    } else {
+      counts.file++;
+    }
+  });
+
+  activeItems.forEach(item => {
+    const type = item.dataset.type || 'file';
+    if (counts[type] !== undefined) {
+      counts[type]++;
+    } else {
+      counts.file++;
+    }
+  });
+
+  return counts;
+}
+
+function createGroupItemHTML(type, count, title, iconSVG) {
+  return `
+    <div class="media-group-card" data-group-type="${type}" style="
+      margin: 12px 16px;
+      border-radius: var(--app-border-radius);
+      background-color: var(--surface-low);
+      border: 1px solid rgb(var(--mdui-color-outline-variant));
+      transition: var(--transition);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      gap: 16px;
+    ">
+      <div style="
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background-color: rgba(var(--mdui-color-primary), 0.1);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        ${iconSVG}
+      </div>
+      <div style="flex-grow: 1;">
+        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: rgb(var(--mdui-color-on-surface));">${title}</h4>
+        <span style="font-size: 0.8rem; color: var(--on-surface-variant); opacity: 0.8;">${count} ${count === 1 ? 'item' : 'items'}</span>
+      </div>
+      <mdui-icon style="opacity: 0.5; color: rgb(var(--mdui-color-on-surface));">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+      </mdui-icon>
+    </div>
+  `;
+}
+
+function createBackToGroupsHeaderHTML(title) {
+  return `
+    <div id="back-to-groups-btn" style="
+      margin: 12px 16px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 100px;
+      width: fit-content;
+      background-color: rgba(var(--mdui-color-primary), 0.08);
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: var(--transition);
+    ">
+      <svg viewBox="0 0 24 24" width="18" height="18" style="transform: scaleX(-1);"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      <span>Back to Groups (${title})</span>
+    </div>
+  `;
 }
 
 function renderInitialList() {
@@ -1181,46 +1286,145 @@ function renderInitialList() {
   });
 
   mediaContainer.innerHTML = '';
-  activeItems.forEach(item => mediaContainer.appendChild(item));
-
   renderedCount = 0;
 
-  if (allFilteredRequests.length === 0 && activeItems.length === 0) {
-    if (query) {
-      mediaContainer.innerHTML = `<div id="no-matches-msg" style="padding: 60px 20px; text-align: center; opacity: 0.8;">No matches found for "${query}"</div>`;
-    } else {
+  const selectedInfoBar = document.getElementById('selected-info-bar');
+  const isSearching = !!query;
+  if (isGroupingEnabled && activeGroup === null && !isSearching) {
+    if (selectedInfoBar) selectedInfoBar.style.display = 'none';
+  } else {
+    if (selectedInfoBar) selectedInfoBar.style.display = 'flex';
+  }
+
+  if (isGroupingEnabled && activeGroup === null && !isSearching) {
+    const counts = getGroupCounts(activeItems);
+    const hasItems = Object.values(counts).some(c => c > 0);
+
+    if (!hasItems) {
       mediaContainer.innerHTML = getNoMediaDetectedHTML();
       if (mediaControls) mediaControls.style.display = 'none';
+      return;
     }
+
+    if (mediaControls) mediaControls.style.display = 'flex';
+
+    const titles = {
+      video: browser.i18n.getMessage("groupByVideoTitle") || "Videos",
+      audio: browser.i18n.getMessage("groupByAudioTitle") || "Audio",
+      stream: browser.i18n.getMessage("groupByStreamTitle") || "Streams",
+      image: browser.i18n.getMessage("groupByImageTitle") || "Images",
+      subtitle: browser.i18n.getMessage("groupBySubtitleTitle") || "Subtitles",
+      file: browser.i18n.getMessage("groupByFileTitle") || "Files"
+    };
+
+    const icons = {
+      video: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>`,
+      audio: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`,
+      stream: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>`,
+      image: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5.5 9L11 15.5l-2.5-3L5 17h14l-4.5-5z"/></svg>`,
+      subtitle: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-4H6V8h12v4z"/></svg>`,
+      file: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`
+    };
+
+    const typesOrder = ['video', 'audio', 'stream', 'image', 'subtitle', 'file'];
+    typesOrder.forEach(type => {
+      const count = counts[type];
+      if (count > 0) {
+        const groupCard = document.createElement('div');
+        groupCard.innerHTML = createGroupItemHTML(type, count, titles[type], icons[type]);
+        const cardEl = groupCard.firstElementChild;
+        cardEl.addEventListener('click', () => {
+          activeGroup = type;
+          renderInitialList();
+        });
+        mediaContainer.appendChild(cardEl);
+      }
+    });
+
+    return;
+  }
+
+  if (isGroupingEnabled && activeGroup !== null) {
+    const titles = {
+      video: browser.i18n.getMessage("groupByVideoTitle") || "Videos",
+      audio: browser.i18n.getMessage("groupByAudioTitle") || "Audio",
+      stream: browser.i18n.getMessage("groupByStreamTitle") || "Streams",
+      image: browser.i18n.getMessage("groupByImageTitle") || "Images",
+      subtitle: browser.i18n.getMessage("groupBySubtitleTitle") || "Subtitles",
+      file: browser.i18n.getMessage("groupByFileTitle") || "Files"
+    };
+
+    const backHeader = document.createElement('div');
+    backHeader.innerHTML = createBackToGroupsHeaderHTML(titles[activeGroup]);
+    const backEl = backHeader.firstElementChild;
+    backEl.addEventListener('click', () => {
+      activeGroup = null;
+      renderInitialList();
+    });
+    mediaContainer.appendChild(backEl);
+
+    activeItems.forEach(item => {
+      if (item.dataset.type === activeGroup) {
+        mediaContainer.appendChild(item);
+      }
+    });
+  } else if (isSearching && isGroupingEnabled) {
+    activeItems.forEach(item => mediaContainer.appendChild(item));
+  } else {
+    activeItems.forEach(item => mediaContainer.appendChild(item));
+  }
+
+  const requestsToRender = getActiveRequests();
+
+  const activeItemsVisible = activeItems.filter(item => {
+    if (isSearching && isGroupingEnabled && activeGroup === null) return true;
+    return !isGroupingEnabled || item.dataset.type === activeGroup;
+  });
+
+  if (requestsToRender.length === 0 && activeItemsVisible.length === 0) {
+    if (isGroupingEnabled && activeGroup !== null) {
+      const emptyMsg = document.createElement('div');
+      if (query) {
+        emptyMsg.innerHTML = `<div id="no-matches-msg" style="padding: 60px 20px; text-align: center; opacity: 0.8;">No matches found for "${query}"</div>`;
+      } else {
+        emptyMsg.innerHTML = getNoMediaDetectedHTML();
+      }
+      mediaContainer.appendChild(emptyMsg);
+    } else {
+      if (query) {
+        mediaContainer.innerHTML = `<div id="no-matches-msg" style="padding: 60px 20px; text-align: center; opacity: 0.8;">No matches found for "${query}"</div>`;
+      } else {
+        mediaContainer.innerHTML = getNoMediaDetectedHTML();
+      }
+      if (mediaControls && !query) mediaControls.style.display = 'none';
+    }
+    updateSelectedCount();
     return;
   }
 
   if (mediaControls) mediaControls.style.display = 'flex';
   renderNextChunk();
+  updateSelectedCount();
 }
 
 function renderNextChunk() {
   const mediaContainer = document.getElementById('media-list');
   const fragment = document.createDocumentFragment();
-  const nextChunk = allFilteredRequests.slice(renderedCount, renderedCount + CHUNK_SIZE);
+  const requestsToRender = getActiveRequests();
+  const nextChunk = requestsToRender.slice(renderedCount, renderedCount + CHUNK_SIZE);
   const selectAllChecked = document.getElementById('select-all-checkbox').checked;
 
   nextChunk.forEach(item => {
-    
     const itemUrl = item.bestRequest.originalUrl;
     const itemUrlBase = itemUrl.split('?')[0];
     const exists = Array.from(mediaContainer.querySelectorAll('.media-item')).some(el => {
        const elUrl = el.dataset.url;
        return elUrl === itemUrl || elUrl?.split('?')[0] === itemUrlBase;
     });
-    
+
     if (exists) return;
 
     const mediaDiv = createMediaItem(item);
-    if (selectAllChecked) {
-      const cb = mediaDiv.querySelector('.media-checkbox');
-      if (cb) cb.checked = true;
-    }
     fragment.appendChild(mediaDiv);
   });
 
@@ -1233,7 +1437,7 @@ function renderNextChunk() {
   mediaContainer.appendChild(fragment);
   renderedCount += nextChunk.length;
 
-  if (renderedCount < allFilteredRequests.length) {
+  if (renderedCount < requestsToRender.length) {
     const sentinel = document.createElement('div');
     sentinel.id = 'infinite-scroll-sentinel';
     sentinel.style.height = '20px';
@@ -1247,7 +1451,7 @@ function renderNextChunk() {
       }, { rootMargin: '200px' });
     }
     intersectionObserver.observe(sentinel);
-  } else if (allFilteredRequests.length > 0) {
+  } else if (requestsToRender.length > 0) {
    const endMsg = document.createElement('div');
    endMsg.id = "end-of-media-list";
    endMsg.className = "end-of-list-container";
@@ -1260,6 +1464,7 @@ function renderNextChunk() {
    endMsg.innerHTML = `
      <div class="end-of-list-title">${titleText}</div>
      <div class="end-of-list-text">${bodyText}</div>
+     <mdui-button variant="tonal" id="add-manual-url-btn-empty" style="margin-top: 12px; --mdui-shape-corner-extra-small: 16px;"><mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></mdui-icon><span data-translate="addManualUrlButton">Add URL</span></mdui-button>
    `;
    mediaContainer.appendChild(endMsg);
   }
@@ -1326,7 +1531,6 @@ function createMediaItem(item) {
     mediaDiv.ytFormats = ytFormats;
   }
 
-
   let activeUrl = bestRequest.originalUrl;
   let activeAudioUrl = null;
   let activeSize = bestRequest.size;
@@ -1336,8 +1540,12 @@ function createMediaItem(item) {
 
   const checkbox = document.createElement('mdui-checkbox');
   checkbox.classList.add('media-checkbox');
+  checkbox.checked = selectedUrls.has(bestRequest.originalUrl);
   checkbox.addEventListener('change', () => {
-    if (!checkbox.checked) {
+    if (checkbox.checked) {
+      selectedUrls.add(bestRequest.originalUrl);
+    } else {
+      selectedUrls.delete(bestRequest.originalUrl);
       const selectAll = document.getElementById('select-all-checkbox');
       if (selectAll) selectAll.checked = false;
     }
@@ -1467,12 +1675,12 @@ function createMediaItem(item) {
 
     const resSelect = document.createElement('select');
     resSelect.classList.add('pill-select');
-    
+
     const loadingOpt = document.createElement('option');
     loadingOpt.value = "";
     loadingOpt.textContent = browser.i18n.getMessage("loadingQualities") || "Loading qualities...";
     resSelect.appendChild(loadingOpt);
-    
+
     resWrapper.appendChild(resSelect);
     resolutionRow.appendChild(resWrapper);
     actionsWrapper.appendChild(resolutionRow);
@@ -1496,7 +1704,6 @@ function createMediaItem(item) {
                 resSelect.appendChild(opt);
             });
 
-            // Determine default selection based on preference
             let defaultVal = "";
             if (preference === "highest") {
                 const highest = variants.reduce((a, b) => (a.bandwidth > b.bandwidth ? a : b));
@@ -1523,7 +1730,6 @@ function createMediaItem(item) {
     });
   }
 
-
   if (ytFormats && ytFormats.length > 1) {
     const resolutionRow = document.createElement('div');
     resolutionRow.classList.add('yt-resolution-row');
@@ -1539,14 +1745,13 @@ function createMediaItem(item) {
 
     const codecSelect = document.createElement('select');
     codecSelect.classList.add('pill-select', 'yt-codec-select');
-    
+
     const resWrapper = document.createElement('div');
     resWrapper.classList.add('pill-select-wrapper', 'yt-resolution-select-wrapper');
 
     const resSelect = document.createElement('select');
     resSelect.classList.add('pill-select', 'yt-resolution-select');
     resSelect.id = 'yt-resolution-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
-
 
     const demuxers = [...new Set(ytFormats.map(fmt => fmt.demuxer))];
     demuxers.forEach(d => {
@@ -1556,7 +1761,6 @@ function createMediaItem(item) {
       formatSelect.appendChild(opt);
     });
 
-
     const defaultDemuxer = demuxers.includes('mp4') ? 'mp4' : demuxers[0];
     formatSelect.value = defaultDemuxer;
 
@@ -1564,14 +1768,13 @@ function createMediaItem(item) {
       codecSelect.innerHTML = '';
       const selectedDemuxer = formatSelect.value;
       const availableCodecs = [...new Set(ytFormats.filter(fmt => fmt.demuxer === selectedDemuxer).map(fmt => fmt.codec || 'UNKNOWN'))];
-      
+
       availableCodecs.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c;
         opt.textContent = c;
         codecSelect.appendChild(opt);
       });
-
 
       if (availableCodecs.includes('AV1')) codecSelect.value = 'AV1';
       else if (availableCodecs.includes('VP9')) codecSelect.value = 'VP9';
@@ -1587,11 +1790,11 @@ function createMediaItem(item) {
         const selectedDemuxer = formatSelect.value;
         const selectedCodec = codecSelect.value;
 
-        const availableFormats = ytFormats.filter(fmt => 
-          fmt.demuxer === selectedDemuxer && 
+        const availableFormats = ytFormats.filter(fmt =>
+          fmt.demuxer === selectedDemuxer &&
           (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
         );
-        
+
         availableFormats.forEach((fmt) => {
           const opt = document.createElement('option');
           opt.value = ytFormats.indexOf(fmt);
@@ -1602,7 +1805,6 @@ function createMediaItem(item) {
           opt.textContent = optLabel;
           resSelect.appendChild(opt);
         });
-        
 
         resSelect.dispatchEvent(new Event('change'));
     }
@@ -1612,7 +1814,7 @@ function createMediaItem(item) {
 
     resSelect.addEventListener('change', () => {
       if (resSelect.value === '') return;
-      
+
       const selectedIdx = parseInt(resSelect.value);
       const fmt = ytFormats[selectedIdx];
       if (fmt) {
@@ -1631,15 +1833,14 @@ function createMediaItem(item) {
 
     formatWrapper.appendChild(formatSelect);
     resolutionRow.appendChild(formatWrapper);
-    
+
     codecWrapper.appendChild(codecSelect);
     resolutionRow.appendChild(codecWrapper);
 
     resWrapper.appendChild(resSelect);
     resolutionRow.appendChild(resWrapper);
-    
-    actionsWrapper.appendChild(resolutionRow);
 
+    actionsWrapper.appendChild(resolutionRow);
 
     updateCodecDropdown();
   }
@@ -1750,9 +1951,9 @@ function createMediaItem(item) {
 
   const cancelBtn = document.createElement('mdui-segmented-button');
   cancelBtn.id = 'cancel-button';
-  cancelBtn.style.display = 'none'; 
+  cancelBtn.style.display = 'none';
   cancelBtn.innerHTML = `<mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></mdui-icon>${browser.i18n.getMessage("cancelButton") || "Cancel"}`;
-  
+
   cancelBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const dlId = mediaDiv.dataset.downloadId;
@@ -1820,7 +2021,7 @@ function updatePausePlayUI(btn, isPaused) {
 function getMediaType(url, responseHeaders) {
     if (!url) return null;
     const urlLower = url.toLowerCase();
-    
+
     let contentType = "";
     if (responseHeaders && Array.isArray(responseHeaders)) {
         const found = responseHeaders.find(h => h.name && h.name.toLowerCase() === "content-type");
@@ -1890,25 +2091,25 @@ function checkIsSegment(url, responseHeaders, settings) {
 
     if (!isHideSegments) return false;
 
-    if (path.endsWith('.ts') || 
-        path.endsWith('.m4s') || 
-        path.endsWith('.m4v') || 
+    if (path.endsWith('.ts') ||
+        path.endsWith('.m4s') ||
+        path.endsWith('.m4v') ||
         path.endsWith('.m4a') ||
         path.endsWith('.m2ts') ||
         path.endsWith('.mts')) {
         return true;
     }
 
-    if (contentType === 'video/mp2t' || 
-        contentType === 'video/iso.segment' || 
+    if (contentType === 'video/mp2t' ||
+        contentType === 'video/iso.segment' ||
         contentType === 'audio/iso.segment') {
         return true;
     }
 
-    if (size > 0 && size < 5242880) { 
-        if (urlLower.includes('chunk') || 
-            urlLower.includes('fragment') || 
-            urlLower.includes('segment') || 
+    if (size > 0 && size < 5242880) {
+        if (urlLower.includes('chunk') ||
+            urlLower.includes('fragment') ||
+            urlLower.includes('segment') ||
             urlLower.includes('range/')) {
             return true;
         }
@@ -1923,6 +2124,18 @@ async function loadMediaList() {
   const globalLoading = document.getElementById('loading');
   const mainContent = document.getElementById('main-content');
   const mediaControls = document.getElementById('media-controls');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoAudioUrl = urlParams.get('autoDownloadAudioUrl');
+  const autoVideoUrl = urlParams.get('autoDownloadVideoUrl');
+  const autoOpenUrl = urlParams.get('autoOpenUrl');
+  const autoDemuxer = urlParams.get('autoDemuxer') || '';
+  const autoCodec = urlParams.get('autoCodec') || '';
+
+  if (autoAudioUrl || autoVideoUrl || autoOpenUrl) {
+    const cleanUrl = window.location.pathname + (window.location.search.includes('mode=tab') ? '?mode=tab' : '');
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
 
   let activeTabTitle = "";
   const tabIdToTitle = new Map();
@@ -1945,6 +2158,7 @@ async function loadMediaList() {
 
   document.getElementById('search-bar').value = '';
   document.getElementById('select-all-checkbox').checked = false;
+  selectedUrls.clear();
   updateSelectedCount();
 
   const activeItems = new Map();
@@ -1975,7 +2189,29 @@ async function loadMediaList() {
         return;
     }
 
-    const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'hide-segments', 'hide-page-components', 'media-sort-order', 'limit-media-list', 'limit-media-list-custom', 'optimize-low-end']);
+    const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'hide-segments', 'hide-page-components', 'media-sort-order', 'limit-media-list', 'limit-media-list-custom', 'optimize-low-end', 'group-by-type', 'disable-deduplication']);
+    isGroupingEnabled = settings['group-by-type'] === '1' || settings['group-by-type'] === true;
+
+    if (isGroupingEnabled) {
+      if (autoAudioUrl) {
+        const decodedUrl = decodeURIComponent(autoAudioUrl);
+        const isYouTube = decodedUrl.includes('googlevideo.com') || decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be');
+        activeGroup = isYouTube ? 'video' : 'audio';
+      } else if (autoVideoUrl) {
+        activeGroup = 'video';
+      } else if (autoOpenUrl) {
+        const decodedUrl = decodeURIComponent(autoOpenUrl);
+        const isYouTube = decodedUrl.includes('googlevideo.com') || decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be');
+        if (isYouTube) {
+          activeGroup = 'video';
+        } else {
+          const type = getMediaType(decodedUrl);
+          if (type) {
+            activeGroup = type;
+          }
+        }
+      }
+    }
 
     const mediaGroups = new Map();
     for (const rawUrl in mediaRequests) {
@@ -2027,7 +2263,6 @@ async function loadMediaList() {
       });
     }
 
-    // Parallel fetch for stream variants
     const streamGroups = [];
     mediaGroups.forEach(group => {
         const bestRequest = group.requests[0];
@@ -2125,14 +2360,27 @@ async function loadMediaList() {
         });
     });
 
+    const isDisableDeduplication = isFlagEnabled(settings['disable-deduplication']);
     const filenameGroupsMap = new Map();
-    groupsWithNames.forEach(item => {
-        const isVideoAudioStream = ['video', 'audio', 'stream'].includes(item.group.type);
-        let nameKey = item.resolvedFilename.toLowerCase();
-        if (isVideoAudioStream) {
-            const baseName = item.resolvedFilename.replace(/\.[a-zA-Z0-9]+$/, '').toLowerCase();
-            nameKey = baseName + '_media_group';
+    groupsWithNames.forEach((item, index) => {
+        let nameKey;
+        if (isDisableDeduplication) {
+            nameKey = 'no_dedup_' + index + '_' + (item.bestRequest.originalUrl || item.bestRequest.url || '');
+        } else {
+            const isVideoAudioStream = ['video', 'audio', 'stream'].includes(item.group.type);
+            nameKey = item.resolvedFilename.toLowerCase();
+            if (isVideoAudioStream) {
+                const baseName = item.resolvedFilename.replace(/\.[a-zA-Z0-9]+$/, '').toLowerCase();
+                nameKey = baseName + '_' + item.group.type + '_media_group';
+            }
+            if (item.size > 0) {
+                nameKey += '_' + item.size;
+            } else {
+                const urlKey = item.bestRequest.originalUrl || item.bestRequest.url || '';
+                nameKey += '_' + urlKey;
+            }
         }
+
         if (!filenameGroupsMap.has(nameKey)) {
             filenameGroupsMap.set(nameKey, []);
         }
@@ -2242,9 +2490,10 @@ async function loadMediaList() {
     if (loadingSpinner) loadingSpinner.style.display = 'none';
 
     const activeDownloads = await browser.runtime.sendMessage({ action: 'getActiveDownloads' });
+    activeDownloadingElements = [];
     if (activeDownloads) {
       const activeIds = Object.keys(activeDownloads);
-      downloadingCount = 0; 
+      downloadingCount = 0;
 
       activeIds.forEach(id => {
         const downloadData = activeDownloads[id];
@@ -2269,7 +2518,7 @@ async function loadMediaList() {
 
           const mediaContainer = document.getElementById('media-list');
           item = createMediaItem(mockItem);
-          mediaContainer.appendChild(item); 
+          mediaContainer.appendChild(item);
         }
 
         if (item) {
@@ -2282,22 +2531,40 @@ async function loadMediaList() {
           const audioBtn = item.querySelector('#audio-only-button');
           if (audioBtn) audioBtn.style.display = 'none';
           updateProgressUI(id, downloadData.loaded, downloadData.total, downloadData.isParallel, downloadData.isPaused, downloadData.status, downloadData.percent);
+
+          if (!activeDownloadingElements.includes(item)) {
+            activeDownloadingElements.push(item);
+          }
         }
       });
     }
 
     renderInitialList();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const autoAudioUrl = urlParams.get('autoDownloadAudioUrl');
-    const autoVideoUrl = urlParams.get('autoDownloadVideoUrl');
     if (autoAudioUrl) {
       const decodedUrl = decodeURIComponent(autoAudioUrl);
       setTimeout(() => {
-        const mediaItemEl = Array.from(document.querySelectorAll('.media-item')).find(el => {
+        const allItems = Array.from(document.querySelectorAll('.media-item'));
+        let mediaItemEl = allItems.find(el => {
           const elUrl = el.dataset.url;
           return elUrl === decodedUrl || (elUrl && elUrl.split('?')[0] === decodedUrl.split('?')[0]);
         });
+        if (!mediaItemEl) {
+          mediaItemEl = allItems.find(el => {
+            if (el.ytFormats) {
+              return el.ytFormats.some(f => {
+                if (f.videoUrl === decodedUrl || f.audioUrl === decodedUrl) return true;
+                const getItag = (u) => u ? u.match(/[?&]itag=(\d+)/)?.[1] : null;
+                const itagFmtVid = getItag(f.videoUrl);
+                const itagFmtAud = getItag(f.audioUrl);
+                const itagDec = getItag(decodedUrl);
+                if (itagDec && (itagDec === itagFmtVid || itagDec === itagFmtAud)) return true;
+                return false;
+              });
+            }
+            return false;
+          });
+        }
         if (mediaItemEl) {
           const audioBtn = mediaItemEl.querySelector('#audio-only-button');
           if (audioBtn && audioBtn.style.display !== 'none') {
@@ -2310,8 +2577,6 @@ async function loadMediaList() {
       }, 300);
     } else if (autoVideoUrl) {
       const decodedUrl = decodeURIComponent(autoVideoUrl);
-      const autoDemuxer = urlParams.get('autoDemuxer') || '';
-      const autoCodec = urlParams.get('autoCodec') || '';
       let attempts = 0;
       const tryAutoDownload = () => {
         attempts++;
@@ -2376,7 +2641,7 @@ async function loadMediaList() {
                           const getItag = (u) => u.match(/[?&]itag=(\d+)/)?.[1];
                           const itagOpt = getItag(optionFmt.videoUrl);
                           const itagDec = getItag(decodedUrl);
-                          
+
                           if (optionFmt.videoUrl === decodedUrl || (itagOpt && itagOpt === itagDec)) {
                             foundOptValue = opt.value;
                             break;
@@ -2385,12 +2650,12 @@ async function loadMediaList() {
                       }
                     }
                   }
-                  
+
                   if (foundOptValue !== null) {
                     resSel.value = foundOptValue;
                     resSel.dispatchEvent(new Event('change'));
                   }
-                  
+
                   mediaItemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   setTimeout(() => dlBtn.click(), 200);
                 }, 50);
@@ -2522,7 +2787,7 @@ async function loadHistoryList() {
         let method = res['download-method'] || 'browser';
         const isGdriveStream = res['save-to-gdrive'] === '1' && res['gdrive-stream'] === '1' && res['gdrive_token'];
         const isDropboxStream = res['save-to-dropbox'] === '1' && res['dropbox-stream'] === '1' && res['dropbox_token'];
-        
+
         if (isGdriveStream || isDropboxStream) method = 'fetch';
 
         if (method === 'fetch') {
@@ -2719,9 +2984,9 @@ async function loadAboutPage() {
         let nativeUpdateFound = false;
         if (browser.runtime.requestUpdateCheck) {
           try {
-            const [status, details] = await browser.runtime.requestUpdateCheck();
-            if (status === 'update_available') {
-              showUpdateDialog('https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader', details.version || 'new');
+            const result = await browser.runtime.requestUpdateCheck();
+            if (result && result.status === 'update_available') {
+              showUpdateDialog('https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader', result.version || 'new');
               nativeUpdateFound = true;
             }
           } catch (err) {
@@ -2793,7 +3058,7 @@ async function downloadAllAsZip(items) {
         const requestData = allFilteredRequests.find(r => r.bestRequest.originalUrl === url || r.bestRequest.url === url);
         targetRequest = requestData ? requestData.bestRequest : null;
       } else {
-        
+
         url = item.bestRequest.originalUrl;
         targetRequest = item.bestRequest;
       }
@@ -3060,7 +3325,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
   try {
    const requests = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: url });
    let targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
-   
+
    if (!targetRequest && mediaDiv && mediaDiv.dataset.originalUrl) {
        const ogUrl = mediaDiv.dataset.originalUrl;
        const ogReqs = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: ogUrl });
@@ -3130,7 +3395,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
     const dlSettings = await browser.storage.local.get(['download-method', 'stream-download', 'background-download']);
     let downloadMethod = dlSettings['download-method'] || 'browser';
     let streamPref = dlSettings['stream-download'] || 'offline';
-    const bgDownloadEnabled = dlSettings['background-download'] !== '0'; 
+    const bgDownloadEnabled = dlSettings['background-download'] !== '0';
 
     if (!bgDownloadEnabled) {
         if (streamPref === 'offline') streamPref = 'stream';
@@ -3165,7 +3430,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
       try {
           const checkCancel = () => window.activeCancellations && window.activeCancellations.has(url);
           const isYouTube = url.toLowerCase().includes('googlevideo.com') || url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') || (mediaDiv && mediaDiv.dataset.originalUrl && (mediaDiv.dataset.originalUrl.toLowerCase().includes('youtube.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('googlevideo.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('youtu.be')));
-          
+
           let blob;
           if (isYouTube) {
               const uint8Array = await window.fetchAsUint8ArrayChunked(url, loadingBar, statusInfo, checkCancel);
@@ -3206,7 +3471,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
               blob = new Blob(chunks);
           }
           statusInfo.textContent = browser.i18n.getMessage("downloadCompletePreparingExtraction");
-          await new Promise(r => setTimeout(r, 500)); 
+          await new Promise(r => setTimeout(r, 500));
           if (window.activeCancellations.has(url)) throw new Error("Cancelled");
           await extractAudioFromBlob(blob, newName, downloadMethod, loadingBar, checkCancel);
       } catch (e) {
@@ -3234,7 +3499,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
   try {
    const requests = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: url });
    let targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
-   
+
    if (!targetRequest && mediaDiv && mediaDiv.dataset.originalUrl) {
        const ogUrl = mediaDiv.dataset.originalUrl;
        const ogReqs = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: ogUrl });
@@ -3350,7 +3615,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
                 if (!response.ok) throw new Error("Fetch failed");
                 text = await response.text();
             }
-            
+
             try {
                 if (typeof window.subsrt !== 'undefined') {
                     text = window.subsrt.convert(text, { format: subFormat });
@@ -3361,7 +3626,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
                 console.warn("subsrt conversion failed, using fallback:", convErr);
                 if (subFormat === 'srt') {
                     if (text.trim().startsWith('WEBVTT')) {
-                        text = text.replace(/^WEBVTT[^\n]*\n+/i, ''); 
+                        text = text.replace(/^WEBVTT[^\n]*\n+/i, '');
                         text = text.replace(/([0-9]{2}:[0-9]{2}:[0-9]{2})\.([0-9]{3})/g, '$1,$2');
                     }
                 } else if (subFormat === 'vtt') {
@@ -3374,7 +3639,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
 
             newName = newName.replace(/\.[a-z0-9]+$/i, '.' + subFormat);
             if (!newName.toLowerCase().endsWith('.' + subFormat)) newName += '.' + subFormat;
-            
+
             let mimeType = 'application/octet-stream';
             if (subFormat === 'srt') mimeType = 'application/x-subrip';
             if (subFormat === 'vtt') mimeType = 'text/vtt';
@@ -3415,7 +3680,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
         if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("startingDownload") || "Starting download...";
         try {
             console.log("downloadFile: Calling downloadAndMuxYoutube...");
-            // Pre-emptively clear cancellations for this URL to allow fresh start
+
             if (window.activeCancellations) {
                 window.activeCancellations.delete(url);
                 window.activeCancellations.delete(audioUrl);
@@ -3518,11 +3783,10 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
           }
 
           const blob = new Blob(chunks);
-          
+
           const downloadMethod = await browser.storage.local.get('download-method').then(res => res['download-method'] || 'browser');
           await finalizeDownload(blob, newName, downloadMethod, loadingBar, false, false);
-          
-          
+
           setTimeout(() => {
             finishDownloadUI(downloadId, true);
           }, 2000);
@@ -3532,14 +3796,14 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
           finishDownloadUI(downloadId);
         }
       } else {
-        
+
         browser.runtime.sendMessage({
           action: 'startFetchDownload',
           url: url,
-          downloadId: mediaDiv.dataset.downloadId,
+          downloadId: mediaDiv ? mediaDiv.dataset.downloadId : downloadId,
           filename: newName,
           request: targetRequest,
-          mediaType: mediaDiv.dataset.type
+          mediaType: mediaDiv ? mediaDiv.dataset.type : getMediaType(url, targetRequest.responseHeaders)
         });
       }
     }  } catch (error) {
@@ -3550,7 +3814,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
         window.activeCancellations.delete(url);
         if (audioUrl) window.activeCancellations.delete(audioUrl);
         if (downloadId) window.activeCancellations.delete(downloadId);
-        
+
         const restoreCb = window.activeCancellations.restoreCallbacks.get(url);
         if (restoreCb) restoreCb();
         window.activeCancellations.restoreCallbacks.delete(url);
@@ -3562,13 +3826,13 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
 async function generateTemplateName(template, url, originalName, suggestedTitle) {
     let result = template || "{name}";
     let pageTitle = suggestedTitle;
-    
+
     if (!pageTitle) {
         const tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
         const activeTab = tabs[0];
         pageTitle = activeTab ? activeTab.title : "Media";
     }
-    
+
     const host = new URL(url).hostname;
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
@@ -3657,7 +3921,6 @@ function showRenameDialog(initialValue) {
     });
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
     const extensionsMap = {
         video: [".3g2", ".3gp", ".asx", ".avi", ".divx", ".4v", ".flv", ".ismv", ".m2t", ".m2ts", ".m2v", ".m4s", ".m4v", ".mk3d", ".mkv", ".mng", ".mov", ".mp2v", ".mp4", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mxf", ".ogm", ".ogv", ".qt", ".rm", ".swf", ".ts", ".vob", ".vp9", ".webm", ".wmv"],
@@ -3693,3 +3956,99 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function showAddManualUrlDialog() {
+    return new Promise(async (resolve) => {
+        const dialog = document.createElement('mdui-dialog');
+        dialog.headline = browser.i18n.getMessage("addManualUrlHeadline") || "Add URL to Download";
+
+        const urlField = document.createElement('mdui-text-field');
+        urlField.style.marginTop = '16px';
+        urlField.setAttribute('label', browser.i18n.getMessage("addManualUrlFieldLabel") || "Direct File URL");
+        urlField.setAttribute('placeholder', "https://example.com/file.mp4");
+        dialog.appendChild(urlField);
+
+        const cancelBtn = document.createElement('mdui-button');
+        cancelBtn.slot = "action";
+        cancelBtn.variant = "text";
+        cancelBtn.textContent = browser.i18n.getMessage("renameDialogCancelButton") || "Cancel";
+        cancelBtn.addEventListener('click', () => {
+            dialog.open = false;
+            resolve(null);
+        });
+
+        const okBtn = document.createElement('mdui-button');
+        okBtn.slot = "action";
+        okBtn.variant = "tonal";
+        okBtn.textContent = browser.i18n.getMessage("renameDialogDownloadButton") || "Download";
+        okBtn.addEventListener('click', () => {
+            dialog.open = false;
+            resolve(urlField.value.trim());
+        });
+
+        dialog.appendChild(cancelBtn);
+        dialog.appendChild(okBtn);
+
+        document.body.appendChild(dialog);
+        dialog.open = true;
+
+        dialog.addEventListener('closed', () => {
+            dialog.remove();
+        });
+    });
+}
+
+async function addManualUrl(url) {
+    if (!url) return;
+    try {
+        new URL(url);
+    } catch (e) {
+        showDialog("Please enter a valid URL.", "Invalid URL");
+        return;
+    }
+
+    let activeTabId = null;
+    let activeTabUrl = "";
+    let activeTabTitle = "";
+    try {
+        const tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+        if (tabs && tabs[0]) {
+            activeTabId = tabs[0].id;
+            activeTabUrl = tabs[0].url;
+            activeTabTitle = tabs[0].title;
+        }
+    } catch (e) {}
+
+    const originalName = getFileName(url, 100);
+    const item = {
+        url: url,
+        method: 'GET',
+        requestHeaders: null,
+        responseHeaders: null,
+        requestBody: null,
+        cookie: '',
+        size: 'unknown',
+        timeStamp: Date.now(),
+        tabId: activeTabId,
+        pageTitle: originalName,
+        pageUrl: activeTabUrl
+    };
+
+    const updates = {};
+    updates[url] = [item];
+    await browser.storage.session.set(updates);
+
+    await loadMediaList();
+
+    setTimeout(async () => {
+        const mediaItemEl = Array.from(document.querySelectorAll('.media-item')).find(el => {
+            return el.dataset.url === url;
+        });
+        if (mediaItemEl) {
+            const dlBtn = mediaItemEl.querySelector('#download-button');
+            if (dlBtn) dlBtn.click();
+        } else {
+            downloadFile(url, null, null, false);
+        }
+    }, 300);
+}

@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let val = 'local';
         if (gdriveVal === '1') val = 'gdrive';
         if (dropboxVal === '1') val = 'dropbox';
-        
+
         if (cloudLocationSelect) {
             if (cloudLocationSelect.value !== val) {
                 cloudLocationSelect.value = val;
@@ -99,8 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateCloudVisibility();
         });
     }
-    
-    // Call it initially
+
     updateCloudVisibility();
 
     await Promise.allSettled([
@@ -112,7 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupConfirmationBar();
     setupSpeedTest();
 
-    
     if (window.location.search.includes('startDropbox=true')) {
         const res = await browser.storage.local.get('dropbox_token');
         if (!res.dropbox_token) {
@@ -157,7 +155,7 @@ function setupConfirmationBar() {
     cancelBtn.addEventListener('click', () => {
         pendingChanges = {};
         bar.style.display = 'none';
-        initializeSettings(); 
+        initializeSettings();
     });
 }
 
@@ -170,18 +168,17 @@ function showApplyBar() {
 async function initializeSettings() {
     isInitializing = true;
 
-    // Self-healing: if filename-template was incorrectly set to '0', reset it to empty string
     const tempRes = await browser.storage.local.get('filename-template');
     if (tempRes['filename-template'] === '0') {
         await browser.storage.local.set({ 'filename-template': '' });
     }
 
     const settings = [
-        'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
+        'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
         'media-notification', 'stack-notifications', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
         'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
-        'filename-template', 'disable-rename-dialog', 'history-page', 'clean-view', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
+        'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream'
     ];
 
@@ -191,14 +188,14 @@ async function initializeSettings() {
 
         if (value === undefined) {
             const defaultsEnabled = [
-                'url-detection', 'youtube-detection', 'mime-detection', 'hide-page-components',
+                'url-detection', 'youtube-detection', 'mime-detection', 'hide-page-components', 'hide-segments',
                 'media-notification', 'only-video', 'only-audio', 'only-stream',
-                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4'
+                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3'
             ];
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['only-image', 'only-subtitle', 'detect-download-links', 'history-page', 'clean-view', 'audio-to-mp3', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
+            } else if (['only-image', 'only-subtitle', 'detect-download-links', 'disable-deduplication', 'history-page', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -215,7 +212,7 @@ async function initializeSettings() {
 
         if (element.tagName === 'MDUI-SWITCH') {
             element.checked = value === '1' || value === true;
-            
+
             const updateConstraints = () => {
                 const speedBoost = document.getElementById('speed-boost');
                 const speedBoostResume = document.getElementById('speed-boost-resume');
@@ -230,7 +227,7 @@ async function initializeSettings() {
                             speedBoost.checked = false;
                             speedBoost.disabled = true;
                             pendingChanges['speed-boost'] = '0';
-                            
+
                             if (speedBoostResume) {
                                 speedBoostResume.checked = false;
                                 speedBoostResume.disabled = true;
@@ -243,7 +240,7 @@ async function initializeSettings() {
                                 const item = connections.closest('.setting-item');
                                 if (item) item.style.display = 'none';
                             }
-                            
+
                             if (typeof showApplyBar === 'function') showApplyBar();
                         } else {
                             speedBoost.disabled = false;
@@ -307,7 +304,7 @@ async function initializeSettings() {
                             gdriveStream.checked = false;
                             gdriveStream.disabled = true;
                             pendingChanges['gdrive-stream'] = '0';
-                            
+
                             const dbxStream = document.getElementById('dropbox-stream');
                             if (speedBoost && (!dbxStream || !dbxStream.checked)) {
                                 speedBoost.disabled = false;
@@ -332,7 +329,6 @@ async function initializeSettings() {
                     }
                 }
 
-                
                 if (setting === 'save-to-dropbox') {
                     if (!element.checked) {
                         const dbxStream = document.getElementById('dropbox-stream');
@@ -345,7 +341,7 @@ async function initializeSettings() {
                             const speedBoost = document.getElementById('speed-boost');
                             const speedBoostResume = document.getElementById('speed-boost-resume');
                             const connections = document.getElementById('connections');
-                            
+
                             if (speedBoost && (!gdriveStream || !gdriveStream.checked)) {
                                 speedBoost.disabled = false;
                                 if (speedBoostResume) {
@@ -430,7 +426,6 @@ async function initializeSettings() {
                 }
             };
 
-            // Initial constraint check
             if (setting === 'gdrive-stream' || setting === 'speed-boost' || setting === 'background-download' || setting === 'save-to-gdrive' || setting === 'detect-download-links' || setting === 'optimize-low-end') {
                 const checkInitial = () => {
                     const speedBoost = document.getElementById('speed-boost');
@@ -448,7 +443,7 @@ async function initializeSettings() {
 
                     if (speedBoost && speedBoostResume && connections && gdriveStream && backgroundDownload && autoResume && cloudSaveLocation && detectDownloadLinks && onlyFile) {
                         const dropboxStream = document.getElementById('dropbox-stream');
-                        
+
                         if (gdriveStream) {
                             gdriveStream.disabled = cloudSaveLocation.value !== 'gdrive';
                             if (gdriveStream.disabled) gdriveStream.checked = false;
@@ -520,7 +515,7 @@ async function initializeSettings() {
 
             const handleChange = () => {
                 pendingChanges[setting] = element.checked ? '1' : '0';
-                
+
                 updateConstraints();
                 showApplyBar();
 
@@ -537,7 +532,6 @@ async function initializeSettings() {
                     }
                 }
 
-                
                 if ((setting === 'save-to-dropbox' || setting === 'dropbox-stream') && element.checked) {
                     checkDropboxLogin();
                 }
@@ -571,14 +565,15 @@ async function initializeSettings() {
 
         if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
             const defaultValue = setting === 'limit-media-list' ? '20' :
+                                (setting === 'settings-layout' ? 'default' :
                                 (setting === 'open-preference' ? 'tab' :
                                 (setting === 'download-method' ? 'browser' :
                                 (setting === 'stream-quality' ? 'highest' :
                                 (setting === 'subtitle-conversion' ? 'none' :
                                 (setting === 'connections' ? '4' :
                                 (setting === 'media-sort-order' ? 'newest' :
-                                (setting === 'stream-download' ? 'offline' : 'stream')))))));
-            
+                                (setting === 'stream-download' ? 'offline' : 'stream'))))))));
+
             element.value = value || defaultValue;
             element.addEventListener('change', () => {
                 pendingChanges[setting] = element.value;
@@ -589,6 +584,9 @@ async function initializeSettings() {
                         const item = limitCustom.closest('.setting-item');
                         if (item) item.style.display = element.value === 'custom' ? 'flex' : 'none';
                     }
+                }
+                if (setting === 'settings-layout') {
+                    applySettingsLayout(element.value);
                 }
             });
             continue;
@@ -626,8 +624,6 @@ async function initializeSettings() {
     const dropboxUserInfo = document.getElementById('dropbox-user-info');
     const dropboxUserEmail = document.getElementById('dropbox-user-email');
 
-
-    
     async function checkDropboxLogin() {
         const res = await browser.storage.local.get('dropbox_token');
         const dropboxSwitch = document.getElementById('save-to-dropbox');
@@ -640,7 +636,7 @@ async function initializeSettings() {
             if (dropboxStreamContainer) dropboxStreamContainer.style.display = 'flex';
             dropboxText.textContent = browser.i18n.getMessage("dropboxLogoutButton") || "Logout";
             if (dropboxBtn) dropboxBtn.variant = "outlined";
-            
+
             const userRes = await browser.storage.local.get('dropbox_user');
             if (userRes.dropbox_user) {
                 dropboxUserInfo.style.display = 'block';
@@ -657,9 +653,8 @@ async function initializeSettings() {
             const current = await browser.storage.local.get('save-to-dropbox');
             if (current['save-to-dropbox'] === '1' || pendingChanges['save-to-dropbox'] === '1') {
                 pendingChanges['save-to-dropbox'] = '0';
-                await browser.storage.local.set({ 'save-to-dropbox': '0' }); // Auto-save
-                
-                // If it was currently active, revert the dropdown to local immediately
+                await browser.storage.local.set({ 'save-to-dropbox': '0' });
+
                 const select = document.getElementById('cloud-save-location');
                 if (select && select.value === 'dropbox') {
                     select.value = 'local';
@@ -683,7 +678,7 @@ async function initializeSettings() {
             if (gdriveStreamContainer) gdriveStreamContainer.style.display = 'flex';
             gdriveText.textContent = browser.i18n.getMessage("gdriveLogoutButton") || "Logout";
             gdriveBtn.variant = "outlined";
-            
+
             const userRes = await browser.storage.local.get('gdrive_user');
             if (userRes.gdrive_user) {
                 gdriveUserInfo.style.display = 'block';
@@ -700,13 +695,12 @@ async function initializeSettings() {
             const current = await browser.storage.local.get('save-to-gdrive');
             if (current['save-to-gdrive'] === '1' || pendingChanges['save-to-gdrive'] === '1') {
                 pendingChanges['save-to-gdrive'] = '0';
-                await browser.storage.local.set({ 'save-to-gdrive': '0' }); // Auto-save
+                await browser.storage.local.set({ 'save-to-gdrive': '0' });
 
-                // If it was currently active, revert the dropdown to local immediately
                 const select = document.getElementById('cloud-save-location');
                 if (select && select.value === 'gdrive') {
                     select.value = 'local';
-                    // dispatch change event to trigger updateCloudVisibility if it was attached
+
                     select.dispatchEvent(new Event('change'));
                 }
                 const gdriveDetails = document.getElementById('gdrive-details-container');
@@ -726,7 +720,7 @@ async function initializeSettings() {
                 }
             } else {
                 let isPopup = window.location.pathname.endsWith('popup.html') && !window.location.search.includes('options=true');
-                
+
                 try {
                     const clientId = "1042907477337-c8h27qniercjia05jqqafgvjao514n28.apps.googleusercontent.com";
                     const finalRedirectUri = getRedirectURL();
@@ -811,7 +805,7 @@ async function initializeSettings() {
 
                     if (token) {
                         await browser.storage.local.set({ gdrive_token: token });
-                        
+
                         const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
@@ -852,7 +846,7 @@ async function initializeSettings() {
                 }
             } else {
                 let isPopup = window.location.pathname.endsWith('popup.html') && !window.location.search.includes('options=true');
-                
+
                 try {
                     const clientId = "gipboqpkook5oaj";
                     let finalRedirectUri;
@@ -946,7 +940,7 @@ async function initializeSettings() {
 
                     if (token) {
                         await browser.storage.local.set({ dropbox_token: token });
-                        
+
                         const userResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
                             method: 'POST',
                             headers: { 'Authorization': "Bearer " + token }
@@ -955,7 +949,7 @@ async function initializeSettings() {
                             const userData = await userResponse.json();
                             await browser.storage.local.set({ dropbox_user: { email: userData.email, name: userData.name.display_name } });
                         }
-                        
+
                         checkDropboxLogin();
 
                         if (typeof mdui !== 'undefined' && mdui.snackbar) {
@@ -973,8 +967,15 @@ async function initializeSettings() {
         checkDropboxLogin();
     }
 
-    const cleanViewResult = await browser.storage.local.get('clean-view');
-    updateCleanViewUI(cleanViewResult['clean-view'] === '1', true);
+    const layoutResult = await browser.storage.local.get('settings-layout');
+    let layoutVal = layoutResult['settings-layout'] || 'default';
+    if (!layoutResult['settings-layout']) {
+        const cleanViewResult = await browser.storage.local.get('clean-view');
+        if (cleanViewResult['clean-view'] === '1') {
+            layoutVal = 'clean';
+        }
+    }
+    applySettingsLayout(layoutVal);
 
     setupCollapsibleLogic();
 
@@ -1043,7 +1044,7 @@ async function initializeSettings() {
     if (hexInput) {
         hexInput.oninput = (e) => {
             let val = e.target.value;
-            
+
             pendingChanges['theme-color'] = val;
             showApplyBar();
 
@@ -1075,7 +1076,7 @@ async function initializeSettings() {
     if (bgDlSwitch) {
         syncNotificationSetting(bgDlSwitch.checked);
     }
-    
+
     setTimeout(() => {
         isInitializing = false;
         pendingChanges = {};
@@ -1105,39 +1106,122 @@ function updatePopupState(value) {
     }
 }
 
-function updateCleanViewUI(isEnabled, isInit = false) {
+function applySettingsLayout(layoutType) {
     const container = document.getElementById('settings-container');
-    const groups = document.querySelectorAll('.settings-group');
-    const icons = document.querySelectorAll('.collapse-icon');
-    
-    if (isInit) {
-        document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = 'none');
-    }
+    if (!container) return;
 
-    if (container) {
-        if (isEnabled) container.classList.add('clean-view-enabled');
-        else container.classList.remove('clean-view-enabled');
-    }
+    document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = 'none');
 
+    container.classList.remove('layout-default', 'layout-clean', 'layout-sidebar', 'layout-tabs', 'clean-view-enabled');
+
+    const oldSidebar = container.querySelector('.settings-sidebar-nav');
+    if (oldSidebar) oldSidebar.remove();
+    const oldTabsHeader = container.querySelector('.settings-tabs-header');
+    if (oldTabsHeader) oldTabsHeader.remove();
+
+    const groups = container.querySelectorAll('.settings-group');
     groups.forEach(group => {
-        if (isEnabled) {
-            group.classList.add('collapsed');
-            
-        } else {
-            group.classList.remove('collapsed');
-        }
+        group.style.display = '';
+        group.classList.remove('collapsed', 'active-sidebar-group', 'active-tab-group');
     });
 
-    icons.forEach(icon => {
-        icon.style.display = isEnabled ? 'block' : 'none';
-    });
+    const icons = container.querySelectorAll('.collapse-icon');
+    icons.forEach(icon => icon.style.display = 'none');
 
-    if (isInit) {
-        document.body.offsetHeight; // Force reflow
-        setTimeout(() => {
-            document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = '');
-        }, 50);
+    if (layoutType === 'default') {
+        container.classList.add('layout-default');
     }
+    else if (layoutType === 'clean') {
+        container.classList.add('layout-clean', 'clean-view-enabled');
+        groups.forEach(group => group.classList.add('collapsed'));
+        icons.forEach(icon => icon.style.display = 'block');
+    }
+    else if (layoutType === 'sidebar') {
+        container.classList.add('layout-sidebar');
+
+        const sidebarNav = document.createElement('div');
+        sidebarNav.className = 'settings-sidebar-nav';
+
+        groups.forEach((group, index) => {
+            const titleSpan = group.querySelector('.settings-section-title span[data-translate]');
+            const key = titleSpan ? titleSpan.getAttribute('data-translate') : null;
+            const titleText = key ? (browser.i18n.getMessage(key) || titleSpan.textContent) : "Group";
+
+            let svgIcon = '';
+            const mduiIcon = group.querySelector('.settings-section-title mdui-icon');
+            if (mduiIcon) svgIcon = mduiIcon.innerHTML;
+
+            const navItem = document.createElement('div');
+            navItem.className = 'sidebar-nav-item' + (index === 0 ? ' active' : '');
+            navItem.innerHTML = `<span class="nav-icon">${svgIcon}</span>`;
+            navItem.title = titleText;
+
+            navItem.addEventListener('click', () => {
+                sidebarNav.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
+                navItem.classList.add('active');
+
+                groups.forEach(g => g.classList.remove('active-sidebar-group'));
+                group.classList.add('active-sidebar-group');
+            });
+
+            sidebarNav.appendChild(navItem);
+
+            if (index === 0) {
+                group.classList.add('active-sidebar-group');
+            }
+        });
+
+        container.insertBefore(sidebarNav, container.firstChild);
+    }
+    else if (layoutType === 'tabs' || layoutType === 'tabs-icons') {
+        container.classList.add('layout-tabs');
+
+        const tabsHeader = document.createElement('div');
+        tabsHeader.className = 'settings-tabs-header';
+        if (layoutType === 'tabs-icons') {
+            tabsHeader.classList.add('tabs-icons-only');
+        }
+
+        groups.forEach((group, index) => {
+            const titleSpan = group.querySelector('.settings-section-title span[data-translate]');
+            const key = titleSpan ? titleSpan.getAttribute('data-translate') : null;
+            const titleText = key ? (browser.i18n.getMessage(key) || titleSpan.textContent) : "Group";
+
+            const tabItem = document.createElement('div');
+            tabItem.className = 'tabs-nav-item' + (index === 0 ? ' active' : '');
+
+            if (layoutType === 'tabs') {
+                tabItem.textContent = titleText;
+            } else {
+                let svgIcon = '';
+                const mduiIcon = group.querySelector('.settings-section-title mdui-icon');
+                if (mduiIcon) svgIcon = mduiIcon.innerHTML;
+                tabItem.innerHTML = `<span class="nav-icon">${svgIcon}</span>`;
+                tabItem.title = titleText;
+            }
+
+            tabItem.addEventListener('click', () => {
+                tabsHeader.querySelectorAll('.tabs-nav-item').forEach(el => el.classList.remove('active'));
+                tabItem.classList.add('active');
+
+                groups.forEach(g => g.classList.remove('active-tab-group'));
+                group.classList.add('active-tab-group');
+            });
+
+            tabsHeader.appendChild(tabItem);
+
+            if (index === 0) {
+                group.classList.add('active-tab-group');
+            }
+        });
+
+        container.insertBefore(tabsHeader, container.firstChild);
+    }
+
+    document.body.offsetHeight;
+    setTimeout(() => {
+        document.querySelectorAll('.settings-items-container').forEach(c => c.style.transition = '');
+    }, 50);
 
     setTimeout(enforceUIConstraints, 50);
 }
@@ -1160,14 +1244,21 @@ function enforceUIConstraints() {
 
 function setupCollapsibleLogic() {
     const headers = document.querySelectorAll('.collapsible-header');
-    
+
     headers.forEach(header => {
         if (header.dataset.collapsibleBound) return;
         header.dataset.collapsibleBound = "true";
 
         header.addEventListener('click', async () => {
-            const cleanViewResult = await browser.storage.local.get('clean-view');
-            if (cleanViewResult['clean-view'] !== '1') return;
+            const layoutResult = await browser.storage.local.get('settings-layout');
+            let layoutVal = layoutResult['settings-layout'] || 'default';
+            if (!layoutResult['settings-layout']) {
+                const cleanViewResult = await browser.storage.local.get('clean-view');
+                if (cleanViewResult['clean-view'] === '1') {
+                    layoutVal = 'clean';
+                }
+            }
+            if (layoutVal !== 'clean') return;
 
             const currentGroup = header.closest('.settings-group');
             if (!currentGroup) return;
@@ -1209,12 +1300,12 @@ function setupSpeedTest() {
         if (!speedometerProgress || !speedometerValue) return;
         const Mbps = bps / 1000000;
         speedometerValue.textContent = Mbps.toFixed(2);
-        
+
         const maxSpeed = 150;
         const progressFraction = Math.min(Math.sqrt(Mbps / maxSpeed), 1);
         const dashLength = progressFraction * 376.99;
         speedometerProgress.style.strokeDasharray = `${dashLength} 502.65`;
-        
+
         if (type === 'download') {
             speedometerProgress.style.stroke = 'rgb(var(--mdui-color-primary))';
             speedometerProgress.style.filter = 'drop-shadow(0 0 6px rgba(var(--mdui-color-primary), 0.6))';
@@ -1231,7 +1322,7 @@ function setupSpeedTest() {
         dlBoostValue.textContent = '-';
         ulValue.textContent = '-';
         ulBoostValue.textContent = '-';
-        
+
         dlProgress.style.display = 'block';
         dlProgress.value = 0;
         dlBoostProgress.style.display = 'none';
@@ -1244,12 +1335,12 @@ function setupSpeedTest() {
         if (speedometerContainer) speedometerContainer.style.display = 'flex';
         if (speedometerProgress) speedometerProgress.style.strokeDasharray = '0 502.65';
         if (speedometerValue) speedometerValue.textContent = '0.00';
-        
+
         const localSettings = await browser.storage.local.get(['connections']);
         const concurrency = parseInt(localSettings['connections'] || '4', 10);
 
         try {
-            // 1. Run Download Test (Normal)
+
             statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingDownload") || "Testing download speed...";
             const downloadBps = await runDownloadTest((progress, currentBps) => {
                 dlProgress.value = progress;
@@ -1260,7 +1351,6 @@ function setupSpeedTest() {
             updateSpeedometer(downloadBps, 'download');
             dlProgress.style.display = 'none';
 
-            // 2. Run Download Test (Speed Boost)
             dlBoostProgress.style.display = 'block';
             statusText.textContent = `Testing download speed boost (using ${concurrency} connections)...`;
             const downloadBoostBps = await runParallelDownloadTest(concurrency, (progress, currentBps) => {
@@ -1272,7 +1362,6 @@ function setupSpeedTest() {
             updateSpeedometer(downloadBoostBps, 'download');
             dlBoostProgress.style.display = 'none';
 
-            // 3. Run Upload Test (Normal)
             ulProgress.style.display = 'block';
             statusText.textContent = browser.i18n.getMessage("speedTestStatusTestingUpload") || "Testing upload speed...";
             const uploadBps = await runUploadTest((progress, currentBps) => {
@@ -1284,7 +1373,6 @@ function setupSpeedTest() {
             updateSpeedometer(uploadBps, 'upload');
             ulProgress.style.display = 'none';
 
-            // 4. Run Upload Test (Speed Boost)
             ulBoostProgress.style.display = 'block';
             statusText.textContent = `Testing upload speed boost (using ${concurrency} connections)...`;
             const uploadBoostBps = await runParallelUploadTest(concurrency, (progress, currentBps) => {
@@ -1409,7 +1497,7 @@ async function runParallelDownloadTest(concurrency, onProgress) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     totalReceived += value.length;
-                    
+
                     if (elapsed > 0) {
                         const bps = (totalReceived * 8) / (elapsed / 1000);
                         const progress = Math.min((elapsed / durationMs) * 100, 100);
@@ -1435,41 +1523,41 @@ async function runUploadTest(onProgress) {
     const startTime = performance.now();
     const durationMs = 10000;
     let totalUploaded = 0;
-    
-    const chunk = new Uint8Array(2 * 1024 * 1024); // 2MB chunk
-    
+
+    const chunk = new Uint8Array(2 * 1024 * 1024);
+
     while (performance.now() - startTime < durationMs) {
         await new Promise((resolve) => {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "https://speed.cloudflare.com/__up");
-            
+
             let lastLoaded = 0;
             xhr.upload.onprogress = (event) => {
                 const chunkUploaded = event.loaded - lastLoaded;
                 lastLoaded = event.loaded;
                 totalUploaded += chunkUploaded;
-                
+
                 const elapsed = performance.now() - startTime;
                 if (elapsed >= durationMs) {
                     xhr.abort();
                     return;
                 }
-                
+
                 if (elapsed > 0) {
                     const bps = (totalUploaded * 8) / (elapsed / 1000);
                     const progress = Math.min((elapsed / durationMs) * 100, 100);
                     onProgress(progress, bps);
                 }
             };
-            
+
             xhr.onload = () => resolve();
             xhr.onerror = () => resolve();
             xhr.onabort = () => resolve();
-            
+
             xhr.send(chunk);
         });
     }
-    
+
     const finalElapsed = (performance.now() - startTime) / 1000;
     return (totalUploaded * 8) / finalElapsed;
 }
@@ -1479,14 +1567,14 @@ async function runParallelUploadTest(concurrency, onProgress) {
     const durationMs = 10000;
     let totalUploaded = 0;
     let hasError = false;
-    const chunk = new Uint8Array(1 * 1024 * 1024); // 1MB chunk for parallel upload
+    const chunk = new Uint8Array(1 * 1024 * 1024);
 
     const uploadJobs = Array.from({ length: concurrency }).map(async () => {
         while (performance.now() - startTime < durationMs && !hasError) {
             await new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "https://speed.cloudflare.com/__up");
-                
+
                 let lastLoaded = 0;
                 xhr.upload.onprogress = (event) => {
                     const elapsed = performance.now() - startTime;
@@ -1498,21 +1586,21 @@ async function runParallelUploadTest(concurrency, onProgress) {
                     const chunkUploaded = event.loaded - lastLoaded;
                     lastLoaded = event.loaded;
                     totalUploaded += chunkUploaded;
-                    
+
                     if (elapsed > 0) {
                         const bps = (totalUploaded * 8) / (elapsed / 1000);
                         const progress = Math.min((elapsed / durationMs) * 100, 100);
                         onProgress(progress, bps);
                     }
                 };
-                
+
                 xhr.onload = () => resolve();
                 xhr.onerror = () => {
                     hasError = true;
                     reject(new Error("Parallel upload failed"));
                 };
                 xhr.onabort = () => resolve();
-                
+
                 xhr.send(chunk);
             });
         }
@@ -1523,3 +1611,11 @@ async function runParallelUploadTest(concurrency, onProgress) {
     const finalElapsed = (performance.now() - startTime) / 1000;
     return (totalUploaded * 8) / finalElapsed;
 }
+
+window.addEventListener('scroll', () => {
+    const tabsHeader = document.querySelector('.settings-tabs-header');
+    if (!tabsHeader) return;
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    const newTop = Math.max(0, 48 - scrollY);
+    tabsHeader.style.top = newTop + 'px';
+});

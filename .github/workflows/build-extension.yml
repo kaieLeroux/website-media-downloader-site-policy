@@ -1,0 +1,31 @@
+name: Build Extension XPI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from manifest
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' src/manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create XPI Archive
+        run: |
+          cd src
+          zip -r ../website-media-downloader-${{ steps.get_version.outputs.version }}.xpi ./*
+          cd ..
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-media-downloader-v${{ steps.get_version.outputs.version }}
+          path: website-media-downloader-${{ steps.get_version.outputs.version }}.xpi
+          if-no-files-found: error

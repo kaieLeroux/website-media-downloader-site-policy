@@ -156,6 +156,18 @@
     "message": "목록 새로고침",
     "description": "The label of the button to refresh the media list."
   },
+  "addManualUrlButton": {
+    "message": "URL 추가",
+    "description": "The label of the button to add a manual URL for download."
+  },
+  "addManualUrlHeadline": {
+    "message": "다운로드할 URL 추가",
+    "description": "The headline of the dialog to add a manual URL."
+  },
+  "addManualUrlFieldLabel": {
+    "message": "직접 파일 URL",
+    "description": "The label of the text field to enter the direct file URL."
+  },
   "settingsDetectionSectionTitle": {
     "message": "감지 설정",
     "description": "The title of the detection settings section in the settings tab."
@@ -255,6 +267,14 @@
   "hideSegmentsCheckbox": {
     "message": "미디어 목록에서 스트림 세그먼트 숨기기",
     "description": "The label of the checkbox to hide stream segments."
+  },
+  "disableDeduplicationTitle": {
+    "message": "감지된 목록 중복 제거 안 함",
+    "description": "The title of the option to disable deduplication of detected media files."
+  },
+  "disableDeduplicationExplain": {
+    "message": "중복 미디어 항목 숨기기를 비활성화하여 감지된 모든 파일을 개별적으로 표시합니다.",
+    "description": "The explanation of the option to disable deduplication."
   },
   "onlyVideoTitle": {
     "message": "동영상 표시",
@@ -1571,6 +1591,66 @@
   "cleanViewExplain": {
     "message": "설정을 드롭다운으로 그룹화하여 더 깔끔하게 보여줍니다.",
     "description": "The explanation of the clean settings view option."
+  },
+  "settingsLayoutTitle": {
+    "message": "설정 화면 레이아웃",
+    "description": "Title of the setting that controls the presentation layout of settings."
+  },
+  "settingsLayoutExplain": {
+    "message": "설정이 표시되는 방식을 선택합니다.",
+    "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "layoutDefault": {
+    "message": "기본",
+    "description": "Label for the default settings layout."
+  },
+  "layoutClean": {
+    "message": "Clean (접기)",
+    "description": "Label for the clean (collapsible) settings layout."
+  },
+  "layoutSidebar": {
+    "message": "사이드바",
+    "description": "Label for the sidebar settings layout."
+  },
+  "layoutTabs": {
+    "message": "탭 (텍스트)",
+    "description": "Label for the tabbed settings layout (Text-only)."
+  },
+  "layoutTabsIcons": {
+    "message": "탭 (아이콘)",
+    "description": "Label for the tabbed settings layout (Icons-only)."
+  },
+  "groupByTypeTitle": {
+    "message": "미디어 유형별로 그룹화",
+    "description": "Title of the setting that groups media by type on the home tab."
+  },
+  "groupByTypeExplain": {
+    "message": "감지된 미디어를 홈 탭의 폴더로 그룹화합니다.",
+    "description": "Description of the setting that groups media by type on the home tab."
+  },
+  "groupByVideoTitle": {
+    "message": "동영상",
+    "description": "Folder title for videos."
+  },
+  "groupByAudioTitle": {
+    "message": "오디오",
+    "description": "Folder title for audio files."
+  },
+  "groupByStreamTitle": {
+    "message": "스트림",
+    "description": "Folder title for streams."
+  },
+  "groupByImageTitle": {
+    "message": "이미지",
+    "description": "Folder title for images."
+  },
+  "groupBySubtitleTitle": {
+    "message": "자막",
+    "description": "Folder title for subtitles."
+  },
+  "groupByFileTitle": {
+    "message": "기타 파일",
+    "description": "Folder title for generic files."
   },
   "downloadTransmuxing": {
     "message": "MP4로 변환 중...",

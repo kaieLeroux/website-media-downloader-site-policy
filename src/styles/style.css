@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+
 :root {
     --app-border-radius: 16px;
     --card-border-radius: 12px;
@@ -285,7 +286,6 @@ mdui-card {
     gap: 8px;
 }
 
-/* YouTube Resolution Selector */
 .yt-resolution-row {
     display: flex;
     align-items: stretch;
@@ -675,4 +675,171 @@ mdui-segmented-button[selected]::part(button) {
 .no-media-container {
     margin: 40px 16px;
     padding: 20px;
+}
+
+.layout-sidebar {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.settings-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 52px;
+    flex-shrink: 0;
+    border-right: 1px solid rgb(var(--mdui-color-outline-variant));
+    padding-right: 8px;
+    align-items: center;
+    position: fixed;
+    left: 16px;
+    top: 76px;
+    z-index: 10;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: rgb(var(--mdui-color-on-surface-variant));
+    transition: var(--transition);
+}
+
+.sidebar-nav-item:hover {
+    background-color: rgba(var(--mdui-color-primary), 0.05);
+    color: var(--primary);
+}
+
+.sidebar-nav-item.active {
+    background-color: rgba(var(--mdui-color-primary), 0.12);
+    color: var(--primary) !important;
+}
+
+.sidebar-nav-item .nav-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.sidebar-nav-item .nav-icon svg,
+.sidebar-nav-item .nav-icon svg path {
+    fill: currentColor !important;
+}
+
+.layout-sidebar .settings-group {
+    display: none !important;
+    flex-grow: 1;
+    width: calc(100% - 68px);
+    margin-left: 68px;
+}
+
+.layout-sidebar .settings-group.active-sidebar-group {
+    display: flex !important;
+}
+
+.layout-sidebar .collapsible-header {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+.layout-sidebar .collapse-icon {
+    display: none !important;
+}
+
+.layout-tabs {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px;
+    padding-top: 60px !important;
+}
+
+.settings-tabs-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgb(var(--mdui-color-outline-variant));
+    padding: 8px 16px;
+    margin: 0;
+    scrollbar-width: none;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background-color: rgb(var(--mdui-color-surface));
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.settings-tabs-header::-webkit-scrollbar {
+    display: none;
+}
+
+.tabs-nav-item {
+    padding: 8px 16px;
+    border-radius: 100px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgb(var(--mdui-color-on-surface-variant));
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.tabs-nav-item:hover {
+    background-color: rgba(var(--mdui-color-primary), 0.05);
+    color: var(--primary);
+}
+
+.tabs-nav-item.active {
+    background-color: var(--primary);
+    color: rgb(var(--mdui-color-on-primary));
+    font-weight: 600;
+}
+
+.layout-tabs .settings-group {
+    display: none !important;
+}
+
+.layout-tabs .settings-group.active-tab-group {
+    display: flex !important;
+}
+
+.layout-tabs .collapsible-header {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+.layout-tabs .collapse-icon {
+    display: none !important;
+}
+
+.tabs-icons-only {
+    justify-content: center;
+}
+
+.tabs-icons-only .tabs-nav-item {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tabs-icons-only .tabs-nav-item .nav-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.tabs-icons-only .tabs-nav-item .nav-icon svg,
+.tabs-icons-only .tabs-nav-item .nav-icon svg path {
+    fill: currentColor !important;
 }

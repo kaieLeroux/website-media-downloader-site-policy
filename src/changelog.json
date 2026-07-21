@@ -1,101 +1,101 @@
 {
   "en": {
-    "headline": "What's New (v2.1.4)",
+    "headline": "What's New (v2.1.6)",
     "changes": [
-      "Select your desired YouTube format, codec, and resolution directly from the new options modal.",
-      "Dismiss notification toasts easily by swiping them left or right.",
-      "Added a new toggle in the settings menu allowing you to choose between stacking multiple notifications or only displaying the latest one.",
-      "YouTube video detection is now much faster and uses significantly less memory.",
-      "Fixed lag and redundant notifications when navigating between videos or playlists on YouTube.",
-      "Improved quality selection accuracy to guarantee the exact resolution you chose is the one downloaded."
+      "Added Media Grouping to categorize detected media into discrete cards (Videos, Audio, Streams, Images, Subtitles, Files) with dedicated view navigation.",
+      "Added manual URL download entry on the Home tab to add and download direct file links immediately.",
+      "Added flexible Settings Layout options: choose between Collapsible sections, Sidebar navigation, or Tabbed views.",
+      "Improved search to match across all media groups in real-time by page title, filename, URL, hostname, and media type.",
+      "Fixed YouTube audio-only download routing, ReferenceError in ZIP generator, and preserved navigation buttons on empty group views.",
+      "Fixed native update check response destructuring and aligned AMO fallback download URL."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.1.4)",
+    "headline": "Yang Baru (v2.1.6)",
     "changes": [
-      "Pilih format, codec, dan kualitas unduhan YouTube langsung dari modal opsi baru.",
-      "Usap (swipe) ke kiri atau kanan untuk menutup notifikasi dengan mudah.",
-      "Menambahkan pengaturan baru untuk memilih apakah notifikasi ditumpuk atau hanya menampilkan yang terbaru.",
-      "Deteksi video YouTube kini jauh lebih cepat dan menggunakan memori yang jauh lebih sedikit.",
-      "Memperbaiki lag dan notifikasi ganda saat berpindah video atau playlist di YouTube.",
-      "Meningkatkan akurasi pemilihan kualitas untuk memastikan resolusi yang diunduh sesuai dengan yang Anda pilih."
+      "Menambahkan Pengelompokan Media untuk mengategorikan media terdeteksi ke dalam grup (Video, Audio, Stream, Gambar, Subtitle, File) dengan navigasi khusus.",
+      "Menambahkan fitur Tambah URL manual di tab Beranda untuk menambah dan mengunduh tautan file langsung secara instan.",
+      "Menambahkan opsi Tata Letak Pengaturan: pilih antara tampilan Lipat (Collapsible), Bilah Sisi (Sidebar), atau Tab.",
+      "Meningkatkan pencarian real-time di seluruh grup media berdasarkan judul halaman, nama file, URL, hostname, dan jenis media.",
+      "Memperbaiki pengalihan unduhan YouTube audio-only, ReferenceError pada pembuat ZIP, dan mempertahankan tombol navigasi pada tampilan grup kosong.",
+      "Memperbaiki destructuring pemeriksa pembaruan bawaan dan menyelaraskan URL pembaruan cadangan AMO."
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.1.4)",
+    "headline": "Was gibt's Neues (v2.1.6)",
     "changes": [
-      "Wählen Sie das YouTube-Download-Format, den Codec und die Qualität direkt im neuen Options-Modal aus.",
-      "Wischen Sie nach links oder rechts, um Benachrichtigungen einfach zu schließen.",
-      "Neue Einstellung hinzugefügt, um auszuwählen, ob Benachrichtigungen gestapelt oder nur die neueste angezeigt wird.",
-      "Die Erkennung von YouTube-Videos ist jetzt viel schneller und verbraucht deutlich weniger Speicher.",
-      "Verzögerungen und doppelte Benachrichtigungen bei der Navigation zwischen Videos oder Playlists auf YouTube behoben.",
-      "Verbesserte Genauigkeit bei der Qualitätsauswahl, um sicherzustellen, dass genau die ausgewählte Auflösung heruntergeladen wird."
+      "Medien-Gruppierung hinzugefügt, um erkannte Medien in saubere Kategorien (Videos, Audio, Streams, Bilder, Untertitel, Dateien) einzuteilen.",
+      "Manuelle URL-Eingabe auf der Startseite hinzugefügt, um direkte Datei-Links sofort hinzuzufügen und herunterzuladen.",
+      "Flexible Einstellungen-Layouts hinzugefügt: Wählen Sie zwischen klappbaren Abschnitten, Seitenleiste oder Tabs.",
+      "Verbesserte Echtzeit-Suche über alle Mediengruppen hinweg nach Seitentitel, Dateiname, URL, Hostname und Medientyp.",
+      "Fehlerbehebung für YouTube Audio-Downloads, ZIP-Generator ReferenceError und Beibehaltung der Navigationsschaltflächen.",
+      "Native Update-Prüfung und AMO-Fallback-Update-URL korrigiert."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.1.4)",
+    "headline": "Nouveautés (v2.1.6)",
     "changes": [
-      "Choisissez le format, le codec et la qualité de téléchargement YouTube directement depuis le nouveau modal.",
-      "Faites glisser vers la gauche ou la droite pour fermer facilement les notifications.",
-      "Ajout d'un nouveau paramètre pour choisir d'empiler les notifications ou de n'afficher que la plus récente.",
-      "La détection des vidéos YouTube est désormais plus rapide et utilise beaucoup moins de mémoire.",
-      "Correction des ralentissements et des notifications redondantes lors de la navigation entre les vidéos ou les listes de lecture sur YouTube.",
-      "Amélioration de la précision de la sélection de qualité pour garantir le téléchargement de la résolution exacte choisie."
+      "Ajout du regroupement des médias pour catégoriser les éléments détectés (Vidéos, Audio, Flux, Images, Sous-titres, Fichiers).",
+      "Ajout de la saisie manuelle d'URL sur la page d'accueil pour ajouter et télécharger directement des liens de fichiers.",
+      "Ajout d'options de disposition des paramètres : choisissez entre des sections pliables, une barre latérale ou des onglets.",
+      "Amélioration de la recherche en temps réel sur tous les groupes de médias par titre de page, nom de fichier, URL et type de média.",
+      "Correction du routage des téléchargements audio YouTube, de l'erreur ReferenceError ZIP et de la navigation des groupes vides.",
+      "Correction de la vérification des mises à jour natives et de l'URL de secours AMO."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.1.4)",
+    "headline": "新機能 (v2.1.6)",
     "changes": [
-      "新しいオプション画面から直接、YouTubeのダウンロード形式、コーデック、品質を選択できるようになりました。",
-      "通知トーストを左右にスワイプして、簡単に閉じることができます。",
-      "通知をスタックするか、最新の通知のみを表示するかを選択できる新しい設定を追加しました。",
-      "YouTubeの動画検出が大幅に高速化し、メモリ使用量も削減されました。",
-      "YouTubeで動画やプレイリスト間を移動する際の遅延や重複する通知を修正しました。",
-      "選択した解像度が正確にダウンロードされるよう、品質選択の精度を向上させました。"
+      "検出されたメディアを分類するメディアグループ化機能（動画、音声、ストリーム、画像、字幕、ファイル）を追加しました。",
+      "ホームタブから直接ファイルURLを入力して即座にダウンロードできる手動URL追加機能を追加しました。",
+      "設定レイアウトの選択肢（折りたたみ式、サイドバー、タブ）を追加しました。",
+      "ページタイトル、ファイル名、URL、ホスト名、メディアタイプによる全グループ対象のリアルタイム検索を改善しました。",
+      "YouTube音声のみのダウンロード処理、ZIP作成時のError修正、空のグループ表示時のナビゲーション保持を修正しました。",
+      "ネイティブアップデート確認処理とAMOフォールバック更新URLを修正しました。"
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.1.4)",
+    "headline": "새로운 기능 (v2.1.6)",
     "changes": [
-      "새로운 옵션 모달에서 YouTube 다운로드 형식, 코덱, 화질을 직접 선택하세요.",
-      "알림창을 왼쪽이나 오른쪽으로 밀어서(스위프) 쉽게 닫을 수 있습니다.",
-      "알림을 쌓아두지 않고 최신 알림만 표시할지 선택하는 설정을 추가했습니다.",
-      "YouTube 동영상 감지가 훨씬 빨라지고 메모리 사용량이 크게 줄었습니다.",
-      "YouTube에서 동영상 및 재생목록을 이동할 때 발생하던 지연 현상과 중복 알림을 해결했습니다.",
-      "선택한 해상도가 정확히 다운로드되도록 화질 선택 정확도를 개선했습니다."
+      "감지된 미디어를 전용 카테고리(비디오, 오디오, 스트림, 이미지, 자막, 파일)로 분류하는 미디어 그룹화 기능을 추가했습니다.",
+      "직접 파일 링크를 입력하여 즉시 다운로드할 수 있는 수동 URL 추가 기능을 홈 탭에 추가했습니다.",
+      "다양한 설정 레이아웃 옵션(접기/펼치기, 사이드바, 탭)을 추가했습니다.",
+      "페이지 제목, 파일명, URL, 호스트명, 미디어 유형을 기준으로 모든 그룹을 실시간 검색하도록 개선했습니다.",
+      "YouTube 오디오 전용 다운로드 라우팅, ZIP 생성 오류 및 빈 그룹 보기의 탐색 버튼 유지 문제를 수정했습니다.",
+      "기본 업데이트 확인 오류 수정 및 AMO 폴백 업데이트 URL을 맞췄습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.1.4)",
+    "headline": "Novidades (v2.1.6)",
     "changes": [
-      "Escolha o formato, codec e qualidade de download do YouTube diretamente no novo modal de opções.",
-      "Deslize para a esquerda ou direita para fechar as notificações facilmente.",
-      "Adicionada uma nova opção para escolher entre empilhar notificações ou mostrar apenas a mais recente.",
-      "A detecção de vídeos do YouTube está muito mais rápida e consome significativamente menos memória.",
-      "Corrigidos atrasos e notificações redundantes ao navegar entre vídeos ou playlists no YouTube.",
-      "Melhorada a precisão na seleção de qualidade para garantir que a resolução exata escolhida seja baixada."
+      "Adicionado agrupamento de mídia para categorizar itens detectados (Vídeos, Áudio, Streams, Imagens, Legendas, Arquivos).",
+      "Adicionada entrada manual de URL na guia Início para adicionar e baixar links de arquivos diretos instantaneamente.",
+      "Adicionadas opções de layout de configurações: escolha entre seções dobráveis, barra lateral ou guias.",
+      "Melhorada a busca em tempo real em todos os grupos de mídia por título da página, nome de arquivo, URL e tipo de mídia.",
+      "Corrigidos downloads de áudio do YouTube, erro ReferenceError no gerador ZIP e navegação em grupos vazios.",
+      "Corrigida a verificação de atualização nativa e alinhada a URL de fallback do AMO."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.1.4)",
+    "headline": "Что нового (v2.1.6)",
     "changes": [
-      "Выбирайте формат, кодек и качество скачивания YouTube прямо в новом окне параметров.",
-      "Проведите пальцем влево или вправо, чтобы легко закрыть всплывающее уведомление.",
-      "Добавлена новая настройка для выбора: накапливать уведомления или показывать только последнее.",
-      "Обнаружение видео на YouTube стало намного быстрее и потребляет значительно меньше памяти.",
-      "Устранены задержки и дублирующиеся уведомления при переходе между видео и плейлистами на YouTube.",
-      "Улучшена точность выбора качества, чтобы гарантировать скачивание именно выбранного вами разрешения."
+      "Добавлена группировка медиафайлов по категориям (Видео, Аудио, Потоки, Изображения, Субтитры, Файлы).",
+      "Добавлен ручной ввод URL на главной вкладке для моментального скачивания файлов по прямым ссылкам.",
+      "Добавлены варианты оформления настроек: сворачиваемые секции, боковая панель или вкладки.",
+      "Улучшен поиск в реальном времени по всем группам медиа по заголовку страницы, имени файла, URL и типу медиа.",
+      "Исправлена маршрутизация аудио YouTube, ошибка ReferenceError в ZIP-генераторе и кнопка возврата в пустых группах.",
+      "Исправлена нативная проверка обновлений и обновлен URL-адрес для AMO."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.1.4)",
+    "headline": "ما الجديد (v2.1.6)",
     "changes": [
-      "اختر صيغة تنزيل يوتيوب والترميز والجودة مباشرة من نافذة الخيارات الجديدة.",
-      "اسحب لليمين أو اليسار لإغلاق إشعارات التنبيه بسهولة.",
-      "تمت إضافة إعداد جديد للاختيار بين تكديس الإشعارات أو عرض الأحدث منها فقط.",
-      "أصلحت عملية اكتشاف فيديوهات يوتيوب لتصبح أسرع بكثير وتستهلك ذاكرة أقل بكثير.",
-      "تم إصلاح التأخير والإشعارات المتكررة عند التنقل بين الفيديوهات أو قوائم التشغيل على يوتيوب.",
-      "تحسين دقة اختيار الجودة لضمان تنزيل الدقة المحددة التي اخترتها بالضبط."
+      "تمت إضافة تجميع الوسائط لتصنيف العناصر المكتشفة إلى فئات (فيديو، صوت، بث، صور، ترجمات، ملفات).",
+      "تمت إضافة ميزة إدخال رابط URL يدويًا في الصفحة الرئيسية لتنزيل روابط الملفات المباشرة فورًا.",
+      "تمت إضافة خيارات تخطيط الإعدادات: الاختيار بين الأقسام القابلة للطي، الشريط الجانبي، أو التبويبات.",
+      "تحسين البحث الفوري عبر جميع مجموعات الوسائط حسب عنوان الصفحة، اسم الملف، الرابط، ونوع الوسائط.",
+      "إصلاح توجيه تنزيل صوت يوتيوب، وخطأ ReferenceError في منشئ ZIP، والحفاظ على زر التنقل في المجموعات الفارغة.",
+      "إصلاح فحص التحديثات المدمج وتنسيق رابط تحديث AMO الاحتياطي."
     ]
   }
 }

@@ -1419,8 +1419,13 @@ browser.notifications.onButtonClicked.addListener((notificationId, buttonIndex) 
 });
 
 browser.notifications.onClicked.addListener((notificationId) => {
+    const data = notificationUrls.get(notificationId);
+    let popupUrl = `popup.html?mode=tab`;
+    if (data && data.url) {
+        popupUrl += `&autoOpenUrl=${encodeURIComponent(data.url)}`;
+    }
     browser.tabs.create({
-        url: browser.runtime.getURL(`popup.html?mode=tab`),
+        url: browser.runtime.getURL(popupUrl),
     });
     notificationUrls.delete(notificationId);
 });
@@ -2568,6 +2573,7 @@ async function handleDownloadAllAsZip(items, downloadId) {
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 const url = item.url;
+                const originalRequest = item.originalRequest;
                 const originalFileName = item.filename || "file";
                 let filename = originalFileName;
 

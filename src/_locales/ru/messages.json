@@ -156,6 +156,18 @@
     "message": "Обновить список",
     "description": "The label of the button to refresh the media list."
   },
+  "addManualUrlButton": {
+    "message": "Добавить URL",
+    "description": "The label of the button to add a manual URL for download."
+  },
+  "addManualUrlHeadline": {
+    "message": "Добавить URL для скачивания",
+    "description": "The headline of the dialog to add a manual URL."
+  },
+  "addManualUrlFieldLabel": {
+    "message": "Прямая ссылка на файл",
+    "description": "The label of the text field to enter the direct file URL."
+  },
   "settingsDetectionSectionTitle": {
     "message": "Настройки Обнаружения",
     "description": "The title of the detection settings section in the settings tab."
@@ -255,6 +267,14 @@
   "hideSegmentsCheckbox": {
     "message": "Скрывать сегменты потока в списке медиа",
     "description": "The label of the checkbox to hide stream segments."
+  },
+  "disableDeduplicationTitle": {
+    "message": "Не удалять дубликаты из обнаруженного списка",
+    "description": "The title of the option to disable deduplication of detected media files."
+  },
+  "disableDeduplicationExplain": {
+    "message": "Отключите скрытие дубликатов медиафайлов, чтобы все обнаруженные файлы отображались отдельно.",
+    "description": "The explanation of the option to disable deduplication."
   },
   "onlyVideoTitle": {
     "message": "Показывать видео",
@@ -1571,6 +1591,66 @@
   "cleanViewExplain": {
     "message": "Группирует настройки в выпадающие списки для более аккуратного вида.",
     "description": "The explanation of the clean settings view option."
+  },
+  "settingsLayoutTitle": {
+    "message": "Оформление меню настроек",
+    "description": "Title of the setting that controls the presentation layout of settings."
+  },
+  "settingsLayoutExplain": {
+    "message": "Выберите способ отображения настроек.",
+    "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "layoutDefault": {
+    "message": "По умолчанию",
+    "description": "Label for the default settings layout."
+  },
+  "layoutClean": {
+    "message": "Clean (Свернуто)",
+    "description": "Label for the clean (collapsible) settings layout."
+  },
+  "layoutSidebar": {
+    "message": "Боковая панель",
+    "description": "Label for the sidebar settings layout."
+  },
+  "layoutTabs": {
+    "message": "Вкладки (Текст)",
+    "description": "Label for the tabbed settings layout (Text-only)."
+  },
+  "layoutTabsIcons": {
+    "message": "Вкладки (Иконки)",
+    "description": "Label for the tabbed settings layout (Icons-only)."
+  },
+  "groupByTypeTitle": {
+    "message": "Группировать по типу медиа",
+    "description": "Title of the setting that groups media by type on the home tab."
+  },
+  "groupByTypeExplain": {
+    "message": "Группует обнаруженные медиафайлы по папкам на вкладке Главная.",
+    "description": "Description of the setting that groups media by type on the home tab."
+  },
+  "groupByVideoTitle": {
+    "message": "Видео",
+    "description": "Folder title for videos."
+  },
+  "groupByAudioTitle": {
+    "message": "Аудио",
+    "description": "Folder title for audio files."
+  },
+  "groupByStreamTitle": {
+    "message": "Потоки",
+    "description": "Folder title for streams."
+  },
+  "groupByImageTitle": {
+    "message": "Изображения",
+    "description": "Folder title for images."
+  },
+  "groupBySubtitleTitle": {
+    "message": "Субтитры",
+    "description": "Folder title for subtitles."
+  },
+  "groupByFileTitle": {
+    "message": "Другие файлы",
+    "description": "Folder title for generic files."
   },
   "downloadTransmuxing": {
     "message": "Конвертация в MP4...",

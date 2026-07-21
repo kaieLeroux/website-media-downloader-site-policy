@@ -156,6 +156,18 @@
     "message": "リストを更新",
     "description": "The label of the button to refresh the media list."
   },
+  "addManualUrlButton": {
+    "message": "URLを追加",
+    "description": "The label of the button to add a manual URL for download."
+  },
+  "addManualUrlHeadline": {
+    "message": "ダウンロードするURLを追加",
+    "description": "The headline of the dialog to add a manual URL."
+  },
+  "addManualUrlFieldLabel": {
+    "message": "直接ファイルURL",
+    "description": "The label of the text field to enter the direct file URL."
+  },
   "settingsDetectionSectionTitle": {
     "message": "検出設定",
     "description": "The title of the detection settings section in the settings tab."
@@ -255,6 +267,14 @@
   "hideSegmentsCheckbox": {
     "message": "メディアリスト内のストリームセグメントを非表示にする",
     "description": "The label of the checkbox to hide stream segments."
+  },
+  "disableDeduplicationTitle": {
+    "message": "検出されたリストの重複排除を行わない",
+    "description": "The title of the option to disable deduplication of detected media files."
+  },
+  "disableDeduplicationExplain": {
+    "message": "重複するメディア項目の非表示を無効にして、検出されたすべてのファイルを個別に表示します。",
+    "description": "The explanation of the option to disable deduplication."
   },
   "onlyVideoTitle": {
     "message": "ビデオを表示",
@@ -1571,6 +1591,66 @@
   "cleanViewExplain": {
     "message": "設定をドロップダウンにグループ化して、見た目をスッキリさせます。",
     "description": "The explanation of the clean settings view option."
+  },
+  "settingsLayoutTitle": {
+    "message": "設定画面のレイアウト",
+    "description": "Title of the setting that controls the presentation layout of settings."
+  },
+  "settingsLayoutExplain": {
+    "message": "設定の表示方法を選択します。",
+    "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "layoutDefault": {
+    "message": "デフォルト",
+    "description": "Label for the default settings layout."
+  },
+  "layoutClean": {
+    "message": "Clean (折りたたみ)",
+    "description": "Label for the clean (collapsible) settings layout."
+  },
+  "layoutSidebar": {
+    "message": "サイドバー",
+    "description": "Label for the sidebar settings layout."
+  },
+  "layoutTabs": {
+    "message": "タブ (テキスト)",
+    "description": "Label for the tabbed settings layout (Text-only)."
+  },
+  "layoutTabsIcons": {
+    "message": "タブ (アイコン)",
+    "description": "Label for the tabbed settings layout (Icons-only)."
+  },
+  "groupByTypeTitle": {
+    "message": "メディアタイプでグループ化",
+    "description": "Title of the setting that groups media by type on the home tab."
+  },
+  "groupByTypeExplain": {
+    "message": "検出されたメディアをホームタブのフォルダにグループ化します。",
+    "description": "Description of the setting that groups media by type on the home tab."
+  },
+  "groupByVideoTitle": {
+    "message": "動画",
+    "description": "Folder title for videos."
+  },
+  "groupByAudioTitle": {
+    "message": "音声",
+    "description": "Folder title for audio files."
+  },
+  "groupByStreamTitle": {
+    "message": "配信",
+    "description": "Folder title for streams."
+  },
+  "groupByImageTitle": {
+    "message": "画像",
+    "description": "Folder title for images."
+  },
+  "groupBySubtitleTitle": {
+    "message": "字幕",
+    "description": "Folder title for subtitles."
+  },
+  "groupByFileTitle": {
+    "message": "その他のファイル",
+    "description": "Folder title for generic files."
   },
   "downloadTransmuxing": {
     "message": "MP4に変換中...",

@@ -156,6 +156,18 @@
     "message": "تحديث القائمة",
     "description": "The label of the button to refresh the media list."
   },
+  "addManualUrlButton": {
+    "message": "إضافة رابط",
+    "description": "The label of the button to add a manual URL for download."
+  },
+  "addManualUrlHeadline": {
+    "message": "إضافة رابط للتنزيل",
+    "description": "The headline of the dialog to add a manual URL."
+  },
+  "addManualUrlFieldLabel": {
+    "message": "رابط الملف المباشر",
+    "description": "The label of the text field to enter the direct file URL."
+  },
   "settingsDetectionSectionTitle": {
     "message": "إعدادات الاكتشاف",
     "description": "The title of the detection settings section in the settings tab."
@@ -255,6 +267,14 @@
   "hideSegmentsCheckbox": {
     "message": "إخفاء أجزاء البث في قائمة الوسائط",
     "description": "The label of the checkbox to hide stream segments."
+  },
+  "disableDeduplicationTitle": {
+    "message": "عدم إزالة تكرار القائمة المكتشفة",
+    "description": "The title of the option to disable deduplication of detected media files."
+  },
+  "disableDeduplicationExplain": {
+    "message": "إلغاء تفعيل إخفاء عناصر الوسائط المكررة لعرض جميع الملفات المكتشفة بشكل منفصل.",
+    "description": "The explanation of the option to disable deduplication."
   },
   "onlyVideoTitle": {
     "message": "إظهار الفيديو",
@@ -1571,6 +1591,66 @@
   "cleanViewExplain": {
     "message": "تجميع الإعدادات في قوائم منسدلة للحصول على مظهر أكثر ترتيباً.",
     "description": "The explanation of the clean settings view option."
+  },
+  "settingsLayoutTitle": {
+    "message": "تنسيق عرض الإعدادات",
+    "description": "Title of the setting that controls the presentation layout of settings."
+  },
+  "settingsLayoutExplain": {
+    "message": "اختر طريقة عرض الإعدادات.",
+    "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "layoutDefault": {
+    "message": "افتراضي",
+    "description": "Label for the default settings layout."
+  },
+  "layoutClean": {
+    "message": "Clean (مطوي)",
+    "description": "Label for the clean (collapsible) settings layout."
+  },
+  "layoutSidebar": {
+    "message": "شريط جانبي",
+    "description": "Label for the sidebar settings layout."
+  },
+  "layoutTabs": {
+    "message": "تبويبات (نص)",
+    "description": "Label for the tabbed settings layout (Text-only)."
+  },
+  "layoutTabsIcons": {
+    "message": "تبويبات (أيقونات)",
+    "description": "Label for the tabbed settings layout (Icons-only)."
+  },
+  "groupByTypeTitle": {
+    "message": "تجميع حسب نوع الوسائط",
+    "description": "Title of the setting that groups media by type on the home tab."
+  },
+  "groupByTypeExplain": {
+    "message": "تجميع الوسائط المكتشفة في مجلدات في علامة تبويب الصفحة الرئيسية.",
+    "description": "Description of the setting that groups media by type on the home tab."
+  },
+  "groupByVideoTitle": {
+    "message": "مقاطع الفيديو",
+    "description": "Folder title for videos."
+  },
+  "groupByAudioTitle": {
+    "message": "صوت",
+    "description": "Folder title for audio files."
+  },
+  "groupByStreamTitle": {
+    "message": "البث المباشر",
+    "description": "Folder title for streams."
+  },
+  "groupByImageTitle": {
+    "message": "الصور",
+    "description": "Folder title for images."
+  },
+  "groupBySubtitleTitle": {
+    "message": "الترجمات",
+    "description": "Folder title for subtitles."
+  },
+  "groupByFileTitle": {
+    "message": "ملفات أخرى",
+    "description": "Folder title for generic files."
   },
   "downloadTransmuxing": {
     "message": "تحويل إلى MP4...",
