@@ -1010,9 +1010,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const colorResult = await browser.storage.local.get('theme-color');
+    const colorResult = await browser.storage.local.get(['theme-color', 'ui-scale']);
     if (typeof mdui !== 'undefined') {
         mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
+    }
+    if (colorResult['ui-scale']) {
+        document.documentElement.style.zoom = colorResult['ui-scale'];
     }
 
     browser.runtime.sendMessage({ action: 'registerDownloadManagerTab' }).catch(() => {});

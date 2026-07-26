@@ -1,101 +1,110 @@
 {
   "en": {
-    "headline": "What's New (v2.1.6)",
+    "headline": "What's New (v2.2.1)",
     "changes": [
-      "Added Media Grouping to categorize detected media into discrete cards (Videos, Audio, Streams, Images, Subtitles, Files) with dedicated view navigation.",
-      "Added manual URL download entry on the Home tab to add and download direct file links immediately.",
-      "Added flexible Settings Layout options: choose between Collapsible sections, Sidebar navigation, or Tabbed views.",
-      "Improved search to match across all media groups in real-time by page title, filename, URL, hostname, and media type.",
-      "Fixed YouTube audio-only download routing, ReferenceError in ZIP generator, and preserved navigation buttons on empty group views.",
-      "Fixed native update check response destructuring and aligned AMO fallback download URL."
+      "Adapted media cards to active theme colors and resolved custom hex color rendering issues.",
+      "Added UI Scale DPI settings with customizable display scaling options.",
+      "Enhanced media filtering to skip disabled media types across network listeners, storage, and popup history.",
+      "Introduced minimum file size filter to exclude small unwanted files automatically.",
+      "Optimized DRM detection reliability and automatic root non-detection during low-end optimization mode.",
+      "Improved MP3 conversion performance with seamless progress updates, custom bitrate settings, and active download badge count.",
+      "Added setting to disable automatic update check on application startup."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.1.6)",
+    "headline": "Yang Baru (v2.2.1)",
     "changes": [
-      "Menambahkan Pengelompokan Media untuk mengategorikan media terdeteksi ke dalam grup (Video, Audio, Stream, Gambar, Subtitle, File) dengan navigasi khusus.",
-      "Menambahkan fitur Tambah URL manual di tab Beranda untuk menambah dan mengunduh tautan file langsung secara instan.",
-      "Menambahkan opsi Tata Letak Pengaturan: pilih antara tampilan Lipat (Collapsible), Bilah Sisi (Sidebar), atau Tab.",
-      "Meningkatkan pencarian real-time di seluruh grup media berdasarkan judul halaman, nama file, URL, hostname, dan jenis media.",
-      "Memperbaiki pengalihan unduhan YouTube audio-only, ReferenceError pada pembuat ZIP, dan mempertahankan tombol navigasi pada tampilan grup kosong.",
-      "Memperbaiki destructuring pemeriksa pembaruan bawaan dan menyelaraskan URL pembaruan cadangan AMO."
+      "Mengadaptasi kartu media ke warna tema aktif dan memperbaiki rendering warna hex kustom.",
+      "Menambahkan pengaturan UI Scale DPI dengan opsi penyesuaian skala tampilan.",
+      "Meningkatkan pemfilteran media untuk mengabaikan tipe media nonaktif di seluruh listener jaringan, penyimpanan, dan riwayat popup.",
+      "Menghadirkan filter ukuran file minimum untuk menyaring file kecil yang tidak diperlukan.",
+      "Mengoptimalkan keandalan deteksi DRM dan non-deteksi root otomatis saat mode optimasi low-end aktif.",
+      "Meningkatkan performa konversi MP3 tanpa delay buatan, pengaturan bitrate MP3, dan counter badge unduhan aktif.",
+      "Menambahkan opsi untuk menonaktifkan pemeriksaan pembaruan otomatis saat aplikasi dibuka."
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.1.6)",
+    "headline": "Was gibt's Neues (v2.2.1)",
     "changes": [
-      "Medien-Gruppierung hinzugefügt, um erkannte Medien in saubere Kategorien (Videos, Audio, Streams, Bilder, Untertitel, Dateien) einzuteilen.",
-      "Manuelle URL-Eingabe auf der Startseite hinzugefügt, um direkte Datei-Links sofort hinzuzufügen und herunterzuladen.",
-      "Flexible Einstellungen-Layouts hinzugefügt: Wählen Sie zwischen klappbaren Abschnitten, Seitenleiste oder Tabs.",
-      "Verbesserte Echtzeit-Suche über alle Mediengruppen hinweg nach Seitentitel, Dateiname, URL, Hostname und Medientyp.",
-      "Fehlerbehebung für YouTube Audio-Downloads, ZIP-Generator ReferenceError und Beibehaltung der Navigationsschaltflächen.",
-      "Native Update-Prüfung und AMO-Fallback-Update-URL korrigiert."
+      "Medienkarten an die aktive Thema-Farbe angepasst und Hex-Farb-Rendering korrigiert.",
+      "UI Scale DPI-Einstellung mit benutzerdefinierten Skalierungsoptionen hinzugefügt.",
+      "Erweiterte Medienfilterung zum Überspringen deaktivierter Medientypen über Netzwerk-Listener, Speicher und Verlauf.",
+      "Mindestdateigrößenfilter zur automatischen Filterung kleiner Dateien hinzugefügt.",
+      "DRM-Erkennungszuverlässigkeit und automatische Root-Nicht-Erkennung im Energiesparmodus optimiert.",
+      "MP3-Konvertierungsleistung mit nahtlosen Fortschrittsaktualisierungen und Bitraten-Einstellungen verbessert.",
+      "Option zum Deaktivieren der automatischen Update-Prüfung beim Start hinzugefügt."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.1.6)",
+    "headline": "Nouveautés (v2.2.1)",
     "changes": [
-      "Ajout du regroupement des médias pour catégoriser les éléments détectés (Vidéos, Audio, Flux, Images, Sous-titres, Fichiers).",
-      "Ajout de la saisie manuelle d'URL sur la page d'accueil pour ajouter et télécharger directement des liens de fichiers.",
-      "Ajout d'options de disposition des paramètres : choisissez entre des sections pliables, une barre latérale ou des onglets.",
-      "Amélioration de la recherche en temps réel sur tous les groupes de médias par titre de page, nom de fichier, URL et type de média.",
-      "Correction du routage des téléchargements audio YouTube, de l'erreur ReferenceError ZIP et de la navigation des groupes vides.",
-      "Correction de la vérification des mises à jour natives et de l'URL de secours AMO."
+      "Adaptation des cartes média au thème actif et correction du rendu des couleurs hexadécimales personnalisées.",
+      "Ajout des paramètres d'échelle UI Scale DPI avec options de mise à l'échelle personnalisées.",
+      "Amélioration du filtrage pour ignorer les types de médias désactivés sur les écouteurs réseau, le stockage et l'historique.",
+      "Introduction d'un filtre de taille minimale de fichier pour exclure automatiquement les petits fichiers.",
+      "Optimisation de la détection DRM et de la non-détection racine en mode d'optimisation bas de gamme.",
+      "Amélioration des performances de conversion MP3 sans délais artificiels et ajout d'un indicateur de téléchargements actifs.",
+      "Ajout d'une option pour désactiver la vérification automatique des mises à jour au démarrage."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.1.6)",
+    "headline": "新機能 (v2.2.1)",
     "changes": [
-      "検出されたメディアを分類するメディアグループ化機能（動画、音声、ストリーム、画像、字幕、ファイル）を追加しました。",
-      "ホームタブから直接ファイルURLを入力して即座にダウンロードできる手動URL追加機能を追加しました。",
-      "設定レイアウトの選択肢（折りたたみ式、サイドバー、タブ）を追加しました。",
-      "ページタイトル、ファイル名、URL、ホスト名、メディアタイプによる全グループ対象のリアルタイム検索を改善しました。",
-      "YouTube音声のみのダウンロード処理、ZIP作成時のError修正、空のグループ表示時のナビゲーション保持を修正しました。",
-      "ネイティブアップデート確認処理とAMOフォールバック更新URLを修正しました。"
+      "メディアカードのアクティブテーマカラーへの適応とカスタムHexカラーレンダリングの修正。",
+      "表示スケール調整が可能な UI Scale DPI 設定を追加。",
+      "無効化されたメディアタイプをネットワークリスナー、ストレージ、履歴全体でスキップするようフィルタリングを強化。",
+      "小さな不要ファイルを自動的に除外する最小ファイルサイズフィルターを導入。",
+      "低スペック最適化モード時のDRM検出信頼性とルート自動非検出の最適化。",
+      "人工的な遅延を排除したMP3変換の高速化、ビットレート設定、およびアクティブダウンロード数バッジの追加。",
+      "起動時の自動アップデート確認をオフにする設定を追加。"
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.1.6)",
+    "headline": "새로운 기능 (v2.2.1)",
     "changes": [
-      "감지된 미디어를 전용 카테고리(비디오, 오디오, 스트림, 이미지, 자막, 파일)로 분류하는 미디어 그룹화 기능을 추가했습니다.",
-      "직접 파일 링크를 입력하여 즉시 다운로드할 수 있는 수동 URL 추가 기능을 홈 탭에 추가했습니다.",
-      "다양한 설정 레이아웃 옵션(접기/펼치기, 사이드바, 탭)을 추가했습니다.",
-      "페이지 제목, 파일명, URL, 호스트명, 미디어 유형을 기준으로 모든 그룹을 실시간 검색하도록 개선했습니다.",
-      "YouTube 오디오 전용 다운로드 라우팅, ZIP 생성 오류 및 빈 그룹 보기의 탐색 버튼 유지 문제를 수정했습니다.",
-      "기본 업데이트 확인 오류 수정 및 AMO 폴백 업데이트 URL을 맞췄습니다."
+      "미디어 카드를 활성 테마 색상에 맞추고 커스텀 Hex 색상 렌더링 문제를 수정했습니다.",
+      "맞춤형 디스플레이 스케일링 옵션을 제공하는 UI Scale DPI 설정을 추가했습니다.",
+      "네트워크 리스너, 스토리지 및 팝업 기록 전반에서 비활성화된 미디어 유형을 스킵하도록 필터링을 강화했습니다.",
+      "불필요한 작은 파일을 자동으로 제외하는 최소 파일 크기 필터를 도입했습니다.",
+      "저사양 최적화 모드 시 DRM 감지 신뢰성 및 자동 루트 비감지를 최적화했습니다.",
+      "인위적 지연 없는 MP3 변환 성능 향상, MP3 비트레이트 설정 및 활성 다운로드 배지 카운터를 추가했습니다.",
+      "앱 시작 시 자동 업데이트 확인을 끄는 옵션을 추가했습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.1.6)",
+    "headline": "Novidades (v2.2.1)",
     "changes": [
-      "Adicionado agrupamento de mídia para categorizar itens detectados (Vídeos, Áudio, Streams, Imagens, Legendas, Arquivos).",
-      "Adicionada entrada manual de URL na guia Início para adicionar e baixar links de arquivos diretos instantaneamente.",
-      "Adicionadas opções de layout de configurações: escolha entre seções dobráveis, barra lateral ou guias.",
-      "Melhorada a busca em tempo real em todos os grupos de mídia por título da página, nome de arquivo, URL e tipo de mídia.",
-      "Corrigidos downloads de áudio do YouTube, erro ReferenceError no gerador ZIP e navegação em grupos vazios.",
-      "Corrigida a verificação de atualização nativa e alinhada a URL de fallback do AMO."
+      "Adaptados os cartões de mídia para as cores do tema ativo e corrigida a renderização de cores hexadecimais personalizadas.",
+      "Adicionada configuração de UI Scale DPI com opções personalizadas de dimensionamento de exibição.",
+      "Melhorado o filtro de mídia para ignorar tipos desativados em ouvintes de rede, armazenamento e histórico.",
+      "Introduzido filtro de tamanho mínimo de arquivo para excluir arquivos pequenos indesejados.",
+      "Otimizada a detecção de DRM e a não detecção automática de root no modo de otimização de baixo desempenho.",
+      "Melhorado o desempenho da conversão MP3 sem atrasos artificiais, com controle de bitrate e contador de downloads ativos.",
+      "Adicionada opção para desativar a verificação automática de atualização na inicialização."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.1.6)",
+    "headline": "Что нового (v2.2.1)",
     "changes": [
-      "Добавлена группировка медиафайлов по категориям (Видео, Аудио, Потоки, Изображения, Субтитры, Файлы).",
-      "Добавлен ручной ввод URL на главной вкладке для моментального скачивания файлов по прямым ссылкам.",
-      "Добавлены варианты оформления настроек: сворачиваемые секции, боковая панель или вкладки.",
-      "Улучшен поиск в реальном времени по всем группам медиа по заголовку страницы, имени файла, URL и типу медиа.",
-      "Исправлена маршрутизация аудио YouTube, ошибка ReferenceError в ZIP-генераторе и кнопка возврата в пустых группах.",
-      "Исправлена нативная проверка обновлений и обновлен URL-адрес для AMO."
+      "Адаптированы карточки медиа под цвета активной темы и исправлен рендеринг пользовательских hex-цветов.",
+      "Добавлена настройка UI Scale DPI с возможностью пользовательского масштабирования.",
+      "Улучшена фильтрация для пропуска отключенных типов медиа в сетевых слушателях, хранилище и истории.",
+      "Введен фильтр минимального размера файла для автоматического исключения небольших файлов.",
+      "Оптимизирована надежность обнаружения DRM и автоматическое необнаружение root в режиме низкой производительности.",
+      "Улучшена скорость конвертации MP3 без искусственных задержек, добавлены настройки битрейта и счетчик активных загрузок.",
+      "Добавлена опция отключения автоматической проверки обновлений при запуске приложения."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.1.6)",
+    "headline": "ما الجديد (v2.2.1)",
     "changes": [
-      "تمت إضافة تجميع الوسائط لتصنيف العناصر المكتشفة إلى فئات (فيديو، صوت، بث، صور، ترجمات، ملفات).",
-      "تمت إضافة ميزة إدخال رابط URL يدويًا في الصفحة الرئيسية لتنزيل روابط الملفات المباشرة فورًا.",
-      "تمت إضافة خيارات تخطيط الإعدادات: الاختيار بين الأقسام القابلة للطي، الشريط الجانبي، أو التبويبات.",
-      "تحسين البحث الفوري عبر جميع مجموعات الوسائط حسب عنوان الصفحة، اسم الملف، الرابط، ونوع الوسائط.",
-      "إصلاح توجيه تنزيل صوت يوتيوب، وخطأ ReferenceError في منشئ ZIP، والحفاظ على زر التنقل في المجموعات الفارغة.",
-      "إصلاح فحص التحديثات المدمج وتنسيق رابط تحديث AMO الاحتياطي."
+      "تكييف بطاقات الوسائط مع ألوان المظهر النشط وإصلاح عرض الألوان السداسية العشرية المخصصة.",
+      "إضافة إعدادات UI Scale DPI مع خيارات تخصيص مقياس العرض.",
+      "تحسين تصفية الوسائط لتخطي الأنواع المعطلة عبر مستمعي الشبكة والتخزين والسجل.",
+      "إدخال مرشح الحد الأدنى لحجم الملف لاستبعاد الملفات الصغيرة غير المرغوب فيها تلقائيًا.",
+      "تحسين موثوقية كشف DRM وعدم الكشف التلقائي عن Root أثناء وضع التحسين للأجهزة ضعيفة الأداء.",
+      "تحسين أداء تحويل MP3 بدون تأخيرات اصطناعية، مع إضافة إعدادات معدل البت وعداد التحميلات النشطة.",
+      "إضافة خيار لإيقاف الفحص التلقائي للتحديثات عند بدء تشغيل التطبيق."
     ]
   }
 }

@@ -26,7 +26,26 @@
         var browser = chrome;
     }
 
-    let isGlobalOpt = false;
+    const contentStorageKeys = [
+        'detect-download-links', 'hide-segments', 'hide-page-components',
+        'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
+        'ignore-disabled-types', 'optimize-low-end'
+    ];
+
+    let cachedContentSettings = {};
+    async function updateSettingsCache() {
+        try {
+            if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+                cachedContentSettings = await browser.storage.local.get(contentStorageKeys);
+            }
+        } catch(e) {}
+    }
+    updateSettingsCache();
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.onChanged) {
+        browser.storage.onChanged.addListener((changes, area) => {
+            if (area === 'local') updateSettingsCache();
+        });
+    }
 
     window.addEventListener('message', (event) => {
         if (event.data) {
@@ -42,9 +61,12 @@
                 if (event.data.url) {
                     const absolute = getAbsoluteUrl(event.data.url);
                     if (absolute && !detected.has(absolute)) {
-                        detected.add(absolute);
-                        if (reportTimeout) clearTimeout(reportTimeout);
-                        reportTimeout = setTimeout(report, 500);
+                        const type = getUrlType(absolute) || 'stream';
+                        if (!isTypeDisabled(type, cachedContentSettings)) {
+                            detected.add(absolute);
+                            if (reportTimeout) clearTimeout(reportTimeout);
+                            reportTimeout = setTimeout(report, 500);
+                        }
                     }
                 }
             } else if (event.data.type === 'MDU_DEEP_URLS_DETECTED') {
@@ -52,9 +74,12 @@
                     event.data.urls.forEach(url => {
                         const absolute = getAbsoluteUrl(url);
                         if (absolute && !detected.has(absolute)) {
-                            detected.add(absolute);
-                            if (reportTimeout) clearTimeout(reportTimeout);
-                            reportTimeout = setTimeout(report, 500);
+                            const type = getUrlType(absolute);
+                            if (!isTypeDisabled(type, cachedContentSettings)) {
+                                detected.add(absolute);
+                                if (reportTimeout) clearTimeout(reportTimeout);
+                                reportTimeout = setTimeout(report, 500);
+                            }
                         }
                     });
                 }
@@ -106,6 +131,44 @@
                path.endsWith('.mts');
     }
 
+    function getUrlType(url) {
+        if (!url || typeof url !== 'string') return null;
+        const urlLower = url.toLowerCase();
+        
+        if (urlLower.includes('mime=video') || urlLower.includes('#video')) return 'video';
+        if (urlLower.includes('mime=audio') || urlLower.includes('#audio')) return 'audio';
+
+        const urlPath = urlLower.split('?')[0].split('#')[0];
+        const hasExt = (ext) => urlPath.endsWith(ext) || urlLower.includes(ext + '&') || urlLower.includes(ext + '?') || urlLower.includes(ext + '#') || urlLower.endsWith(ext);
+
+        if (videoExtensions.some(hasExt)) return 'video';
+        if (audioExtensions.some(hasExt)) return 'audio';
+        if (streamExtensions.some(hasExt) || urlLower.includes('#stream')) return 'stream';
+        if (subtitleExtensions.some(hasExt) || urlLower.includes('#subtitle')) return 'subtitle';
+        if (imageExtensions.some(hasExt) || urlLower.includes('#image')) return 'image';
+        if (downloadExtensions.some(hasExt) || urlLower.includes('#file')) return 'file';
+        return null;
+    }
+
+    function isTypeDisabled(type, settings) {
+        const isIgnoreDisabled = settings?.['ignore-disabled-types'] === '1' || settings?.['ignore-disabled-types'] === true || settings?.['optimize-low-end'] === '1' || settings?.['optimize-low-end'] === true;
+        if (!isIgnoreDisabled) return false;
+
+        const isFlagEnabled = (val, defaultVal) => {
+            if (val === undefined || val === null) return defaultVal;
+            return val === '1' || val === true;
+        };
+
+        if (type === 'video' && !isFlagEnabled(settings?.['only-video'], true)) return true;
+        if (type === 'audio' && !isFlagEnabled(settings?.['only-audio'], true)) return true;
+        if (type === 'stream' && !isFlagEnabled(settings?.['only-stream'], true)) return true;
+        if (type === 'image' && !isFlagEnabled(settings?.['only-image'], false)) return true;
+        if (type === 'subtitle' && !isFlagEnabled(settings?.['only-subtitle'], false)) return true;
+        if (type === 'file' && !isFlagEnabled(settings?.['only-file'], true)) return true;
+
+        return false;
+    }
+
     async function isMediaUrl(url, extraExtensions = [], settings = {}) {
         if (!url || typeof url !== 'string') return false;
         const urlLower = url.toLowerCase();
@@ -121,6 +184,11 @@
 
         try {
             const path = new URL(url, window.location.href).pathname.toLowerCase();
+            const type = getUrlType(url);
+            if (type && isTypeDisabled(type, settings)) {
+                return false;
+            }
+
             const extensionsToCheck = allExtensions.concat(extraExtensions);
             return extensionsToCheck.some(ext => path.endsWith(ext));
         } catch (e) {
@@ -181,23 +249,35 @@
             if (absolute) {
                 if (!(await checkIsSegment(absolute, result))) {
                     const isDownloadAttr = detectDownloads && el.tagName === 'A' && el.hasAttribute('download');
-                    if (await isMediaUrl(absolute, extraExts, result) || el.tagName === 'VIDEO' || el.tagName === 'AUDIO' || isDownloadAttr) {
-                        detected.add(absolute);
+                    const isVideoTag = el.tagName === 'VIDEO' && !isTypeDisabled('video', result);
+                    const isAudioTag = el.tagName === 'AUDIO' && !isTypeDisabled('audio', result);
+                    const isAllowedDownload = isDownloadAttr && !isTypeDisabled('file', result);
+
+                    if (await isMediaUrl(absolute, extraExts, result) || isVideoTag || isAudioTag || isAllowedDownload) {
+                        const type = getUrlType(absolute);
+                        if (!isTypeDisabled(type, result)) {
+                            detected.add(absolute);
+                        }
                     }
                 }
             }
         }
 
         try {
-            const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
-            const bg = isOpt ? el.style.backgroundImage : (el.style.backgroundImage || window.getComputedStyle(el).backgroundImage);
-            if (bg && bg !== 'none') {
-                const match = bg.match(/url\(['"]?([^'"]+)['"]?\)/);
-                if (match && match[1]) {
-                    const absolute = getAbsoluteUrl(match[1]);
-                    if (absolute && await isMediaUrl(absolute, extraExts, result)) {
-                        if (!(await checkIsSegment(absolute, result))) {
-                            detected.add(absolute);
+            if (!isTypeDisabled('image', result)) {
+                const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
+                const bg = isOpt ? el.style.backgroundImage : (el.style.backgroundImage || window.getComputedStyle(el).backgroundImage);
+                if (bg && bg !== 'none') {
+                    const match = bg.match(/url\(['"]?([^'"]+)['"]?\)/);
+                    if (match && match[1]) {
+                        const absolute = getAbsoluteUrl(match[1]);
+                        if (absolute && await isMediaUrl(absolute, extraExts, result)) {
+                            if (!(await checkIsSegment(absolute, result))) {
+                                const type = getUrlType(absolute) || 'image';
+                                if (!isTypeDisabled(type, result)) {
+                                    detected.add(absolute);
+                                }
+                            }
                         }
                     }
                 }
@@ -213,7 +293,10 @@
                 const absolute = getAbsoluteUrl(attr.value);
                 if (absolute) {
                     if (!(await checkIsSegment(absolute, result))) {
-                        detected.add(absolute);
+                        const type = getUrlType(absolute);
+                        if (!isTypeDisabled(type, result)) {
+                            detected.add(absolute);
+                        }
                     }
                 }
             }
@@ -241,7 +324,7 @@
             if (scanPending) return;
             scanPending = true;
 
-            const result = await browser.storage.local.get(['detect-download-links', 'hide-segments', 'hide-page-components', 'only-image', 'optimize-low-end']);
+            const result = await browser.storage.local.get(contentStorageKeys);
             const detectDownloads = result['detect-download-links'] === '1' || result['detect-download-links'] === true;
             const initialSize = detected.size;
             const extraExts = detectDownloads ? downloadExtensions : [];
@@ -252,7 +335,10 @@
                 const surgicalUrls = window.mdu_run_surgical_scrapers();
                 surgicalUrls.forEach(url => {
                     const absolute = getAbsoluteUrl(url);
-                    if (absolute) detected.add(absolute);
+                    if (absolute) {
+                        const type = getUrlType(absolute) || 'video';
+                        if (!isTypeDisabled(type, result)) detected.add(absolute);
+                    }
                 });
             }
 
@@ -280,7 +366,7 @@
         const nodes = Array.from(pendingNodesToScan);
         pendingNodesToScan.clear();
 
-        const result = await browser.storage.local.get(['detect-download-links', 'hide-segments', 'hide-page-components', 'only-image', 'optimize-low-end']);
+        const result = await browser.storage.local.get(contentStorageKeys);
         const detectDownloads = result['detect-download-links'] === '1' || result['detect-download-links'] === true;
         const initialSize = detected.size;
         const extraExts = detectDownloads ? downloadExtensions : [];
@@ -302,7 +388,10 @@
             const surgicalUrls = window.mdu_run_surgical_scrapers();
             surgicalUrls.forEach(url => {
                 const absolute = getAbsoluteUrl(url);
-                if (absolute) detected.add(absolute);
+                if (absolute) {
+                    const type = getUrlType(absolute) || 'video';
+                    if (!isTypeDisabled(type, result)) detected.add(absolute);
+                }
             });
         }
 
@@ -345,21 +434,33 @@
     browser.storage.local.get(['optimize-low-end']).then((result) => {
         const isOpt = result && (result['optimize-low-end'] === '1' || result['optimize-low-end'] === true);
         isGlobalOpt = isOpt;
+
+        try {
+            const drmScript = document.createElement('script');
+            drmScript.textContent = `
+                (function() {
+                    try {
+                        const originalRequestMediaKeySystemAccess = navigator.requestMediaKeySystemAccess;
+                        if (originalRequestMediaKeySystemAccess && !navigator.mdu_hooked) {
+                            navigator.requestMediaKeySystemAccess = function() {
+                                window.postMessage({ type: 'MDU_DRM_DETECTED' }, '*');
+                                return originalRequestMediaKeySystemAccess.apply(this, arguments);
+                            };
+                            navigator.mdu_hooked = true;
+                        }
+                    } catch (e) {}
+                })();
+            `;
+            (document.head || document.documentElement).appendChild(drmScript);
+            drmScript.remove();
+        } catch (e) {}
+
         if (!isOpt) {
             try {
                 const script = document.createElement('script');
                 script.textContent = `
                     (function() {
                         try {
-                            const originalRequestMediaKeySystemAccess = navigator.requestMediaKeySystemAccess;
-                            if (originalRequestMediaKeySystemAccess && !navigator.mdu_hooked) {
-                                navigator.requestMediaKeySystemAccess = function() {
-                                    window.postMessage({ type: 'MDU_DRM_DETECTED' }, '*');
-                                    return originalRequestMediaKeySystemAccess.apply(this, arguments);
-                                };
-                                navigator.mdu_hooked = true;
-                            }
-
                             const originalAttachShadow = Element.prototype.attachShadow;
                             if (originalAttachShadow && !Element.prototype.mdu_hooked) {
                                 Element.prototype.attachShadow = function(init) {

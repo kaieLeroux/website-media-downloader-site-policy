@@ -324,6 +324,14 @@
     "message": "検出されたダウンロードリンクとファイルをリストに表示します。",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "無効なメディアを検出しない",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "動作を軽量化するため、上記でオフにされたメディアタイプの検出を無効にします。",
+    "description": "The explanation of the option to skip detection for disabled media types."
+  },
   "mediaNotificationTitle": {
     "message": "メディアが検出されました！",
     "description": "The title of the notification when media is detected."
@@ -898,6 +906,54 @@
     "message": "ブラウザの起動時に、保留中のダウンロードを自動的に再開します。",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "自動更新確認",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "開いたときに拡張機能の更新を自動的に確認します。",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "アイコンのバッジカウント",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "拡張機能アイコンに進行中のダウンロード数を表示します。",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "MP3ビットレート品質",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "音声からMP3への変換時のビットレート品質を設定します。",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "最小ファイルサイズフィルター",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "選択したサイズより小さい検出メディアを非表示にします。",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "なし (0 KB)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "カスタム (KB)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "カスタム最小サイズ (KB)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "最小ファイルサイズをKB単位で入力 (0 = 無効)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "ファイル名の確認ダイアログをスキップし、デフォルト名を使用してすぐにダウンロードを開始します。",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "MPDのPeriodにオーディオ/ビデオのAdaptationSetがありません。",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Website Media Downloader へようこそ",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "インストール完了",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "究極のメディアコンパニオンの準備が整いました。ワンクリックでお気に入りのコンテンツの検出とダウンロードを開始できます。",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "今すぐ始める",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "バージョン",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "開発者",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "コミュニティ",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "GitHub プロジェクト",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "サポート",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "アドオンストア",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "私たちの旅の一部になっていただきありがとうございます。",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "フィードバックと問題",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "バグを見つけたり、提案がありますか？ GitHubでIssueを開いて改善に協力してください！",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "問題を報告する",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "変更を適用しますか？",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "$1 をDropboxに正常に保存しました！"
+  },
+  "uiScaleTitle": {
+    "message": "UIスケール / DPI",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "拡張機能のインターフェースのサイズとスケールを調整します。",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "カスタムスケール率 (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "公式サイト",
+    "description": "Label for the official website link in the About page."
   }
 }

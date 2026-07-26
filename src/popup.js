@@ -81,6 +81,10 @@ window.activePauses = new Set();
 window.activeAbortControllers = new Map();
 
 async function checkForUpdates() {
+  const settings = await browser.storage.local.get('auto-check-update');
+  if (settings['auto-check-update'] === '0') {
+    return;
+  }
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
 
   let nativeUpdateFound = false;
@@ -276,6 +280,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
   }
 
+  const scaleResult = await browser.storage.local.get('ui-scale');
+  if (scaleResult['ui-scale']) {
+    document.documentElement.style.zoom = scaleResult['ui-scale'];
+  }
+
   const historyPageResult = await browser.storage.local.get('history-page');
   if (historyPageResult['history-page'] === '1') {
     document.getElementById('history-tab').style.display = 'inline-flex';
@@ -441,7 +450,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const mediaFilterSettings = [
       'only-video', 'only-audio', 'only-stream', 'only-image',
-      'only-subtitle', 'only-file', 'hide-segments', 'disable-deduplication'
+      'only-subtitle', 'only-file', 'ignore-disabled-types', 'hide-segments', 'disable-deduplication',
+      'min-file-size', 'min-file-size-custom'
     ];
 
     if (mediaFilterSettings.some(s => Object.prototype.hasOwnProperty.call(changes, s))) {
@@ -461,6 +471,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (changes['theme-color'] && typeof mdui !== 'undefined') {
       mdui.setColorScheme(changes['theme-color'].newValue);
+    }
+
+    if (changes['ui-scale']) {
+      document.documentElement.style.zoom = changes['ui-scale'].newValue || '100%';
     }
   });
 
@@ -1321,7 +1335,7 @@ function renderInitialList() {
       video: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M18 4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>`,
       audio: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`,
       stream: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>`,
-      image: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5.5 9L11 15.5l-2.5-3L5 17h14l-4.5-5z"/></svg>`,
+      image: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z"/></svg>`,
       subtitle: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-4H6V8h12v4z"/></svg>`,
       file: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`
     };
@@ -1566,13 +1580,16 @@ function createMediaItem(item) {
     if (!isStream) video.currentTime = 0.1;
     previewContainer.appendChild(video);
 
+    video.addEventListener('play', () => previewContainer.classList.add('playing'));
+    video.addEventListener('pause', () => previewContainer.classList.remove('playing'));
+    video.addEventListener('ended', () => previewContainer.classList.remove('playing'));
+
     let hls = null;
     previewContainer.addEventListener('click', (e) => {
       e.stopPropagation();
       if (video.paused) {
         document.querySelectorAll('.media-preview-container.playing video').forEach(v => {
           v.pause();
-          v.parentElement.classList.remove('playing');
         });
 
         if (isStream && !video.src) {
@@ -1586,12 +1603,9 @@ function createMediaItem(item) {
         }
 
         video.muted = false;
-        video.play().then(() => {
-          previewContainer.classList.add('playing');
-        }).catch(err => console.error("Playback failed:", err));
+        video.play().catch(err => console.error("Playback failed:", err));
       } else {
         video.pause();
-        previewContainer.classList.remove('playing');
       }
     });
   } else if (isImage) {
@@ -1601,6 +1615,13 @@ function createMediaItem(item) {
     img.style.width = "100%";
     img.style.height = "100%";
     img.style.objectFit = "cover";
+    img.onerror = () => {
+      img.remove();
+      const fallback = document.createElement('mdui-icon');
+      fallback.classList.add('media-preview-icon');
+      fallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>`;
+      previewContainer.appendChild(fallback);
+    };
     previewContainer.appendChild(img);
   } else {
     const mediaIconContainer = document.createElement('mdui-icon');
@@ -2037,6 +2058,9 @@ function getMediaType(url, responseHeaders) {
         return null;
     }
 
+    if (contentType.startsWith('video/') || urlLower.includes('mime=video') || urlLower.includes('#video')) return 'video';
+    if (contentType.startsWith('audio/') || urlLower.includes('mime=audio') || urlLower.includes('#audio')) return 'audio';
+
     const videoExtensions = [".3g2", ".3gp", ".asx", ".avi", ".divx", ".4v", ".flv", ".ismv", ".m2t", ".m2ts", ".m2v", ".m4s", ".m4v", ".mk3d", ".mkv", ".mng", ".mov", ".mp2v", ".mp4", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mxf", ".ogm", ".ogv", ".qt", ".rm", ".swf", ".ts", ".vob", ".vp9", ".webm", ".wmv"];
     const audioExtensions = [".3ga", ".aac", ".ac3", ".adts", ".aif", ".aiff", ".alac", ".ape", ".asf", ".au", ".dts", ".f4a", ".f4b", ".flac", ".isma", ".it", ".m4a", ".m4b", ".m4r", ".mid", ".mka", ".mod", ".mp1", ".mp2", ".mp3", ".mp4a", ".mpa", ".mpga", ".oga", ".ogg", ".ogx", ".opus", ".ra", ".shn", ".spx", ".vorbis", ".wav", ".weba", ".wma", ".xm"];
     const streamExtensions = [".f4f", ".f4m", ".m3u8", ".mpd", ".smil"];
@@ -2045,18 +2069,18 @@ function getMediaType(url, responseHeaders) {
     const downloadExtensions = [".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".msi", ".apk", ".dmg", ".iso", ".bin", ".pdf", ".epub", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"];
 
     const urlPath = urlLower.split('?')[0].split('#')[0];
-    const hasExt = (ext) => urlPath.endsWith(ext) || urlLower.includes(ext + '&') || urlLower.includes(ext + '?') || urlLower.endsWith(ext);
+    const hasExt = (ext) => urlPath.endsWith(ext) || urlLower.includes(ext + '&') || urlLower.includes(ext + '?') || urlLower.includes(ext + '#') || urlLower.endsWith(ext);
 
-    if (contentType.startsWith('video/') || videoExtensions.some(hasExt)) return 'video';
-    if (contentType.startsWith('audio/') || audioExtensions.some(hasExt)) return 'audio';
+    if (videoExtensions.some(hasExt)) return 'video';
+    if (audioExtensions.some(hasExt)) return 'audio';
 
     if (contentType === 'image/svg+xml' || hasExt('.svg')) return null;
-    if (contentType.startsWith('image/') || imageExtensions.some(hasExt)) return 'image';
+    if (contentType.startsWith('image/') || imageExtensions.some(hasExt) || urlLower.includes('#image')) return 'image';
 
-    if (streamExtensions.some(hasExt) || contentType.includes('mpegurl') || contentType.includes('dash+xml')) return 'stream';
-    if (subtitleExtensions.some(hasExt) || contentType.includes('vtt') || contentType.includes('subrip') || contentType.includes('ass') || contentType.includes('ttml') || contentType.includes('dfxp') || contentType.includes('sami') || contentType.includes('smil') || contentType.includes('lrc') || contentType.includes('sbv') || contentType.includes('microdvd')) return 'subtitle';
+    if (streamExtensions.some(hasExt) || contentType.includes('mpegurl') || contentType.includes('dash+xml') || urlLower.includes('#stream')) return 'stream';
+    if (subtitleExtensions.some(hasExt) || contentType.includes('vtt') || contentType.includes('subrip') || contentType.includes('ass') || contentType.includes('ttml') || contentType.includes('dfxp') || contentType.includes('sami') || contentType.includes('smil') || contentType.includes('lrc') || contentType.includes('sbv') || contentType.includes('microdvd') || urlLower.includes('#subtitle')) return 'subtitle';
 
-    if (downloadExtensions.some(hasExt)) return 'file';
+    if (downloadExtensions.some(hasExt) || urlLower.includes('#file')) return 'file';
 
     return null;
 }
@@ -2189,8 +2213,17 @@ async function loadMediaList() {
         return;
     }
 
-    const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'hide-segments', 'hide-page-components', 'media-sort-order', 'limit-media-list', 'limit-media-list-custom', 'optimize-low-end', 'group-by-type', 'disable-deduplication']);
+    const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'hide-segments', 'hide-page-components', 'media-sort-order', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom', 'optimize-low-end', 'group-by-type', 'disable-deduplication']);
     isGroupingEnabled = settings['group-by-type'] === '1' || settings['group-by-type'] === true;
+
+    const minFileSizeSetting = settings['min-file-size'] || '0';
+    let minSizeBytes = 0;
+    if (minFileSizeSetting === 'custom') {
+      const customKB = parseInt(settings['min-file-size-custom']) || 0;
+      minSizeBytes = customKB * 1024;
+    } else {
+      minSizeBytes = (parseInt(minFileSizeSetting) || 0) * 1024;
+    }
 
     if (isGroupingEnabled) {
       if (autoAudioUrl) {
@@ -2239,6 +2272,11 @@ async function loadMediaList() {
       if (type === 'image' && !showImage) continue;
       if (type === 'subtitle' && !showSubtitle) continue;
       if (type === 'file' && !showFile) continue;
+
+      if (minSizeBytes > 0 && type !== 'stream') {
+        const reqSize = parseInt(requests[requests.length - 1].size) || 0;
+        if (reqSize > 0 && reqSize < minSizeBytes) continue;
+      }
 
       const identity = rawUrl;
 
@@ -2689,7 +2727,7 @@ async function loadHistoryList() {
   const historyContainer = document.getElementById('history-list');
   const historyResult = await browser.storage.local.get('download-history');
   const history = historyResult['download-history'] || [];
-  const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle']);
+  const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file']);
 
   historyContainer.innerHTML = '';
 
@@ -2708,12 +2746,14 @@ async function loadHistoryList() {
     const showStream = isFlagEnabled(settings['only-stream'], true);
     const showImage = isFlagEnabled(settings['only-image'], false);
     const showSubtitle = isFlagEnabled(settings['only-subtitle'], false);
+    const showFile = isFlagEnabled(settings['only-file'], true);
 
     if (type === 'video' && !showVideo) return;
     if (type === 'audio' && !showAudio) return;
     if (type === 'stream' && !showStream) return;
     if (type === 'image' && !showImage) return;
     if (type === 'subtitle' && !showSubtitle) return;
+    if (type === 'file' && !showFile) return;
 
     visibleCount++;
     const historyItem = document.createElement('div');
@@ -2927,19 +2967,44 @@ async function loadAboutPage() {
 
     html += `
         </div>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
           <h2 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin: 8px 8px 0;">${browser.i18n.getMessage("usefulLinksTitle") || "Useful Links"}</h2>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
     `;
 
     const linkTranslationMap = {
+      "Official Website": "officialWebsite",
       "Star on GitHub": "starOnGithub",
       "Rate on Add-ons": "rateOnAddons",
       "GitHub Repository": "githubRepositoryLabel",
       "Report Issue": "reportIssue"
     };
 
-    data.links.forEach((link) => {
+    const officialLink = data.links.find(l => l.label === "Official Website");
+    const otherLinks = data.links.filter(l => l.label !== "Official Website");
+
+    if (officialLink) {
+      const transKey = linkTranslationMap[officialLink.label];
+      const localizedLabel = transKey ? (browser.i18n.getMessage(transKey) || officialLink.label) : officialLink.label;
+      html += `
+        <mdui-card href="${officialLink.url}" target="_blank" clickable style="background: linear-gradient(135deg, rgba(var(--mdui-color-primary), 0.15), rgba(var(--mdui-color-primary), 0.05)); border: 1px solid rgba(var(--mdui-color-primary), 0.3); border-radius: 14px; transition: var(--transition); width: 100%; box-sizing: border-box;">
+          <div style="padding: 14px 16px; display: flex; align-items: center; gap: 14px; box-sizing: border-box; width: 100%;">
+            <div style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(var(--mdui-color-primary), 0.15); color: var(--primary); border-radius: 10px; flex-shrink: 0;">
+              <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="${officialLink.icon}"/></svg>
+            </div>
+            <div style="flex-grow: 1;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: rgb(var(--mdui-color-on-surface));">${localizedLabel}</div>
+              <div style="font-size: 0.72rem; color: var(--on-surface-variant); opacity: 0.7; margin-top: 2px;">wmd.devianproject.tech</div>
+            </div>
+          </div>
+        </mdui-card>
+      `;
+    }
+
+    html += `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    `;
+
+    otherLinks.forEach((link) => {
       const transKey = linkTranslationMap[link.label];
       const localizedLabel = transKey ? (browser.i18n.getMessage(transKey) || link.label) : link.label;
       html += `

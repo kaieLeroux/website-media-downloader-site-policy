@@ -19,10 +19,10 @@
 importScripts('libraries/lame.min.js');
 
 self.onmessage = async function(e) {
-    const { id, data, filename } = e.data;
+    const { id, data, filename, bitrate } = e.data;
     
     try {
-        const mp3Blob = await convertWavToMp3(data, (progress) => {
+        const mp3Blob = await convertWavToMp3(data, bitrate, (progress) => {
             self.postMessage({ type: 'progress', id, progress });
         });
         const newFilename = filename.replace(/\.wav$/i, '') + '.mp3';
@@ -39,7 +39,7 @@ self.onmessage = async function(e) {
     }
 };
 
-async function convertWavToMp3(arrayBuffer, onProgress) {
+async function convertWavToMp3(arrayBuffer, bitrate, onProgress) {
     const dataView = new DataView(arrayBuffer);
 
     const riff = String.fromCharCode(dataView.getUint8(0), dataView.getUint8(1), dataView.getUint8(2), dataView.getUint8(3));
@@ -70,7 +70,8 @@ async function convertWavToMp3(arrayBuffer, onProgress) {
     }
 
     const pcmData = new Int16Array(arrayBuffer, dataOffset);
-    const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+    const bitrateVal = parseInt(bitrate) || 128;
+    const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, bitrateVal);
     const mp3Data = [];
 
     const sampleBlockSize = 1152;
@@ -96,10 +97,9 @@ async function convertWavToMp3(arrayBuffer, onProgress) {
             
             processedSamples += sampleBlockSize * 2;
             let currentProgress = processedSamples / totalSamples;
-            if (currentProgress - lastProgressReport > 0.05 || processedSamples >= totalSamples) {
+            if (currentProgress - lastProgressReport >= 0.01 || processedSamples >= totalSamples) {
                 onProgress(currentProgress);
                 lastProgressReport = currentProgress;
-                await new Promise(r => setTimeout(r, 0));
             }
         }
     } else {
@@ -112,10 +112,9 @@ async function convertWavToMp3(arrayBuffer, onProgress) {
             
             processedSamples += sampleBlockSize;
             let currentProgress = processedSamples / totalSamples;
-            if (currentProgress - lastProgressReport > 0.05 || processedSamples >= totalSamples) {
+            if (currentProgress - lastProgressReport >= 0.01 || processedSamples >= totalSamples) {
                 onProgress(currentProgress);
                 lastProgressReport = currentProgress;
-                await new Promise(r => setTimeout(r, 0));
             }
         }
     }

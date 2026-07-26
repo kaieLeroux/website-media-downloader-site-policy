@@ -344,6 +344,14 @@
     "message": "Shows only general files and download links in the media list.",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "Don't detect turned-off media",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "Disable detection for media types that are turned off above to keep the extension lightweight.",
+    "description": "The explanation of the option to skip detection for disabled media types."
+  },
   "mediaNotificationTitle": {
     "message": "Media detected!",
     "description": "The title of the notification when media is detected."
@@ -918,6 +926,54 @@
     "message": "The app will automatically resume any paused downloads when you reopen your browser.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "Automatic update check",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "Automatically check for extension updates when opened.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "Badge counter on icon",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "Show active running downloads count on extension icon.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "MP3 bitrate quality",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "Set the bitrate quality when converting audio to MP3.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "Minimum file size filter",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "Hide detected media smaller than selected size.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "None (0 KB)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "Custom (KB)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "Custom minimum size (KB)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "Enter minimum file size in KB (0 = disable)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "Starts the download immediately without asking you to name the file.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1468,69 +1524,9 @@
     "message": "MPD’s Period has no AdaptationSet for audio/video.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Welcome to Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "Installation Complete",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "The ultimate media companion is ready. Start detecting and downloading your favorite content with a single click.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "Get Started Now",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "Version",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "Developer",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "Community",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "GitHub Project",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "Support",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "Add-ons Store",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "Thank you for being part of our journey.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "Feedback & Issues",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "Found a bug or have a suggestion? Help us improve by opening an issue on GitHub!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "Report an Issue",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "Apply changes?",
@@ -1619,6 +1615,14 @@
   "settingsLayoutExplain": {
     "message": "Choose how settings are presented.",
     "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "uiScaleTitle": {
+    "message": "UI Scale / DPI",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Adjust the scale and size of the extension interface.",
+    "description": "Explanation for UI scaling / DPI setting."
   },
   "layoutDefault": {
     "message": "Default",
@@ -2009,5 +2013,13 @@
   },
   "uploadSuccessDropbox": {
     "message": "Successfully saved $1 to Dropbox!"
+  },
+  "customUiScaleTitle": {
+    "message": "Custom scale percentage (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "Official Website",
+    "description": "Label for the official website link in the About page."
   }
 }

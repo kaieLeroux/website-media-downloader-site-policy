@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.1.6-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -48,18 +48,19 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## What's New in v2.1.6
+## What's New in v2.2.1
 
-- **Media Grouping**: Categorize detected media into clean, organized group cards (Videos, Audio, Streams, Images, Subtitles, Files) with live item counts and dedicated view navigation.
-- **Manual URL Download**: Add direct file download links directly from the Home tab to start downloading immediately without waiting for auto-detection.
-- **Flexible Settings Layouts**: Customize your settings interface with choices between Collapsible sections, Sidebar navigation, or Tabbed views.
-- **Cross-Group Real-Time Search**: Search seamlessly across all media groups in real-time matching by page title, filename, URL, hostname, and media type.
-- **YouTube & Download Fixes**: YouTube audio-only downloads mapped to video group; resolved ZIP generator ReferenceError; preserved navigation buttons in empty group views.
-- **Update Check Improvements**: Fixed destructuring issue in native browser update check response and aligned fallback update URL for Mozilla Add-ons (AMO).
+- **Media Card Theme Adaptation**: Adapted media cards to active theme colors and resolved custom hex color rendering issues; ensured theme color presets wrap and scroll cleanly.
+- **UI Scale DPI Settings**: Added UI Scale DPI settings with customizable display scaling options.
+- **Media Detection & Filtering Controls**: Implemented root-level skipping and hiding for disabled media types across network listeners, storage, and popup history.
+- **Minimum File Size Filter**: Introduced minimum file size filter to exclude small unwanted files automatically.
+- **Optimization & DRM Detection**: Optimized DRM detection reliability and automatic root non-detection during low-end optimization mode.
+- **MP3 Conversion & Audio Enhancements**: Improved MP3 conversion performance with seamless progress updates, custom bitrate settings, and active download badge count.
+- **Startup Settings**: Added setting to disable automatic update checking upon extension startup.
 
 ---
 
-## Technical Features (v2.1.6)
+## Technical Features (v2.2.1)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

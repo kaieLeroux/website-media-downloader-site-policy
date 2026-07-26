@@ -344,6 +344,14 @@
     "message": "Hanya menampilkan berkas umum dan tautan unduhan di daftar media.",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "Jangan deteksi yang dimatikan",
+    "description": "Judul opsi untuk mematikan deteksi jenis media yang dimatikan."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "Matikan deteksi untuk jenis media yang dimatikan di atas agar pemrosesan lebih ringan.",
+    "description": "Penjelasan opsi untuk mematikan deteksi jenis media yang dimatikan."
+  },
   "mediaNotificationTitle": {
     "message": "Media terdeteksi!",
     "description": "The title of the notification when media is detected."
@@ -918,6 +926,54 @@
     "message": "Aplikasi akan otomatis melanjutkan proses unduhan yang tertunda saat Anda membuka kembali peramban.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "Cek pembaruan otomatis",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "Otomatis memeriksa pembaruan ekstensi saat dibuka.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "Hitung badge pada ikon",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "Tampilkan jumlah unduhan yang sedang berjalan pada ikon ekstensi.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "Kualitas bitrate MP3",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "Atur kualitas bitrate saat mengonversi audio ke MP3.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "Filter ukuran file minimal",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "Sembunyikan media terdeteksi yang lebih kecil dari ukuran ini.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "Tanpa filter (0 KB)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "Kustom (KB)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "Ukuran minimal kustom (KB)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "Masukkan ukuran file minimal dalam KB (0 = nonaktifkan)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "Langsung memulai proses unduhan tanpa menanyakan nama file kepada Anda.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1468,69 +1524,9 @@
     "message": "Period MPD tidak memiliki AdaptationSet untuk audio/video.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Selamat Datang di Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "Instalasi Selesai",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "Pendamping media utama kini siap. Mulai deteksi dan unduh konten favorit Anda dengan sekali klik.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "Mulai Sekarang",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "Versi",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "Pengembang",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "Komunitas",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "Proyek GitHub",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "Dukungan",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "Toko Add-ons",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "Terima kasih telah menjadi bagian dari perjalanan kami.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "Umpan Balik & Masalah",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "Menemukan bug atau punya saran? Bantu kami berkembang dengan melaporkan masalah di GitHub!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "Laporkan Masalah",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "Terapkan perubahan?",
@@ -1619,6 +1615,14 @@
   "settingsLayoutExplain": {
     "message": "Pilih cara menampilkan menu pengaturan.",
     "description": "Explanation of the setting that controls the presentation layout of settings."
+  },
+  "uiScaleTitle": {
+    "message": "Ukuran tampilan UI (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Sesuaikan skala dan ukuran elemen antarmuka ekstensi.",
+    "description": "Explanation for UI scaling / DPI setting."
   },
   "layoutDefault": {
     "message": "Biasa",
@@ -2009,5 +2013,13 @@
   },
   "uploadSuccessDropbox": {
     "message": "Berhasil menyimpan $1 ke Dropbox!"
+  },
+  "customUiScaleTitle": {
+    "message": "Persentase skala kustom (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "Website Resmi",
+    "description": "Label for the official website link in the About page."
   }
 }

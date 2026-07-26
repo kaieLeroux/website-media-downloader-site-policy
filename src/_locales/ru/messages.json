@@ -324,6 +324,14 @@
     "message": "Показывать обнаруженные ссылки на скачивание и файлы в списке.",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "Не обнаруживать отключенные медиа",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "Отключает обнаружение типов медиа, выключенных выше, для снижения нагрузки.",
+    "description": "The explanation of the option to skip detection for disabled media types."
+  },
   "mediaNotificationTitle": {
     "message": "Медиа обнаружено!",
     "description": "The title of the notification when media is detected."
@@ -898,6 +906,54 @@
     "message": "Автоматически возобновлять отложенные загрузки при запуске браузера.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "Автоматическая проверка обновлений",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "Автоматически проверять наличие обновлений расширения при открытии.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "Счетчик на значке",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "Отображать количество активных загрузок на иконке расширения.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "Качество битрейта MP3",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "Укажите качество битрейта при конвертации аудио в MP3.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "Фильтр минимального размера файла",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "Скрывать обнаруженные медиафайлы меньше выбранного размера.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "Нет (0 КБ)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "Пользовательский (КБ)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "Пользовательский минимальный размер (КБ)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "Введите минимальный размер файла в КБ (0 = отключить)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "Пропускать диалог подтверждения имени файла и начинать загрузку немедленно, используя имя по умолчанию.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "В Period MPD отсутствует AdaptationSet для аудио/видео.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Добро пожаловать в Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "Установка завершена",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "Ваш идеальный помощник для медиа готов. Начните находить и скачивать любимый контент в один клик.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "Начать",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "Версия",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "Разработчик",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "Сообщество",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "Проект на GitHub",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "Поддержка",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "Магазин дополнений",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "Спасибо, что вы с нами.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "Отзывы и проблемы",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "Нашли ошибку или есть предложение? Помогите нам стать лучше, открыв проблему на GitHub!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "Сообщить о проблеме",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "Применить изменения?",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "Успешно сохранено $1 в Dropbox!"
+  },
+  "uiScaleTitle": {
+    "message": "Масштаб интерфейса (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Настройка масштаба и размера интерфейса расширения.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "Пользовательский процент масштаба (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "Официальный сайт",
+    "description": "Label for the official website link in the About page."
   }
 }

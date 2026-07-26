@@ -324,6 +324,14 @@
     "message": "Afficher les liens de téléchargement et les fichiers détectés dans la liste.",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "Ne pas détecter les médias désactivés",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "Désactive la détection des types de médias désactivés ci-dessus pour alléger l'extension.",
+    "description": "The explanation of the option to skip detection for disabled media types."
+  },
   "mediaNotificationTitle": {
     "message": "Média détecté !",
     "description": "The title of the notification when media is detected."
@@ -898,6 +906,54 @@
     "message": "Reprendre automatiquement les téléchargements en attente au démarrage du navigateur.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "Vérification automatique des mises à jour",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "Vérifier automatiquement les mises à jour de l'extension lors de son ouverture.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "Compteur sur l'icône",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "Afficher le nombre de téléchargements en cours sur l'icône de l'extension.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "Qualité du débit MP3",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "Définir la qualité du débit lors de la conversion audio en MP3.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "Filtre de taille de fichier minimale",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "Masquer les médias détectés plus petits que la taille sélectionnée.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "Aucun (0 KO)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "Personnalisé (KO)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "Taille minimale personnalisée (KO)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "Entrer la taille minimale en KO (0 = désactiver)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "Passer la boîte de dialogue de confirmation du nom de fichier et démarrer les téléchargements immédiatement.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "Le Period du MPD n'a pas d'AdaptationSet pour l'audio/vidéo.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Bienvenue sur Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "Installation terminée",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "Le compagnon multimédia ultime est prêt. Commencez à détecter et télécharger votre contenu préféré en un seul clic.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "Commencer",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "Version",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "Développeur",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "Communauté",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "Projet GitHub",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "Assistance",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "Boutique d'extensions",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "Merci de faire partie de notre aventure.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "Commentaires et problèmes",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "Vous avez trouvé un bug ou avez une suggestion ? Aidez-nous à nous améliorer en ouvrant un ticket sur GitHub !",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "Signaler un problème",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "Appliquer les modifications ?",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "Le fichier $1 a été enregistré avec succès dans Dropbox !"
+  },
+  "uiScaleTitle": {
+    "message": "Échelle de l'interface (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Ajustez l'échelle et la taille de l'interface de l'extension.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "Pourcentage d'échelle personnalisé (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "Site Officiel",
+    "description": "Label for the official website link in the About page."
   }
 }

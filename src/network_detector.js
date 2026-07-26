@@ -458,13 +458,33 @@ browser.webRequest.onBeforeSendHeaders.addListener(
     ["blocking", "requestHeaders"]
 );
 
+let cachedSettings = {
+    mimeDetection: true,
+    urlDetection: true,
+    youtubeDetection: true,
+    mediaNotification: true,
+    stackNotifications: false,
+    hideSegments: false,
+    hidePageComponents: true,
+    onlyVideo: true,
+    onlyAudio: true,
+    onlyStream: true,
+    onlyImage: false,
+    onlySubtitle: false,
+    onlyFile: true,
+    ignoreDisabledTypes: false,
+    optimizeLowEnd: false,
+    filenameTemplate: '',
+    themeColor: '#8ab4f8'
+};
+
 function getSettings(callback) {
     browser.storage.local.get([
         'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
-        'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
-        'filename-template', 'theme-color'
+        'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types', 'optimize-low-end',
+        'filename-template', 'theme-color', 'ui-scale'
     ], function (result) {
-        callback({
+        const s = {
             mimeDetection: isFlagEnabled(result['mime-detection'], true),
             urlDetection: isFlagEnabled(result['url-detection'], true),
             youtubeDetection: isFlagEnabled(result['youtube-detection'], true),
@@ -477,10 +497,29 @@ function getSettings(callback) {
             onlyStream: isFlagEnabled(result['only-stream'], true),
             onlyImage: isFlagEnabled(result['only-image'], false),
             onlySubtitle: isFlagEnabled(result['only-subtitle'], false),
+            onlyFile: isFlagEnabled(result['only-file'], true),
+            ignoreDisabledTypes: isFlagEnabled(result['ignore-disabled-types'], false),
+            optimizeLowEnd: isFlagEnabled(result['optimize-low-end'], false),
             filenameTemplate: (result['filename-template'] && result['filename-template'] !== '0') ? result['filename-template'] : '',
-            themeColor: result['theme-color'] || '#8ab4f8'
-        });
+            themeColor: result['theme-color'] ? (result['theme-color'].startsWith('#') || result['theme-color'].startsWith('rgb') ? result['theme-color'] : '#' + result['theme-color']) : '#bbdefb',
+            uiScale: result['ui-scale'] || '100%'
+        };
+        cachedSettings = s;
+        if (callback) callback(s);
     });
+}
+
+function isMediaTypeDisabled(mediaType, settings) {
+    const activeSettings = settings || cachedSettings;
+    const isIgnoreDisabled = activeSettings.ignoreDisabledTypes || activeSettings.optimizeLowEnd;
+    if (!mediaType || !activeSettings || !isIgnoreDisabled) return false;
+    if (mediaType === 'video' && !activeSettings.onlyVideo) return true;
+    if (mediaType === 'audio' && !activeSettings.onlyAudio) return true;
+    if (mediaType === 'stream' && !activeSettings.onlyStream) return true;
+    if (mediaType === 'image' && !activeSettings.onlyImage) return true;
+    if (mediaType === 'subtitle' && !activeSettings.onlySubtitle) return true;
+    if (mediaType === 'file' && !activeSettings.onlyFile) return true;
+    return false;
 }
 
 const notificationUrls = new Map();
@@ -495,15 +534,67 @@ browser.tabs.onRemoved.addListener((tabId) => {
     lastNotificationTime.delete(tabId);
 });
 
-browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.status === 'loading' || changeInfo.url) {
-        tabMetadata.delete(tabId);
-        tabsWithDrm.delete(tabId);
-        notifiedUrls.delete(tabId);
-    }
-});
+async function updateActiveDownloadsBadge() {
+    try {
+        const settings = await browser.storage.local.get('badge-counter');
+        const actionAPI = (typeof browser !== 'undefined' && browser.action) ? browser.action : (typeof chrome !== 'undefined' && chrome.action) ? chrome.action : (browser.browserAction || chrome.browserAction);
+        if (!actionAPI || !actionAPI.setBadgeText) return;
 
-function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false) {
+        if (settings['badge-counter'] === '0') {
+            actionAPI.setBadgeText({ text: '' });
+            return;
+        }
+
+        let activeCount = 0;
+        if (typeof activeDownloads !== 'undefined' && activeDownloads) {
+            for (const [id, item] of activeDownloads) {
+                if (item && !item.paused && !item.isPaused && !item.cancelled && item.state !== 'interrupted' && item.state !== 'complete') {
+                    activeCount++;
+                }
+            }
+        }
+
+        const text = activeCount > 0 ? (activeCount > 99 ? '99+' : String(activeCount)) : '';
+        actionAPI.setBadgeText({ text: text });
+        if (activeCount > 0 && actionAPI.setBadgeBackgroundColor) {
+            actionAPI.setBadgeBackgroundColor({ color: '#1976D2' });
+        }
+    } catch (e) {
+        console.warn("Failed to update active downloads badge:", e);
+    }
+}
+
+const _origActiveDownloadsSet = activeDownloads.set.bind(activeDownloads);
+const _origActiveDownloadsDelete = activeDownloads.delete.bind(activeDownloads);
+const _origActiveDownloadsClear = activeDownloads.clear.bind(activeDownloads);
+
+activeDownloads.set = function(key, value) {
+    const res = _origActiveDownloadsSet(key, value);
+    updateActiveDownloadsBadge();
+    return res;
+};
+
+activeDownloads.delete = function(key) {
+    const res = _origActiveDownloadsDelete(key);
+    updateActiveDownloadsBadge();
+    return res;
+};
+
+activeDownloads.clear = function() {
+    const res = _origActiveDownloadsClear();
+    updateActiveDownloadsBadge();
+    return res;
+};
+
+if (browser.storage && browser.storage.onChanged) {
+    browser.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes['badge-counter']) {
+            updateActiveDownloadsBadge();
+        }
+    });
+}
+
+function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false, uiScale = '100%') {
     if (!browser.scripting) return;
 
     const modalTranslations = {
@@ -520,7 +611,35 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
 
     browser.scripting.executeScript({
         target: { tabId: tabId },
-        func: (name, downloadUrl, dlLabel, type, titleLabel, primaryColor, drm, formats, stack, t) => {
+        func: (name, downloadUrl, dlLabel, type, titleLabel, primaryColor, drm, formats, stack, t, uiScale) => {
+             let safeColor = primaryColor || '#8ab4f8';
+             if (typeof safeColor === 'string') {
+                 safeColor = safeColor.trim();
+                 if (!safeColor.startsWith('#') && !safeColor.startsWith('rgb')) {
+                     safeColor = '#' + safeColor;
+                 }
+                 if (/^#[0-9a-fA-F]{3}$/.test(safeColor)) {
+                     safeColor = '#' + safeColor[1] + safeColor[1] + safeColor[2] + safeColor[2] + safeColor[3] + safeColor[3];
+                 }
+             }
+             function getContrastColor(hex) {
+                 if (!hex || !hex.startsWith('#') || hex.length !== 7) return '#121212';
+                 const r = parseInt(hex.slice(1, 3), 16);
+                 const g = parseInt(hex.slice(3, 5), 16);
+                 const b = parseInt(hex.slice(5, 7), 16);
+                 const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+                 return yiq >= 128 ? '#121212' : '#ffffff';
+             }
+             function hexToRgba(hex, alpha) {
+                 if (!hex || !hex.startsWith('#') || hex.length !== 7) return `rgba(255, 255, 255, ${alpha})`;
+                 const r = parseInt(hex.slice(1, 3), 16);
+                 const g = parseInt(hex.slice(3, 5), 16);
+                 const b = parseInt(hex.slice(5, 7), 16);
+                 return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+             }
+             const btnTextColor = getContrastColor(safeColor);
+             const encodedColor = encodeURIComponent(safeColor);
+
              if (!stack) {
                  const existingToasts = document.querySelectorAll('.mdu-toast');
                  existingToasts.forEach(t => {
@@ -536,9 +655,8 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                  });
              }
 
-
-            const toast = document.createElement('div');
-            toast.className = 'mdu-toast';
+             const toast = document.createElement('div');
+             toast.className = 'mdu-toast';
             
             const icons = {
                 video: '<svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>',
@@ -573,19 +691,21 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 animation: mdu-toast-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 touch-action: pan-y; user-select: none; -webkit-user-select: none;
+                zoom: ${uiScale || '100%'};
             `;
+            if (uiScale) toast.style.zoom = uiScale;
 
             const inner = toast.querySelector('.mdu-toast-inner');
             inner.style.cssText = `display: flex; align-items: center; padding: 14px 20px; gap: 14px;`;
 
             const iconCont = toast.querySelector('.mdu-toast-icon');
-            iconCont.style.cssText = `color: ${primaryColor}; flex-shrink: 0; display: flex; align-items: center;`;
+            iconCont.style.cssText = `color: ${safeColor}; flex-shrink: 0; display: flex; align-items: center;`;
 
             const content = toast.querySelector('.mdu-toast-content');
             content.style.cssText = `flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;`;
 
             const title = toast.querySelector('.mdu-toast-title');
-            title.style.cssText = `font-size: 13px; color: ${primaryColor}; font-weight: 600; opacity: 1;`;
+            title.style.cssText = `font-size: 13px; color: ${safeColor}; font-weight: 600; opacity: 1;`;
 
             const filename = toast.querySelector('.mdu-toast-filename');
             filename.style.cssText = `font-size: 14px; ${drm ? 'white-space: normal;' : 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'} color: rgba(255,255,255,0.9);`;
@@ -608,13 +728,13 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 `;
 
                 modalBackdrop.innerHTML = `
-                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
-                        <div style="font-size: 18px; font-weight: 600; color: ${primaryColor};">${t.ytModalTitle}</div>
+                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '100%'};">
+                        <div style="font-size: 18px; font-weight: 600; color: ${safeColor};">${t.ytModalTitle}</div>
                         <div style="font-size: 14px; color: rgba(255,255,255,0.7); max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
                         
                         <!-- Tab Video / Audio -->
                         <div style="display: flex; background: rgba(255,255,255,0.08); padding: 4px; border-radius: 12px; gap: 4px;">
-                            <button id="tab-video" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: ${primaryColor}; color: #121212; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabVideo}</button>
+                            <button id="tab-video" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: ${safeColor}; color: ${btnTextColor}; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabVideo}</button>
                             <button id="tab-audio" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: transparent; color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabAudio}</button>
                         </div>
 
@@ -646,7 +766,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                         <!-- Footer Buttons -->
                         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;">
                             <button id="btn-cancel" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalCancelBtn}</button>
-                            <button id="btn-download" style="background: ${primaryColor}; color: #121212; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalDownloadBtn}</button>
+                            <button id="btn-download" style="background: ${safeColor}; color: ${btnTextColor}; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalDownloadBtn}</button>
                         </div>
                     </div>
                     
@@ -668,13 +788,13 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                             appearance: none !important;
                             -webkit-appearance: none !important;
                             -moz-appearance: none !important;
-                            background-color: rgba(255,255,255,0.08) !important;
-                            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${primaryColor.replace('#', '%23')}"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+                            background-color: ${hexToRgba(safeColor, 0.15)} !important;
+                            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${encodedColor}"><path d="M7 10l5 5 5-5z"/></svg>') !important;
                             background-repeat: no-repeat !important;
                             background-position: right 12px center !important;
                             background-size: 20px !important;
                             color: white !important;
-                            border: 1.5px solid rgba(255,255,255,0.15) !important;
+                            border: 1.5px solid ${hexToRgba(safeColor, 0.35)} !important;
                             padding: 11px 38px 11px 14px !important;
                             border-radius: 12px !important;
                             font-size: 13px !important;
@@ -698,8 +818,8 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                         }
 
                         .mdu-modal-select:focus {
-                            border-color: ${primaryColor} !important;
-                            box-shadow: 0 0 0 3px ${primaryColor}33, 0 3px 10px rgba(0,0,0,0.2) !important;
+                            border-color: ${safeColor} !important;
+                            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2), 0 3px 10px rgba(0,0,0,0.2) !important;
                         }
 
                         .mdu-modal-select option {
@@ -712,8 +832,8 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
 
                         .mdu-modal-select option:hover,
                         .mdu-modal-select option:checked {
-                            background: ${primaryColor} !important;
-                            color: #121212 !important;
+                            background: ${safeColor} !important;
+                            color: ${btnTextColor} !important;
                         }
                     </style>
                 `;
@@ -884,7 +1004,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
             if (!drm) {
                 const dlBtn = toast.querySelector('.mdu-toast-dl-btn');
                 dlBtn.style.cssText = `
-                    background: ${primaryColor}; color: #1e1e1e; border: none; padding: 8px 18px;
+                    background: ${safeColor}; color: ${btnTextColor}; border: none; padding: 8px 18px;
                     border-radius: 18px; cursor: pointer; font-weight: 600; font-size: 13px;
                     transition: all 0.2s ease;
                 `;
@@ -907,7 +1027,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
             const progressBar = toast.querySelector('.mdu-toast-progress-bar');
             progressBar.style.cssText = `
                 position: absolute; bottom: 0; left: 0; height: 3px;
-                background: ${primaryColor}; width: 100%; transition: width 6s linear;
+                background: ${safeColor}; width: 100%; transition: width 6s linear;
                 opacity: 0.5;
             `;
 
@@ -1000,7 +1120,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 }
             }, 6000);
         },
-        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm, ytFormats, stackNotifications, modalTranslations]
+        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm, ytFormats, stackNotifications, modalTranslations, uiScale]
     }).catch(() => {});
 }
 
@@ -1022,23 +1142,26 @@ function getMediaType(url, contentType) {
         return null;
     }
 
+    if (mimeLower.startsWith('video/') || urlLower.includes('mime=video') || urlLower.includes('#video')) return 'video';
+    if (mimeLower.startsWith('audio/') || urlLower.includes('mime=audio') || urlLower.includes('#audio')) return 'audio';
+
     const subtitleExtensions = [".vtt", ".srt", ".ass", ".ssa", ".ttml", ".dfxp", ".lrc", ".smi", ".sub", ".sbv"];
     const imageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".gif"];
     const downloadExtensions = [".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".msi", ".apk", ".dmg", ".iso", ".bin", ".pdf", ".epub", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"];
 
     const urlPath = urlLower.split('?')[0].split('#')[0];
-    const hasExt = (ext) => urlPath.endsWith(ext) || urlLower.includes(ext + '&') || urlLower.includes(ext + '?') || urlLower.endsWith(ext);
+    const hasExt = (ext) => urlPath.endsWith(ext) || urlLower.includes(ext + '&') || urlLower.includes(ext + '?') || urlLower.includes(ext + '#') || urlLower.endsWith(ext);
 
-    if (mimeLower.startsWith('video/') || videoExtensions.some(hasExt)) return 'video';
-    if (mimeLower.startsWith('audio/') || audioExtensions.some(hasExt)) return 'audio';
+    if (videoExtensions.some(hasExt)) return 'video';
+    if (audioExtensions.some(hasExt)) return 'audio';
 
     if (mimeLower === 'image/svg+xml' || hasExt('.svg')) return null;
-    if (mimeLower.startsWith('image/') || imageExtensions.some(hasExt)) return 'image';
+    if (mimeLower.startsWith('image/') || imageExtensions.some(hasExt) || urlLower.includes('#image')) return 'image';
 
-    if (streamExtensions.some(hasExt) || mimeLower.includes('mpegurl') || mimeLower.includes('dash+xml')) return 'stream';
-    if (subtitleExtensions.some(hasExt) || mimeLower.includes('vtt') || mimeLower.includes('subrip') || mimeLower.includes('ass') || mimeLower.includes('ttml') || mimeLower.includes('dfxp') || mimeLower.includes('sami') || mimeLower.includes('smil') || mimeLower.includes('lrc') || mimeLower.includes('sbv') || mimeLower.includes('microdvd')) return 'subtitle';
+    if (streamExtensions.some(hasExt) || mimeLower.includes('mpegurl') || mimeLower.includes('dash+xml') || urlLower.includes('#stream')) return 'stream';
+    if (subtitleExtensions.some(hasExt) || mimeLower.includes('vtt') || mimeLower.includes('subrip') || mimeLower.includes('ass') || mimeLower.includes('ttml') || mimeLower.includes('dfxp') || mimeLower.includes('sami') || mimeLower.includes('smil') || mimeLower.includes('lrc') || mimeLower.includes('sbv') || mimeLower.includes('microdvd') || urlLower.includes('#subtitle')) return 'subtitle';
 
-    if (downloadExtensions.some(hasExt)) return 'file';
+    if (downloadExtensions.some(hasExt) || urlLower.includes('#file')) return 'file';
 
     return null;
 }
@@ -1282,6 +1405,7 @@ async function showMediaNotification(details, settings) {
     if (isStream && !settings.onlyStream) return;
     if (isImage && !settings.onlyImage) return;
     if (isSubtitle && !settings.onlySubtitle) return;
+    if (isMediaTypeDisabled(mediaType, settings)) return;
 
     if (!mediaType) return;
 
@@ -1350,7 +1474,7 @@ async function showMediaNotification(details, settings) {
     const finalDisplayFilename = isDrm ? drmMsg : displayFilename;
     const notificationTitle = isDrm ? (browser.i18n.getMessage("drmWarningTitle") || "DRM Detected") : (browser.i18n.getMessage("mediaNotificationTitle") || "Media detected!");
 
-    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications);
+    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '100%');
 
     const notificationButtons = isDrm ? [] : [
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
@@ -1490,6 +1614,8 @@ function initListener() {
         beforeRequestListener = function (details) {
             try {
                 if (!details || !details.requestBody) return;
+                const mType = getMediaType(details.url);
+                if (isMediaTypeDisabled(mType, cachedSettings)) return;
 
                 const rb = details.requestBody;
 
@@ -1562,6 +1688,8 @@ function initListener() {
 
         headersSentListener = async function (details) {
             try {
+                const mType = getMediaType(details.url);
+                if (isMediaTypeDisabled(mType, cachedSettings)) return;
 
                 if (details.requestHeaders) {
                     temporaryHeaderMap.set(details.requestId, details.requestHeaders);
@@ -1682,8 +1810,10 @@ function initListener() {
                     getSettings(async function (currentSettings) {
                         const mimeEnabledNow = !!currentSettings.mimeDetection;
                         const urlEnabledNow = !!currentSettings.urlDetection;
+                        const mType = getMediaType(details.url, contentType);
 
                         const shouldSaveNow = (() => {
+                            if (isMediaTypeDisabled(mType, currentSettings)) return false;
                             if (checkIsSegment(details.url, contentType, size, currentSettings)) return false;
                             if (!mimeEnabledNow && !urlEnabledNow) return false;
                             if (mimeEnabledNow && mimeMatches) return true;
@@ -1692,7 +1822,6 @@ function initListener() {
                         })();
 
                         const isDrm = tabsWithDrm.has(details.tabId);
-                        const mType = getMediaType(details.url, contentType);
                         const isDrmMedia = isDrm && (mType === 'video' || mType === 'audio' || mType === 'stream');
 
                         if (shouldSaveNow) {
@@ -2191,8 +2320,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.action === 'reportDetectedMedia') {
         getSettings(function(settings) {
-            const { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
+            let { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
             if (!urls || !Array.isArray(urls)) return;
+            if (settings.ignoreDisabledTypes) {
+                urls = urls.filter(u => {
+                    const mType = getMediaType(u);
+                    return !isMediaTypeDisabled(mType, settings);
+                });
+            }
             const isYtPage = (pageUrl && pageUrl.includes('youtube.com')) || (sender.tab?.url && sender.tab.url.includes('youtube.com'));
             if ((is_youtube || isYtPage) && !settings.youtubeDetection) return;
 
@@ -2218,8 +2353,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (ytFormats && ytFormats.length > 0) {
 
-                    const videoFormats = ytFormats.filter(f => f.height > 0);
-                    const audioOnlyUrls = urls.filter(u => u.includes('mime=audio') || u.includes('#audio'));
+                    let videoFormats = ytFormats.filter(f => f.height > 0);
+                    if (isMediaTypeDisabled('video', settings)) videoFormats = [];
+                    let audioOnlyUrls = urls.filter(u => u.includes('mime=audio') || u.includes('#audio'));
+                    if (isMediaTypeDisabled('audio', settings)) audioOnlyUrls = [];
 
 
                     if (videoFormats.length > 0) {
@@ -2249,6 +2386,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     if (!is_youtube || videoFormats.length === 0) {
                         audioOnlyUrls.forEach(url => {
                             const mType = getMediaType(url);
+                            if (isMediaTypeDisabled(mType, settings)) return;
                             const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
 
                             if (!items[url] && !isDrmMedia) {
@@ -2273,6 +2411,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                     urls.forEach(url => {
                         const mType = getMediaType(url);
+                        if (isMediaTypeDisabled(mType, settings)) return;
                         const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
 
                         if (senderReferer && !urlToHeaderMap.has(url)) {
@@ -2338,7 +2477,21 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     if (message.action === 'getMediaRequests') {
         browser.storage.session.get(null, function (items) {
-            sendResponse(items);
+            if (cachedSettings.ignoreDisabledTypes) {
+                const filtered = {};
+                for (const [url, reqs] of Object.entries(items || {})) {
+                    const contentType = (reqs && reqs.length > 0 && reqs[0].responseHeaders)
+                        ? (reqs[0].responseHeaders.find(h => h.name && h.name.toLowerCase() === 'content-type')?.value || '')
+                        : '';
+                    const mType = getMediaType(url, contentType);
+                    if (!isMediaTypeDisabled(mType, cachedSettings)) {
+                        filtered[url] = reqs;
+                    }
+                }
+                sendResponse(filtered);
+            } else {
+                sendResponse(items);
+            }
         });
         return true;
     }
@@ -4601,7 +4754,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
         await browser.storage.local.set(defaults);
 
         browser.tabs.create({
-            url: browser.runtime.getURL('installed.html'),
+            url: 'https://wmd.devianproject.tech/welcome',
         });
     }
 });
@@ -4712,7 +4865,13 @@ browser.action.onClicked.addListener((tab) => {
 
 browser.runtime.onStartup.addListener(initListener);
 
-browser.runtime.setUninstallURL(`https://github.com/anpa26/website-media-downloader`);
+if (browser.runtime.setUninstallURL) {
+    try {
+        browser.runtime.setUninstallURL('https://wmd.devianproject.tech/goodbye');
+    } catch (e) {
+        console.warn('Failed to set uninstall URL:', e);
+    }
+}
 
 let cacheListener = null;
 let mediaCacheEnabled = false;
@@ -4740,6 +4899,8 @@ function attachCacheListener() {
         try {
 
             if (details.incognito) return;
+            const mType = getMediaType(details.url);
+            if (isMediaTypeDisabled(mType, cachedSettings)) return;
 
             if (!detectionRegex.test(details.url)) return;
 
@@ -4841,6 +5002,27 @@ async function initCacheState() {
 
 browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
+
+    getSettings(function(newSettings) {
+        cachedSettings = newSettings;
+        if (newSettings.ignoreDisabledTypes) {
+            browser.storage.session.get(null, (items) => {
+                const keysToRemove = [];
+                for (const [url, requests] of Object.entries(items || {})) {
+                    const contentType = (requests && requests.length > 0 && requests[0].responseHeaders)
+                        ? (requests[0].responseHeaders.find(h => h.name && h.name.toLowerCase() === 'content-type')?.value || '')
+                        : '';
+                    const mType = getMediaType(url, contentType);
+                    if (isMediaTypeDisabled(mType, newSettings)) {
+                        keysToRemove.push(url);
+                    }
+                }
+                if (keysToRemove.length > 0) {
+                    browser.storage.session.remove(keysToRemove);
+                }
+            });
+        }
+    });
 
     if (Object.prototype.hasOwnProperty.call(changes, 'media-cache')) {
         const newEnabled = !!isFlagEnabled(changes['media-cache'].newValue);

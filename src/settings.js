@@ -174,12 +174,12 @@ async function initializeSettings() {
     }
 
     const settings = [
-        'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom',
-        'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
+        'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom',
+        'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
         'media-notification', 'stack-notifications', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
-        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'open-preference',
+        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference',
         'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
-        'save-to-dropbox', 'dropbox-stream'
+        'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
     ];
 
     for (const setting of settings) {
@@ -190,12 +190,12 @@ async function initializeSettings() {
             const defaultsEnabled = [
                 'url-detection', 'youtube-detection', 'mime-detection', 'hide-page-components', 'hide-segments',
                 'media-notification', 'only-video', 'only-audio', 'only-stream',
-                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3'
+                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3', 'auto-check-update', 'badge-counter'
             ];
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['only-image', 'only-subtitle', 'detect-download-links', 'disable-deduplication', 'history-page', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
+            } else if (['only-image', 'only-subtitle', 'ignore-disabled-types', 'detect-download-links', 'disable-deduplication', 'history-page', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -203,6 +203,9 @@ async function initializeSettings() {
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'connections') {
                 value = '4';
+                browser.storage.local.set({ [setting]: value });
+            } else if (setting === 'mp3-bitrate') {
+                value = '128';
                 browser.storage.local.set({ [setting]: value });
             }
         }
@@ -504,6 +507,12 @@ async function initializeSettings() {
                                 limitCustom.disabled = true;
                                 const item = limitCustom.closest('.setting-item');
                                 if (item) item.style.display = 'none';
+
+                                const ignoreDisabled = document.getElementById('ignore-disabled-types');
+                                if (ignoreDisabled && !ignoreDisabled.checked) {
+                                    ignoreDisabled.checked = true;
+                                    pendingChanges['ignore-disabled-types'] = '1';
+                                }
                             }
                         }
                     } else {
@@ -572,7 +581,10 @@ async function initializeSettings() {
                                 (setting === 'subtitle-conversion' ? 'none' :
                                 (setting === 'connections' ? '4' :
                                 (setting === 'media-sort-order' ? 'newest' :
-                                (setting === 'stream-download' ? 'offline' : 'stream'))))))));
+                                (setting === 'mp3-bitrate' ? '128' :
+                                (setting === 'min-file-size' ? '0' :
+                                (setting === 'ui-scale' ? '100%' :
+                                (setting === 'stream-download' ? 'offline' : 'stream'))))))))))) ;
 
             element.value = value || defaultValue;
             element.addEventListener('change', () => {
@@ -585,12 +597,45 @@ async function initializeSettings() {
                         if (item) item.style.display = element.value === 'custom' ? 'flex' : 'none';
                     }
                 }
+                if (setting === 'min-file-size') {
+                    const minCustom = document.getElementById('min-file-size-custom');
+                    if (minCustom) {
+                        const item = minCustom.closest('.setting-item');
+                        if (item) item.style.display = element.value === 'custom' ? 'flex' : 'none';
+                    }
+                }
                 if (setting === 'settings-layout') {
                     applySettingsLayout(element.value);
+                }
+                if (setting === 'ui-scale') {
+                    const scaleCustom = document.getElementById('setting-ui-scale-custom');
+                    if (scaleCustom) {
+                        scaleCustom.style.display = element.value === 'custom' ? 'flex' : 'none';
+                    }
+                    if (element.value === 'custom') {
+                        const customVal = document.getElementById('ui-scale-custom')?.value || '80';
+                        document.documentElement.style.zoom = customVal + '%';
+                        pendingChanges['ui-scale'] = customVal + '%';
+                    } else {
+                        document.documentElement.style.zoom = element.value;
+                    }
+                }
+                if (setting === 'ui-scale-custom') {
+                    const scaleSelect = document.getElementById('ui-scale');
+                    if (scaleSelect && scaleSelect.value === 'custom') {
+                        document.documentElement.style.zoom = element.value + '%';
+                        pendingChanges['ui-scale'] = element.value + '%';
+                    }
                 }
             });
             continue;
         }
+    }
+
+    const scaleSelectInitial = document.getElementById('ui-scale');
+    const scaleCustomInitial = document.getElementById('setting-ui-scale-custom');
+    if (scaleSelectInitial && scaleCustomInitial) {
+        scaleCustomInitial.style.display = scaleSelectInitial.value === 'custom' ? 'flex' : 'none';
     }
 
     const limitSelectInitial = document.getElementById('limit-media-list');
@@ -604,6 +649,15 @@ async function initializeSettings() {
             } else {
                 item.style.display = 'none';
             }
+        }
+    }
+
+    const minSelectInitial = document.getElementById('min-file-size');
+    const minCustomInitial = document.getElementById('min-file-size-custom');
+    if (minSelectInitial && minCustomInitial) {
+        const item = minCustomInitial.closest('.setting-item');
+        if (item) {
+            item.style.display = minSelectInitial.value === 'custom' ? 'flex' : 'none';
         }
     }
 
@@ -1035,21 +1089,23 @@ async function initializeSettings() {
     updateActivePreset(activeColor);
 
     const stageColor = (newColor) => {
-        pendingChanges['theme-color'] = newColor;
+        let val = newColor.trim();
+        if (!val.startsWith('#') && !val.startsWith('rgb')) val = '#' + val;
+        pendingChanges['theme-color'] = val;
         showApplyBar();
-        mdui.setColorScheme(newColor);
-        updateActivePreset(newColor);
+        mdui.setColorScheme(val);
+        updateActivePreset(val);
     };
 
     if (hexInput) {
         hexInput.oninput = (e) => {
-            let val = e.target.value;
+            let val = e.target.value.trim();
+            if (val && !val.startsWith('#') && !val.startsWith('rgb')) val = '#' + val;
 
             pendingChanges['theme-color'] = val;
             showApplyBar();
 
-            if (!val.startsWith('#')) val = '#' + val;
-            if (/^#[0-9A-F]{6}$/i.test(val)) {
+            if (/^#[0-9A-F]{3,6}$/i.test(val)) {
                 mdui.setColorScheme(val);
                 updateActivePreset(val);
             }

@@ -321,8 +321,16 @@
     "description": "Toggle visibility of download links and general files"
   },
   "onlyFileExplain": {
-    "message": "감지된 다운로드 링크와 파일을 목록에 표시합니다.",
+    "message": "감지된 다운로드 링크 및 파일을 목록에 표시합니다.",
     "description": "Explains the filter for download links"
+  },
+  "ignoreDisabledTypesTitle": {
+    "message": "비활성화된 미디어 감지 안 함",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "리소스를 절약하기 위해 위에서 끈 미디어 유형의 감지를 비활성화합니다.",
+    "description": "The explanation of the option to skip detection for disabled media types."
   },
   "mediaNotificationTitle": {
     "message": "미디어 감지됨!",
@@ -898,6 +906,54 @@
     "message": "브라우저가 시작될 때 대기 중인 다운로드를 자동으로 재개합니다.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "자동 업데이트 확인",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "열 때 확장 프로그램 업데이트를 자동으로 확인합니다.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "아이콘 뱃지 카운터",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "확장 프로그램 아이콘에 진행 중인 다운로드 수를 표시합니다.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "MP3 비트레이트 품질",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "오디오를 MP3로 변환할 때 비트레이트 품질을 설정합니다.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "최소 파일 크기 필터",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "선택한 크기보다 작은 감지된 미디어를 숨깁니다.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "없음 (0 KB)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "사용자 지정 (KB)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "사용자 지정 최소 크기 (KB)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "최소 파일 크기를 KB 단위로 입력하세요 (0 = 비활성화)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "파일 이름 확인 대화상자를 건너뛰고 기본 이름을 사용하여 즉시 다운로드를 시작합니다.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "MPD의 Period에 오디오/비디오에 대한 AdaptationSet이 없습니다.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Website Media Downloader에 오신 것을 환영합니다",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "설치 완료",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "최고의 미디어 도우미가 준비되었습니다. 클릭 한 번으로 좋아하는 콘텐츠를 감지하고 다운로드하세요.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "지금 시작하기",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "버전",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "개발자",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "커뮤니티",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "GitHub 프로젝트",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "지원",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "부가기능 스토어",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "저희와 함께 해주셔서 감사합니다.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "피드백 및 문제",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "버그를 발견하거나 제안 사항이 있으신가요? GitHub에 이슈를 등록하여 개선에 도움을 주세요!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "문제 신고하기",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "변경 사항을 적용하시겠습니까?",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "Dropbox에 $1 저장 완료!"
+  },
+  "uiScaleTitle": {
+    "message": "UI 배율 / DPI",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "확장 프로그램 인터페이스의 크기와 배율을 조정합니다.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "사용자 지정 배율 (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "공식 웹사이트",
+    "description": "Label for the official website link in the About page."
   }
 }

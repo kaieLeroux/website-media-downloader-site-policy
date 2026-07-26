@@ -324,6 +324,14 @@
     "message": "إظهار روابط التحميل والملفات المكتشفة في القائمة.",
     "description": "Explains the filter for download links"
   },
+  "ignoreDisabledTypesTitle": {
+    "message": "عدم اكتشاف الوسائط المعطلة",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "تعطيل اكتشاف أنواع الوسائط المعطلة أعلاه لجعل الإضافة خفيفة الوزن.",
+    "description": "The explanation of the option to skip detection for disabled media types."
+  },
   "mediaNotificationTitle": {
     "message": "تم اكتشاف وسائط!",
     "description": "The title of the notification when media is detected."
@@ -898,6 +906,54 @@
     "message": "استئناف التنزيلات المعلقة تلقائيًا عند بدء تشغيل المتصفح.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "التحقق التلقائي من التحديثات",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "التحقق تلقائيًا من تحديثات الملحق عند فتحه.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "عداد الشارات على الأيقونة",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "عرض عدد التنزيلات النشطة على أيقونة الملحق.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "جودة معدل البت لـ MP3",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "تعيين جودة معدل البت عند تحويل الصوت إلى MP3.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "تصفية الحد الأدنى لحجم الملف",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "إخفاء الوسائط المكتشفة الأصغر من الحجم المحدد.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "بدون (0 كيلوبايت)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "مخصص (كيلوبايت)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "حجم أدنى مخصص (كيلوبايت)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "أدخل الحد الأدنى لحجم الملف بالكيلوبايت (0 = تعطيل)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "تجاوز حوار تأكيد اسم الملف وبدء التنزيلات فوراً باستخدام الاسم الافتراضي.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "لا يحتوي Period الخاص بـ MPD على AdaptationSet للصوت/الفيديو.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "مرحبًا بك في Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "اكتمل التثبيت",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "الرفيق المثالي للوسائط جاهز. ابدأ باكتشاف وتنزيل محتواك المفضل بنقرة واحدة.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "ابدأ الآن",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "الإصدار",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "المطور",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "المجتمع",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "مشروع GitHub",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "الدعم",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "متجر الإضافات",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "شكراً لكونك جزءاً من رحلتنا.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "الملاحظات والمشكلات",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "هل وجدت خطأ أو لديك اقتراح؟ ساعدنا على التحسين بفتح مشكلة على GitHub!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "الإبلاغ عن مشكلة",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "هل تريد تطبيق التغييرات؟",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "تم حفظ $1 بنجاح في Dropbox!"
+  },
+  "uiScaleTitle": {
+    "message": "حجم واجهة المستخدم (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "ضبط مقياس وحجم عناصر واجهة الإضافة.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "نسبة المقياس المخصصة (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "الموقع الرسمي",
+    "description": "Label for the official website link in the About page."
   }
 }

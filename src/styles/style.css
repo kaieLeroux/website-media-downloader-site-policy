@@ -235,8 +235,8 @@ mdui-card {
     content: '▶';
     position: absolute;
     color: white;
-    font-size: 14px;
-    background: rgba(0,0,0,0.5);
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.5);
     width: 24px;
     height: 24px;
     display: flex;
@@ -244,7 +244,32 @@ mdui-card {
     justify-content: center;
     border-radius: 50%;
     backdrop-filter: blur(4px);
-    transition: var(--transition);
+    transition: opacity 0.25s ease, transform 0.2s ease, background-color 0.2s ease;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.media-preview-container.video:hover::after {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+.media-preview-container.video.playing::after {
+    content: '';
+    width: 3px;
+    height: 10px;
+    background: white;
+    box-shadow: 6px 0 0 0 white;
+    border: none;
+    padding: 0;
+    border-radius: 1px;
+    font-size: 0;
+    opacity: 0;
+}
+
+.media-preview-container.video.playing:hover::after {
+    opacity: 1;
 }
 
 .media-preview-icon {
@@ -445,8 +470,13 @@ mdui-bottom-app-bar {
 
 .color-presets {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 4px 2px;
+    scrollbar-width: thin;
 }
 
 .color-preset {
@@ -455,6 +485,7 @@ mdui-bottom-app-bar {
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid transparent;
+    flex-shrink: 0;
     transition: transform 0.2s, border-color 0.2s;
 }
 
@@ -842,4 +873,74 @@ mdui-segmented-button[selected]::part(button) {
 .tabs-icons-only .tabs-nav-item .nav-icon svg,
 .tabs-icons-only .tabs-nav-item .nav-icon svg path {
     fill: currentColor !important;
+}
+
+mdui-card,
+.media-item {
+    background: linear-gradient(135deg, rgba(var(--mdui-color-primary), 0.08) 0%, rgba(var(--mdui-color-primary), 0.02) 100%), rgb(var(--mdui-color-surface-container-lowest)) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(var(--mdui-color-outline-variant), 0.6) !important;
+    border-radius: var(--app-border-radius);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.setting-item {
+    background: rgba(0, 0, 0, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: var(--transition);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.settings-items-container {
+    border-radius: var(--app-border-radius);
+    overflow: hidden;
+}
+
+.setting-item h3,
+.setting-text h3,
+.media-headline,
+.settings-section-title,
+.collapsible-header h3,
+.history-title,
+.about-card h3,
+h1, h2, h3, h4 {
+    font-weight: 600 !important;
+    text-shadow: 0 -1.5px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+    letter-spacing: 0.018em;
+}
+
+.setting-text p,
+.setting-item p,
+.media-description,
+.download-status-info,
+.collapsible-header p,
+#no-media-detected,
+#selected-count,
+#global-progress-text,
+.about-card p {
+    color: rgba(255, 255, 255, 0.82) !important;
+    text-shadow: 0 -1px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+    line-height: 1.45;
+}
+
+.pill-select,
+.pill-input {
+    background: rgba(var(--mdui-color-primary), 0.12) !important;
+    border: 1px solid rgba(var(--mdui-color-primary), 0.32) !important;
+    color: rgb(var(--mdui-color-on-surface)) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+.media-preview-container {
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.media-preview-container.video::after {
+    text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.9), 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }

@@ -30,8 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearInterval(heartbeatInterval);
     });
 
-    const colorResult = await browser.storage.local.get('theme-color');
+    const colorResult = await browser.storage.local.get(['theme-color', 'ui-scale']);
     mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
+    if (colorResult['ui-scale']) {
+        document.documentElement.style.zoom = colorResult['ui-scale'];
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const streamUrl = urlParams.get('url');

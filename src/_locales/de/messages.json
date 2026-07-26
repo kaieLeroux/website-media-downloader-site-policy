@@ -321,8 +321,16 @@
     "description": "Toggle visibility of download links and general files"
   },
   "onlyFileExplain": {
-    "message": "Erkannte Download-Links und Dateien in der Liste anzeigen.",
+    "message": "Zeigt nur allgemeine Dateien und Download-Links in der Medienliste an.",
     "description": "Explains the filter for download links"
+  },
+  "ignoreDisabledTypesTitle": {
+    "message": "Deaktivierte Medien nicht erkennen",
+    "description": "The title of the option to skip detection for disabled media types."
+  },
+  "ignoreDisabledTypesExplain": {
+    "message": "Deaktiviert die Erkennung für oben ausgeschaltete Medientypen, um Ressourcen zu sparen.",
+    "description": "The explanation of the option to skip detection for disabled media types."
   },
   "mediaNotificationTitle": {
     "message": "Medien erkannt!",
@@ -898,6 +906,54 @@
     "message": "Ausstehende Downloads beim Browserstart automatisch fortsetzen.",
     "description": "Explanation for the automatic resume setting."
   },
+  "autoCheckUpdateTitle": {
+    "message": "Automatische Aktualisierungsprüfung",
+    "description": "Title for the automatic update check setting."
+  },
+  "autoCheckUpdateExplain": {
+    "message": "Beim Öffnen automatisch nach Erweiterungsaktualisierungen suchen.",
+    "description": "Explanation for the automatic update check setting."
+  },
+  "badgeCounterTitle": {
+    "message": "Badge-Zähler auf Symbol",
+    "description": "Title for the badge counter setting."
+  },
+  "badgeCounterExplain": {
+    "message": "Anzahl der aktiven Downloads auf dem Erweiterungssymbol anzeigen.",
+    "description": "Explanation for the badge counter setting."
+  },
+  "mp3BitrateTitle": {
+    "message": "MP3-Bitratenqualität",
+    "description": "Title for the MP3 bitrate setting."
+  },
+  "mp3BitrateExplain": {
+    "message": "Stellen Sie die Bitratenqualität bei der Konvertierung von Audio in MP3 ein.",
+    "description": "Explanation for the MP3 bitrate setting."
+  },
+  "minFileSizeTitle": {
+    "message": "Mindestdateigrößen-Filter",
+    "description": "Title for the minimum file size filter setting."
+  },
+  "minFileSizeExplain": {
+    "message": "Erkannte Medien ausblenden, die kleiner als die gewählte Größe sind.",
+    "description": "Explanation for the minimum file size filter setting."
+  },
+  "minFileSizeNone": {
+    "message": "Keine (0 KB)",
+    "description": "Option for no minimum file size filter."
+  },
+  "minFileSizeCustom": {
+    "message": "Benutzerdefiniert (KB)",
+    "description": "Option for custom minimum file size filter."
+  },
+  "minFileSizeCustomTitle": {
+    "message": "Benutzerdefinierte Mindestgröße (KB)",
+    "description": "Title for custom minimum file size setting."
+  },
+  "minFileSizeCustomExplain": {
+    "message": "Mindestdateigröße in KB eingeben (0 = deaktivieren)",
+    "description": "Explanation for custom minimum file size setting."
+  },
   "disableRenameDialogExplain": {
     "message": "Überspringen Sie den Bestätigungsdialog für den Dateinamen und starten Sie Downloads sofort mit dem Standardnamen.",
     "description": "The explanation of the disable rename dialog setting."
@@ -1448,69 +1504,9 @@
     "message": "MPD-Period hat kein AdaptationSet für Audio/Video.",
     "description": "Error message when no media streams are found in MPD."
   },
-  "installedTitle": {
-    "message": "Willkommen beim Website Media Downloader",
-    "description": "Title of the installed page"
-  },
-  "installedBrand": {
-    "message": "WMD",
-    "description": "Short brand name for the installed page"
-  },
-  "installedHeroTitle": {
-    "message": "Installation abgeschlossen",
-    "description": "Hero title of the installed page"
-  },
-  "installedHeroDescription": {
-    "message": "Der ultimative Medienbegleiter ist bereit. Erkennen und laden Sie Ihre Lieblingsinhalte mit einem einzigen Klick herunter.",
-    "description": "Hero description of the installed page"
-  },
   "getStarted": {
     "message": "Jetzt loslegen",
     "description": "Label for the get started button"
-  },
-  "installedVersion": {
-    "message": "Version",
-    "description": "Label for version number"
-  },
-  "installedMeetDev": {
-    "message": "Entwickler",
-    "description": "Label for developer card"
-  },
-  "installedCommunity": {
-    "message": "Gemeinschaft",
-    "description": "Label for community card"
-  },
-  "installedGitHubProject": {
-    "message": "GitHub-Projekt",
-    "description": "Value for GitHub project link"
-  },
-  "installedSupport": {
-    "message": "Unterstützung",
-    "description": "Label for support card"
-  },
-  "installedAddonsStore": {
-    "message": "Add-ons-Store",
-    "description": "Value for add-ons store link"
-  },
-  "installedFooterQuote": {
-    "message": "Danke, dass Sie Teil unserer Reise sind.",
-    "description": "Footer quote on the installed page"
-  },
-  "installedCopyright": {
-    "message": "Website Media Downloader © 2026",
-    "description": "Copyright notice"
-  },
-  "installedFeedbackTitle": {
-    "message": "Feedback & Probleme",
-    "description": "Title for the feedback section"
-  },
-  "installedFeedbackDesc": {
-    "message": "Haben Sie einen Fehler gefunden oder einen Vorschlag? Helfen Sie uns, uns zu verbessern, indem Sie ein Issue auf GitHub eröffnen!",
-    "description": "Description for the feedback section"
-  },
-  "installedFeedbackButton": {
-    "message": "Problem melden",
-    "description": "Label for the feedback button"
   },
   "applyChangesPrompt": {
     "message": "Änderungen übernehmen?",
@@ -2004,5 +2000,21 @@
   },
   "uploadSuccessDropbox": {
     "message": "$1 erfolgreich in Dropbox gespeichert!"
+  },
+  "uiScaleTitle": {
+    "message": "UI-Skalierung (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Passen Sie die Skalierung und Größe der Benutzeroberfläche an.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
+  "customUiScaleTitle": {
+    "message": "Benutzerdefinierter Skalierungsprozentsatz (50% - 150%)",
+    "description": "Title for custom UI scale percentage input."
+  },
+  "officialWebsite": {
+    "message": "Offizielle Webseite",
+    "description": "Label for the official website link in the About page."
   }
 }

@@ -1317,13 +1317,15 @@ async function convertAudioToMp3IfEnabled(blob, filename, loadingBar = null, che
             worker.terminate();
         };
 
-        blob.arrayBuffer().then(buffer => {
+        blob.arrayBuffer().then(async buffer => {
             if (checkCancel && checkCancel()) {
                 if (cancelInterval) clearInterval(cancelInterval);
                 worker.terminate();
                 return reject(new Error("Cancelled"));
             }
-            worker.postMessage({ id: Date.now(), data: buffer, filename });
+            const bitrateRes = await browser.storage.local.get('mp3-bitrate');
+            const bitrate = bitrateRes['mp3-bitrate'] || '128';
+            worker.postMessage({ id: Date.now(), data: buffer, filename, bitrate });
         }).catch(err => {
             console.error("Failed to read blob for MP3 conversion:", err);
             resolve({ blob, filename });
