@@ -23,7 +23,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.commit_sha }}
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Get Commit Details
         id: commit_info
@@ -50,12 +56,34 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Release Archive (XPI)
+      - name: Run Build Script
         run: |
-          # Package the latest source code from the current checkout
-          cd src
-          zip -r ../addon.xpi ./*
+          node src/build.js all
+
+      - name: Create Release Archives
+        run: |
+          # Package chrome build
+          cd build/chrome
+          zip -r ../../website-media-downloader-chrome-${{ github.event.inputs.tag_name }}.zip ./*
+          cd ../..
+          
+          # Package firefox build
+          cd build/firefox
+          zip -r ../../website-media-downloader-firefox-${{ github.event.inputs.tag_name }}.xpi ./*
+          cd ../..
+
+          # Package Firefox clean source code (mirrors root: src/ folder, metadata in root)
+          zip -r website-media-downloader-firefox-source-${{ github.event.inputs.tag_name }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js"
+
+          # Package Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
+          mkdir -p chrome-source-temp/src
+          cp -r build/chrome/* chrome-source-temp/src/
+          cp README.md LICENSE.md CONTRIBUTING.md chrome-source-temp/
+          cp -r licenses chrome-source-temp/
+          cd chrome-source-temp
+          zip -r ../website-media-downloader-chrome-source-${{ github.event.inputs.tag_name }}.zip ./*
           cd ..
+          rm -rf chrome-source-temp
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -63,7 +91,11 @@ jobs:
           tag_name: ${{ github.event.inputs.tag_name }}
           name: ${{ steps.commit_info.outputs.release_name }}
           body: ${{ steps.commit_info.outputs.body }}
-          files: addon.xpi
+          files: |
+            website-media-downloader-chrome-${{ github.event.inputs.tag_name }}.zip
+            website-media-downloader-firefox-${{ github.event.inputs.tag_name }}.xpi
+            website-media-downloader-chrome-source-${{ github.event.inputs.tag_name }}.zip
+            website-media-downloader-firefox-source-${{ github.event.inputs.tag_name }}.zip
           target_commitish: ${{ github.event.inputs.commit_sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}

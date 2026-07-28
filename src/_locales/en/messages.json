@@ -2022,4 +2022,9 @@
     "message": "Official Website",
     "description": "Label for the official website link in the About page."
   }
+,
+  "limitCustom": {
+    "message": "Custom Limit",
+    "description": "Label for custom limit setting option."
+  }
 }

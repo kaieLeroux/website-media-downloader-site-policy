@@ -2022,4 +2022,9 @@
     "message": "Website Resmi",
     "description": "Label for the official website link in the About page."
   }
+,
+  "limitCustom": {
+    "message": "Batas Kustom",
+    "description": "Label for custom limit setting option."
+  }
 }

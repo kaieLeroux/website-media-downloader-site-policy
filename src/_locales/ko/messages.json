@@ -2017,4 +2017,9 @@
     "message": "공식 웹사이트",
     "description": "Label for the official website link in the About page."
   }
+,
+  "limitCustom": {
+    "message": "사용자 지정 제한",
+    "description": "Label for custom limit setting option."
+  }
 }

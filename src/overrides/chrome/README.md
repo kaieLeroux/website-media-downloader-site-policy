@@ -112,22 +112,10 @@ The extension utilizes header management, including Referer, Origin, and Cookies
 
 ### Update Mechanism
 The extension features an advanced, multi-tiered update checker that automatically runs when the popup is opened.
-- **Native Store Check**: On supported platforms, the extension performs a native update check against the Mozilla Add-ons (AMO) store. If an update is available on the store, you will be prompted to update directly from AMO.
-- **GitHub Fallback**: If the native check is unavailable or fails, the extension queries the project's GitHub repository manifest file. This ensures you are notified of new versions as soon as they are released.
+- **Native Store Check**: On supported platforms, the extension performs a native update check.
+- **GitHub Fallback**: The extension queries the project's GitHub repository manifest file. This ensures you are notified of new versions as soon as they are released.
 
 You can also manually trigger an update check at any time via the **About** page within the extension.
-
-**Note on Store Updates vs. GitHub Releases:**
-New versions are often published to GitHub before they pass the review process on the Mozilla Add-ons (AMO) store. If you are notified of a GitHub update while AMO still serves the older version, you can choose to wait for the official store update or manually install the latest release.
-
-**Manual Installation (.xpi) for Firefox:**
-To manually install the `.xpi` file from GitHub Releases, you **must use Firefox Developer Edition or Firefox Nightly**. Standard Firefox versions restrict the installation of unlisted or manually downloaded extensions for security reasons.
-1. Open Firefox Developer Edition or Firefox Nightly and navigate to `about:config`.
-2. Accept the risk warning, then search for `xpinstall.signatures.required` and double-click it to set it to **false**.
-3. Download the latest `.xpi` file from the [GitHub Releases](https://github.com/anpa26/website-media-downloader/releases) page.
-4. Navigate to the Add-ons manager (`about:addons`).
-5. Click the gear icon and select **"Install Add-on From File..."**.
-6. Select the downloaded `.xpi` file and confirm the installation.
 
 ---
 
@@ -185,27 +173,18 @@ Build output goes to `build/chrome/` and `build/firefox/`, each containing a rea
 
 ## Installation
 
-Website Media Downloader is available for Chrome and Firefox.
+Website Media Downloader is available for Chrome.
 
 ### Chrome / Chromium
 1. Run `node src/build.js chrome`
 2. Open `chrome://extensions/` and enable **Developer mode**
 3. Click **Load unpacked** and select the `build/chrome/` folder
 
-### Firefox Desktop & Android
-You can install the extension directly from the official Firefox Add-ons store:
-
-[**Download on Firefox Add-ons (AMO)**](https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/)
-
-> [!TIP]
-> **Recommended Platform**: While this extension supports Android, it is **highly recommended to use it on Desktop/PC** for the best experience. Desktop browsers offer better stability for background processing, stream reconstruction, and large batch ZIP downloads.
-
 ---
 
 ## Troubleshooting
 
 - **Media not detected?** Try refreshing the page and playing the video again. If it still doesn't show up, go to Settings and enable "Detection via server's MIME response".
-- **YouTube media not detected?** The detection might be rate-limited or blocked by your current network. Try changing your network connection or restarting your router.
 - **Download fails?** Some sites use DRM (Digital Rights Management) or encryption. This extension cannot download encrypted content (like Netflix or Amazon Prime).
 - **403 Forbidden on images?** This is often caused by session-based security tokens. It is highly recommended to stay on the current page until downloads are finished. Navigating to the next page or switching lists too quickly can invalidate the request context.
 - **Broken files?** If a converted stream doesn't play, try downloading the "Direct Manifest" and playing it with VLC Media Player.
@@ -242,7 +221,6 @@ If you want to develop this project further, please don't forget to include me i
 - MP3 Encoding: [lamejs](https://github.com/zhuker/lamejs)
 - Subtitle Processing: [subsrt](https://github.com/papnkukn/subsrt)
 - Media Processing: [libav.js](https://github.com/Yahweasel/libav.js/)
-- YouTube API: [YouTube.js](https://github.com/LuanRT/YouTube.js)
 
 ### Iconography
 - Extension Iconography: Icons are derived from the Google Material Symbols and Icons library, utilized under the Apache License 2.0. Specific SVG implementations have been customized for the user interface.

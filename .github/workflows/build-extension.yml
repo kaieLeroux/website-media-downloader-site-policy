@@ -1,4 +1,4 @@
-name: Build Extension XPI
+name: Build Extension
 
 on:
   workflow_dispatch:
@@ -11,21 +11,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Get version from manifest
         id: get_version
         run: |
           VERSION=$(jq -r '.version' src/manifest.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create XPI Archive
+      - name: Run Build Script
         run: |
-          cd src
-          zip -r ../website-media-downloader-${{ steps.get_version.outputs.version }}.xpi ./*
-          cd ..
+          node src/build.js all
 
-      - name: Upload Artifact
+      - name: Create Extension Archives
+        run: |
+          # Chrome Extension Build
+          cd build/chrome
+          zip -r ../../website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip ./*
+          cd ../..
+
+          # Firefox Extension Build (XPI)
+          cd build/firefox
+          zip -r ../../website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi ./*
+          cd ../..
+
+      - name: Create Source Code Archives
+        run: |
+          # Firefox clean source code (mirrors root: src/ folder, metadata in root)
+          zip -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js"
+
+          # Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
+          mkdir -p chrome-source-temp/src
+          cp -r build/chrome/* chrome-source-temp/src/
+          cp README.md LICENSE.md CONTRIBUTING.md chrome-source-temp/
+          cp -r licenses chrome-source-temp/
+          cd chrome-source-temp
+          zip -r ../website-media-downloader-chrome-source-${{ steps.get_version.outputs.version }}.zip ./*
+          cd ..
+          rm -rf chrome-source-temp
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: website-media-downloader-v${{ steps.get_version.outputs.version }}
-          path: website-media-downloader-${{ steps.get_version.outputs.version }}.xpi
+          path: |
+            website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip
+            website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi
+            website-media-downloader-chrome-source-${{ steps.get_version.outputs.version }}.zip
+            website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip
           if-no-files-found: error

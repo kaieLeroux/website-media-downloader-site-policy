@@ -2017,4 +2017,9 @@
     "message": "公式サイト",
     "description": "Label for the official website link in the About page."
   }
+,
+  "limitCustom": {
+    "message": "カスタム制限",
+    "description": "Label for custom limit setting option."
+  }
 }
