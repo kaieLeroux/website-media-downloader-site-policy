@@ -558,7 +558,12 @@
   },
   "mpdDownloadCompleteMessage": {
     "message": "Der MPD-Stream wurde als ZIP-Datei heruntergeladen. Du kannst sie entpacken und das $BASENAME$.mpd-Video mit VLC oder einem anderen kompatiblen Player abspielen.",
-    "description": "The message of the MPD download complete notification."
+    "description": "The message of the MPD download complete notification.",
+    "placeholders": {
+      "BASENAME": {
+        "content": "$1"
+      }
+    }
   },
   "splitDownloadWarningSnackbar": {
     "message": "Die Audio- und Videoströme sind getrennt. Zwei Dateien werden heruntergeladen.",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "Offizielle Webseite",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "Benutzerdefiniertes Limit",
     "description": "Label for custom limit setting option."

@@ -1172,7 +1172,12 @@
   },
   "dashComputeSegmentsError": {
     "message": "لا يمكن حساب أجزاء $Time$: SegmentTimeline مفقود ولم يتم توفير مدة ثابتة.",
-    "description": "Technical error during DASH segment computation."
+    "description": "Technical error during DASH segment computation.",
+    "placeholders": {
+      "Time": {
+        "content": "$1"
+      }
+    }
   },
   "dashNumberSegmentsError": {
     "message": "لا يمكن حساب الأجزاء القائمة على الأرقام: لا يوجد SegmentTimeline ومدة/مقياس زمن مفقود أو صفر.",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "الموقع الرسمي",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "حد مخصص",
     "description": "Label for custom limit setting option."

@@ -33,6 +33,11 @@ jobs:
           zip -r ../../website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip ./*
           cd ../..
 
+          # Chrome-YT Extension Build
+          cd build/chrome-yt
+          zip -r ../../website-media-downloader-chrome-yt-${{ steps.get_version.outputs.version }}.zip ./*
+          cd ../..
+
           # Firefox Extension Build (XPI)
           cd build/firefox
           zip -r ../../website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi ./*
@@ -53,13 +58,25 @@ jobs:
           cd ..
           rm -rf chrome-source-temp
 
+          # Chrome-YT clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
+          mkdir -p chrome-yt-source-temp/src
+          cp -r build/chrome-yt/* chrome-yt-source-temp/src/
+          cp README.md LICENSE.md CONTRIBUTING.md chrome-yt-source-temp/
+          cp -r licenses chrome-yt-source-temp/
+          cd chrome-yt-source-temp
+          zip -r ../website-media-downloader-chrome-yt-source-${{ steps.get_version.outputs.version }}.zip ./*
+          cd ..
+          rm -rf chrome-yt-source-temp
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: website-media-downloader-v${{ steps.get_version.outputs.version }}
           path: |
             website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip
+            website-media-downloader-chrome-yt-${{ steps.get_version.outputs.version }}.zip
             website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi
             website-media-downloader-chrome-source-${{ steps.get_version.outputs.version }}.zip
+            website-media-downloader-chrome-yt-source-${{ steps.get_version.outputs.version }}.zip
             website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip
           if-no-files-found: error

@@ -1532,7 +1532,7 @@ async function getM3U8Variants(url) {
 
 function createMediaItem(item) {
   const { bestRequest, isVideo, isAudio, isStream, isSubtitle, isFile, isImage } = item;
-  const hlsFormats = null;
+  const ytFormats = item.ytFormats || null;
   const mediaURL = new URL(bestRequest.originalUrl);
 
   const mediaDiv = document.createElement('div');
@@ -1541,8 +1541,8 @@ function createMediaItem(item) {
   mediaDiv.dataset.url = bestRequest.originalUrl;
   mediaDiv.dataset.size = bestRequest.size;
   mediaDiv.dataset.type = isVideo ? 'video' : isAudio ? 'audio' : isStream ? 'stream' : isImage ? 'image' : isSubtitle ? 'subtitle' : 'file';
-  if (hlsFormats) {
-    mediaDiv.hlsFormats = hlsFormats;
+  if (ytFormats) {
+    mediaDiv.ytFormats = ytFormats;
   }
 
   let activeUrl = bestRequest.originalUrl;
@@ -1658,8 +1658,8 @@ function createMediaItem(item) {
   const humanSize = getHumanReadableSize(bestRequest.size);
 
   let resLabel = '';
-  if (hlsFormats && hlsFormats.length > 0 && hlsFormats[0].label) {
-    resLabel = ` • ${hlsFormats[0].label}`;
+  if (ytFormats && ytFormats.length > 0 && ytFormats[0].label) {
+    resLabel = ` • ${ytFormats[0].label}`;
   }
   description.textContent = `${mediaURL.hostname} • ${humanSize}${resLabel} • ${timeStr}`;
   info.appendChild(description);
@@ -1687,7 +1687,7 @@ function createMediaItem(item) {
 
   if (isStream && mediaURL.pathname.toLowerCase().includes('.m3u8')) {
     const resolutionRow = document.createElement('div');
-    resolutionRow.classList.add('dynamic-resolution-row', 'stream-resolution-row');
+    resolutionRow.classList.add('yt-resolution-row', 'stream-resolution-row');
     resolutionRow.style.display = 'none';
     resolutionRow.style.width = '100%';
 
@@ -1751,30 +1751,30 @@ function createMediaItem(item) {
     });
   }
 
-  if (hlsFormats && hlsFormats.length > 1) {
+  if (ytFormats && ytFormats.length > 1) {
     const resolutionRow = document.createElement('div');
-    resolutionRow.classList.add('dynamic-resolution-row');
+    resolutionRow.classList.add('yt-resolution-row');
 
     const formatWrapper = document.createElement('div');
-    formatWrapper.classList.add('pill-select-wrapper', 'dynamic-format-select-wrapper');
+    formatWrapper.classList.add('pill-select-wrapper', 'yt-format-select-wrapper');
 
     const formatSelect = document.createElement('select');
-    formatSelect.classList.add('pill-select', 'dynamic-format-select');
+    formatSelect.classList.add('pill-select', 'yt-format-select');
 
     const codecWrapper = document.createElement('div');
-    codecWrapper.classList.add('pill-select-wrapper', 'dynamic-codec-select-wrapper');
+    codecWrapper.classList.add('pill-select-wrapper', 'yt-codec-select-wrapper');
 
     const codecSelect = document.createElement('select');
-    codecSelect.classList.add('pill-select', 'dynamic-codec-select');
+    codecSelect.classList.add('pill-select', 'yt-codec-select');
 
     const resWrapper = document.createElement('div');
-    resWrapper.classList.add('pill-select-wrapper', 'dynamic-resolution-select-wrapper');
+    resWrapper.classList.add('pill-select-wrapper', 'yt-resolution-select-wrapper');
 
     const resSelect = document.createElement('select');
-    resSelect.classList.add('pill-select', 'dynamic-resolution-select');
-    resSelect.id = 'dynamic-resolution-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+    resSelect.classList.add('pill-select', 'yt-resolution-select');
+    resSelect.id = 'yt-resolution-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
 
-    const demuxers = [...new Set(hlsFormats.map(fmt => fmt.demuxer))];
+    const demuxers = [...new Set(ytFormats.map(fmt => fmt.demuxer))];
     demuxers.forEach(d => {
       const opt = document.createElement('option');
       opt.value = d;
@@ -1788,7 +1788,7 @@ function createMediaItem(item) {
     function updateCodecDropdown() {
       codecSelect.innerHTML = '';
       const selectedDemuxer = formatSelect.value;
-      const availableCodecs = [...new Set(hlsFormats.filter(fmt => fmt.demuxer === selectedDemuxer).map(fmt => fmt.codec || 'UNKNOWN'))];
+      const availableCodecs = [...new Set(ytFormats.filter(fmt => fmt.demuxer === selectedDemuxer).map(fmt => fmt.codec || 'UNKNOWN'))];
 
       availableCodecs.forEach(c => {
         const opt = document.createElement('option');
@@ -1811,14 +1811,14 @@ function createMediaItem(item) {
         const selectedDemuxer = formatSelect.value;
         const selectedCodec = codecSelect.value;
 
-        const availableFormats = hlsFormats.filter(fmt =>
+        const availableFormats = ytFormats.filter(fmt =>
           fmt.demuxer === selectedDemuxer &&
           (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
         );
 
         availableFormats.forEach((fmt) => {
           const opt = document.createElement('option');
-          opt.value = hlsFormats.indexOf(fmt);
+          opt.value = ytFormats.indexOf(fmt);
           let optLabel = fmt.label || `${fmt.width}x${fmt.height}`;
           if (fmt.contentLength) {
             optLabel += ` • ${getHumanReadableSize(fmt.contentLength)}`;
@@ -1837,7 +1837,7 @@ function createMediaItem(item) {
       if (resSelect.value === '') return;
 
       const selectedIdx = parseInt(resSelect.value);
-      const fmt = hlsFormats[selectedIdx];
+      const fmt = ytFormats[selectedIdx];
       if (fmt) {
         activeUrl = fmt.videoUrl;
         activeAudioUrl = fmt.audioUrl || null;
@@ -2228,14 +2228,14 @@ async function loadMediaList() {
     if (isGroupingEnabled) {
       if (autoAudioUrl) {
         const decodedUrl = decodeURIComponent(autoAudioUrl);
-        
-        activeGroup = 'audio';
+        const isYouTube = decodedUrl.includes('googlevideo.com') || decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be');
+        activeGroup = isYouTube ? 'video' : 'audio';
       } else if (autoVideoUrl) {
         activeGroup = 'video';
       } else if (autoOpenUrl) {
         const decodedUrl = decodeURIComponent(autoOpenUrl);
-        
-        if (false) {
+        const isYouTube = decodedUrl.includes('googlevideo.com') || decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be');
+        if (isYouTube) {
           activeGroup = 'video';
         } else {
           const type = getMediaType(decodedUrl);
@@ -2385,7 +2385,7 @@ async function loadMediaList() {
         if (isStreamUrl) {
             const variants = urlVariantsMap.get(bestRequest.originalUrl || bestRequest.url) || [];
             hasQuality = variants.length > 0;
-        } else if (null && null.length > 1) {
+        } else if (bestRequest.ytFormats && bestRequest.ytFormats.length > 1) {
             hasQuality = true;
         }
 
@@ -2456,7 +2456,7 @@ async function loadMediaList() {
           isSubtitle: group.type === 'subtitle',
           isImage: group.type === 'image',
           isFile: group.type === 'file',
-          hlsFormats: null || null
+          ytFormats: bestRequest.ytFormats || null
         });
     });
 
@@ -2589,8 +2589,8 @@ async function loadMediaList() {
         });
         if (!mediaItemEl) {
           mediaItemEl = allItems.find(el => {
-            if (el.hlsFormats) {
-              return el.hlsFormats.some(f => {
+            if (el.ytFormats) {
+              return el.ytFormats.some(f => {
                 if (f.videoUrl === decodedUrl || f.audioUrl === decodedUrl) return true;
                 const getItag = (u) => u ? u.match(/[?&]itag=(\d+)/)?.[1] : null;
                 const itagFmtVid = getItag(f.videoUrl);
@@ -2618,31 +2618,31 @@ async function loadMediaList() {
       let attempts = 0;
       const tryAutoDownload = () => {
         attempts++;
-        
+        // Find any media item that has yt-format/yt-codec/yt-resolution selectors (YouTube item)
         // or match by URL
         const allItems = Array.from(document.querySelectorAll('.media-item'));
         let mediaItemEl = allItems.find(el => {
           const elUrl = el.dataset.url;
           return elUrl === decodedUrl || (elUrl && elUrl.split('?')[0] === decodedUrl.split('?')[0]);
         });
-        
+        // If no direct match, try finding by YouTube format selectors — the dataset.url may be for a different resolution
         if (!mediaItemEl) {
           mediaItemEl = allItems.find(el => {
-            const fmtSel = el.querySelector('.dynamic-format-select');
-            const resSel = el.querySelector('.dynamic-resolution-select');
+            const fmtSel = el.querySelector('.yt-format-select');
+            const resSel = el.querySelector('.yt-resolution-select');
             if (!fmtSel || !resSel) return false;
             // Check if any resolution option's videoUrl matches
             for (const opt of resSel.options) {
               const idx = parseInt(opt.value);
-              if (!isNaN(idx)) return true; // Has parsed formats, likely the right item
+              if (!isNaN(idx)) return true; // Has YT formats, likely the right item
             }
             return false;
           });
         }
         if (mediaItemEl) {
-          const fmtSel = mediaItemEl.querySelector('.dynamic-format-select');
-          const codecSel = mediaItemEl.querySelector('.dynamic-codec-select');
-          const resSel = mediaItemEl.querySelector('.dynamic-resolution-select');
+          const fmtSel = mediaItemEl.querySelector('.yt-format-select');
+          const codecSel = mediaItemEl.querySelector('.yt-codec-select');
+          const resSel = mediaItemEl.querySelector('.yt-resolution-select');
           const dlBtn = mediaItemEl.querySelector('#download-button');
           if (dlBtn && fmtSel && codecSel && resSel) {
             // Set format (demuxer)
@@ -2668,13 +2668,13 @@ async function loadMediaList() {
                 }
                 // Wait for resolution dropdown to populate, then find matching videoUrl
                 setTimeout(() => {
-                  const hlsFormats = mediaItemEl.hlsFormats;
+                  const ytFormats = mediaItemEl.ytFormats;
                   let foundOptValue = null;
-                  if (hlsFormats) {
+                  if (ytFormats) {
                     for (const opt of resSel.options) {
                       const idx = parseInt(opt.value);
                       if (!isNaN(idx)) {
-                        const optionFmt = hlsFormats[idx];
+                        const optionFmt = ytFormats[idx];
                         if (optionFmt) {
                           const getItag = (u) => u.match(/[?&]itag=(\d+)/)?.[1];
                           const itagOpt = getItag(optionFmt.videoUrl);
@@ -3494,10 +3494,10 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
    } else {
       try {
           const checkCancel = () => window.activeCancellations && window.activeCancellations.has(url);
-          
+          const isYouTube = url.toLowerCase().includes('googlevideo.com') || url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') || (mediaDiv && mediaDiv.dataset.originalUrl && (mediaDiv.dataset.originalUrl.toLowerCase().includes('youtube.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('googlevideo.com') || mediaDiv.dataset.originalUrl.toLowerCase().includes('youtu.be')));
 
           let blob;
-          if (false) {
+          if (isYouTube) {
               const uint8Array = await window.fetchAsUint8ArrayChunked(url, loadingBar, statusInfo, checkCancel);
               blob = new Blob([uint8Array.buffer]);
           } else {
@@ -3745,7 +3745,14 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
     if (audioUrl) {
         if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("startingDownload") || "Starting download...";
         try {
-            
+            console.log("downloadFile: Calling downloadAndMuxYoutube...");
+
+            if (window.activeCancellations) {
+                window.activeCancellations.delete(url);
+                window.activeCancellations.delete(audioUrl);
+            }
+            await downloadAndMuxYoutube(url, audioUrl, newName, downloadMethod, loadingBar);
+            console.log("downloadFile: downloadAndMuxYoutube finished successfully.");
             finishDownloadUI(downloadId, true);
         } catch (e) {
             console.error("downloadFile: Muxing failed", e);

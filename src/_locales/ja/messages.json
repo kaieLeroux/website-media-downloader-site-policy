@@ -558,7 +558,12 @@
   },
   "mpdDownloadCompleteMessage": {
     "message": "MPDストリームがZIPファイルとしてダウンロードされました。ファイルを解凍し、VLCなどの対応プレーヤーで$BASENAME$.mpdを再生できます。",
-    "description": "The message of the MPD download complete notification."
+    "description": "The message of the MPD download complete notification.",
+    "placeholders": {
+      "BASENAME": {
+        "content": "$1"
+      }
+    }
   },
   "splitDownloadWarningSnackbar": {
     "message": "オーディオとビデオのストリームが分かれています。2つのファイルがダウンロードされます。",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "公式サイト",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "カスタム制限",
     "description": "Label for custom limit setting option."

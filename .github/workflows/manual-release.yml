@@ -66,6 +66,11 @@ jobs:
           cd build/chrome
           zip -r ../../website-media-downloader-chrome-${{ github.event.inputs.tag_name }}.zip ./*
           cd ../..
+
+          # Package chrome-yt build
+          cd build/chrome-yt
+          zip -r ../../website-media-downloader-chrome-yt-${{ github.event.inputs.tag_name }}.zip ./*
+          cd ../..
           
           # Package firefox build
           cd build/firefox
@@ -85,6 +90,16 @@ jobs:
           cd ..
           rm -rf chrome-source-temp
 
+          # Package Chrome-YT clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
+          mkdir -p chrome-yt-source-temp/src
+          cp -r build/chrome-yt/* chrome-yt-source-temp/src/
+          cp README.md LICENSE.md CONTRIBUTING.md chrome-yt-source-temp/
+          cp -r licenses chrome-yt-source-temp/
+          cd chrome-yt-source-temp
+          zip -r ../website-media-downloader-chrome-yt-source-${{ github.event.inputs.tag_name }}.zip ./*
+          cd ..
+          rm -rf chrome-yt-source-temp
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -93,8 +108,10 @@ jobs:
           body: ${{ steps.commit_info.outputs.body }}
           files: |
             website-media-downloader-chrome-${{ github.event.inputs.tag_name }}.zip
+            website-media-downloader-chrome-yt-${{ github.event.inputs.tag_name }}.zip
             website-media-downloader-firefox-${{ github.event.inputs.tag_name }}.xpi
             website-media-downloader-chrome-source-${{ github.event.inputs.tag_name }}.zip
+            website-media-downloader-chrome-yt-source-${{ github.event.inputs.tag_name }}.zip
             website-media-downloader-firefox-source-${{ github.event.inputs.tag_name }}.zip
           target_commitish: ${{ github.event.inputs.commit_sha }}
         env:

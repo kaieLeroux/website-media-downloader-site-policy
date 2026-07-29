@@ -1192,7 +1192,12 @@
   },
   "dashComputeSegmentsError": {
     "message": "Cannot compute $Time$ segments: SegmentTimeline missing and no fixed duration provided.",
-    "description": "Technical error during DASH segment computation."
+    "description": "Technical error during DASH segment computation.",
+    "placeholders": {
+      "Time": {
+        "content": "$1"
+      }
+    }
   },
   "dashNumberSegmentsError": {
     "message": "Cannot compute number-based segments: no SegmentTimeline and duration/timescale missing or zero.",
@@ -2021,8 +2026,7 @@
   "officialWebsite": {
     "message": "Official Website",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "Custom Limit",
     "description": "Label for custom limit setting option."

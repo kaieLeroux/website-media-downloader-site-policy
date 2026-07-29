@@ -1172,7 +1172,12 @@
   },
   "dashComputeSegmentsError": {
     "message": "$Time$ 세그먼트를 계산할 수 없습니다: SegmentTimeline이 없고 고정된 기간이 제공되지 않았습니다.",
-    "description": "Technical error during DASH segment computation."
+    "description": "Technical error during DASH segment computation.",
+    "placeholders": {
+      "Time": {
+        "content": "$1"
+      }
+    }
   },
   "dashNumberSegmentsError": {
     "message": "번호 기반 세그먼트를 계산할 수 없습니다: SegmentTimeline이 없고 기간/타임스케일이 누락되었거나 0입니다.",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "공식 웹사이트",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "사용자 지정 제한",
     "description": "Label for custom limit setting option."

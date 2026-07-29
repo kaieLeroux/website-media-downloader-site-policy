@@ -9,6 +9,7 @@
         "tabs",
         "activeTab",
         "webRequest",
+        "declarativeNetRequest",
         "scripting",
         "offscreen",
         "identity"
@@ -17,6 +18,16 @@
         "service_worker": "network_detector.js"
     },
     "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content_page.js"
+            ],
+            "run_at": "document_start",
+            "world": "MAIN"
+        },
         {
             "matches": [
                 "<all_urls>"

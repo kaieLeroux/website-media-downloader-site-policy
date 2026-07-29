@@ -558,7 +558,12 @@
   },
   "mpdDownloadCompleteMessage": {
     "message": "Le flux MPD a été téléchargé en tant que fichier zip. Vous pouvez l'extraire et lire la vidéo $BASENAME$.mpd avec VLC ou n'importe quel autre lecteur compatible.",
-    "description": "The message of the MPD download complete notification."
+    "description": "The message of the MPD download complete notification.",
+    "placeholders": {
+      "BASENAME": {
+        "content": "$1"
+      }
+    }
   },
   "splitDownloadWarningSnackbar": {
     "message": "Les flux audio et vidéo sont séparés. Deux fichiers seront téléchargés.",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "Site Officiel",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "Limite personnalisée",
     "description": "Label for custom limit setting option."

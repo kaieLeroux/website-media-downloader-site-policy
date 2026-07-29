@@ -533,6 +533,7 @@ browser.webRequest.onBeforeSendHeaders.addListener(
 let cachedSettings = {
     mimeDetection: true,
     urlDetection: true,
+    youtubeDetection: true,
     mediaNotification: true,
     stackNotifications: false,
     hideSegments: false,
@@ -551,13 +552,14 @@ let cachedSettings = {
 
 function getSettings(callback) {
     browser.storage.local.get([
-        'mime-detection', 'url-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
+        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types', 'optimize-low-end',
         'filename-template', 'theme-color', 'ui-scale'
     ], function (result) {
         const s = {
             mimeDetection: isFlagEnabled(result['mime-detection'], true),
             urlDetection: isFlagEnabled(result['url-detection'], true),
+            youtubeDetection: isFlagEnabled(result['youtube-detection'], true),
             mediaNotification: isFlagEnabled(result['media-notification'], true),
             stackNotifications: isFlagEnabled(result['stack-notifications'], false),
             hideSegments: isFlagEnabled(result['hide-segments'], false),
@@ -664,19 +666,19 @@ if (browser.storage && browser.storage.onChanged) {
     });
 }
 
-function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, hlsFormats = null, stackNotifications = false, uiScale = '100%') {
+function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false, uiScale = '100%') {
     if (!browser.scripting) return;
 
     const modalTranslations = {
-        qualityModalTitle: browser.i18n.getMessage("qualityModalTitle") || "Pilih Kualitas Unduhan",
-        qualityModalTabVideo: browser.i18n.getMessage("qualityModalTabVideo") || "Video + Audio",
-        qualityModalTabAudio: browser.i18n.getMessage("qualityModalTabAudio") || "Audio Saja",
-        qualityModalFormatLabel: browser.i18n.getMessage("qualityModalFormatLabel") || "Format / Tipe",
-        qualityModalCodecLabel: browser.i18n.getMessage("qualityModalCodecLabel") || "Codec",
-        qualityModalQualityLabel: browser.i18n.getMessage("qualityModalQualityLabel") || "Kualitas / Resolusi",
-        qualityModalAudioExplain: browser.i18n.getMessage("qualityModalAudioExplain") || "Audio akan langsung diekstrak dan disimpan dalam format audio kualitas tinggi (.m4a/.webm).",
-        qualityModalCancelBtn: browser.i18n.getMessage("qualityModalCancelBtn") || "Batal",
-        qualityModalDownloadBtn: browser.i18n.getMessage("qualityModalDownloadBtn") || "Unduh"
+        ytModalTitle: browser.i18n.getMessage("ytModalTitle") || "Pilih Kualitas Unduhan",
+        ytModalTabVideo: browser.i18n.getMessage("ytModalTabVideo") || "Video + Audio",
+        ytModalTabAudio: browser.i18n.getMessage("ytModalTabAudio") || "Audio Saja",
+        ytModalFormatLabel: browser.i18n.getMessage("ytModalFormatLabel") || "Format / Tipe",
+        ytModalCodecLabel: browser.i18n.getMessage("ytModalCodecLabel") || "Codec",
+        ytModalQualityLabel: browser.i18n.getMessage("ytModalQualityLabel") || "Kualitas / Resolusi",
+        ytModalAudioExplain: browser.i18n.getMessage("ytModalAudioExplain") || "Audio akan langsung diekstrak dan disimpan dalam format audio kualitas tinggi (.m4a/.webm).",
+        ytModalCancelBtn: browser.i18n.getMessage("ytModalCancelBtn") || "Batal",
+        ytModalDownloadBtn: browser.i18n.getMessage("ytModalDownloadBtn") || "Unduh"
     };
 
     browser.scripting.executeScript({
@@ -715,7 +717,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                  existingToasts.forEach(t => {
                      t.remove();
                  });
-                 const existingModal = document.querySelector('.mdu-media-modal-backdrop');
+                 const existingModal = document.querySelector('.mdu-yt-modal-backdrop');
                  if (existingModal) existingModal.remove();
              } else {
                  const existingToasts = document.querySelectorAll('.mdu-toast');
@@ -783,12 +785,12 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
             const actions = toast.querySelector('.mdu-toast-actions');
             actions.style.cssText = `display: flex; align-items: center; flex-shrink: 0;`;
 
-            const showQualityModal = () => {
-                const existingModal = document.querySelector('.mdu-media-modal-backdrop');
+            const showYtModal = () => {
+                const existingModal = document.querySelector('.mdu-yt-modal-backdrop');
                 if (existingModal) existingModal.remove();
 
                 const modalBackdrop = document.createElement('div');
-                modalBackdrop.className = 'mdu-media-modal-backdrop';
+                modalBackdrop.className = 'mdu-yt-modal-backdrop';
                 modalBackdrop.style.cssText = `
                     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
                     background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2147483647;
@@ -798,30 +800,30 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 `;
 
                 modalBackdrop.innerHTML = `
-                    <div class="mdu-media-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '100%'};">
-                        <div style="font-size: 18px; font-weight: 600; color: ${safeColor};">${t.qualityModalTitle}</div>
+                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '100%'};">
+                        <div style="font-size: 18px; font-weight: 600; color: ${safeColor};">${t.ytModalTitle}</div>
                         <div style="font-size: 14px; color: rgba(255,255,255,0.7); max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
                         
                         <!-- Tab Video / Audio -->
                         <div style="display: flex; background: rgba(255,255,255,0.08); padding: 4px; border-radius: 12px; gap: 4px;">
-                            <button id="tab-video" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: ${safeColor}; color: ${btnTextColor}; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.qualityModalTabVideo}</button>
-                            <button id="tab-audio" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: transparent; color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.qualityModalTabAudio}</button>
+                            <button id="tab-video" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: ${safeColor}; color: ${btnTextColor}; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabVideo}</button>
+                            <button id="tab-audio" style="flex: 1; border: none; padding: 8px; border-radius: 8px; background: transparent; color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalTabAudio}</button>
                         </div>
 
                         <!-- Video Options Container -->
                         <div id="video-options-container" style="display: flex; flex-direction: column; gap: 12px;">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <label class="mdu-modal-label">${t.qualityModalFormatLabel}</label>
+                                <label class="mdu-modal-label">${t.ytModalFormatLabel}</label>
                                 <select id="select-demuxer" class="mdu-modal-select"></select>
                             </div>
 
                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <label class="mdu-modal-label">${t.qualityModalCodecLabel}</label>
+                                <label class="mdu-modal-label">${t.ytModalCodecLabel}</label>
                                 <select id="select-codec" class="mdu-modal-select"></select>
                             </div>
 
                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <label class="mdu-modal-label">${t.qualityModalQualityLabel}</label>
+                                <label class="mdu-modal-label">${t.ytModalQualityLabel}</label>
                                 <select id="select-quality" class="mdu-modal-select"></select>
                             </div>
                         </div>
@@ -829,14 +831,14 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                         <!-- Audio Options Container -->
                         <div id="audio-options-container" style="display: none; flex-direction: column; gap: 12px;">
                             <div style="font-size: 13px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); line-height: 1.4;">
-                                ${t.qualityModalAudioExplain}
+                                ${t.ytModalAudioExplain}
                             </div>
                         </div>
 
                         <!-- Footer Buttons -->
                         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;">
-                            <button id="btn-cancel" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.qualityModalCancelBtn}</button>
-                            <button id="btn-download" style="background: ${safeColor}; color: ${btnTextColor}; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.qualityModalDownloadBtn}</button>
+                            <button id="btn-cancel" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalCancelBtn}</button>
+                            <button id="btn-download" style="background: ${safeColor}; color: ${btnTextColor}; border: none; padding: 10px 24px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">${t.ytModalDownloadBtn}</button>
                         </div>
                     </div>
                     
@@ -1047,6 +1049,24 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                                 quality: fmt.resolution && fmt.bandwidth ? `${fmt.resolution}@${fmt.bandwidth}` : (fmt.resolution || fmt.bandwidth?.toString() || 'highest'),
                                 filename: name
                             });
+                        } else if (activeMode === "video") {
+                            chrome.runtime.sendMessage({
+                                action: 'downloadYoutubeVideo',
+                                videoUrl: fmt.videoUrl,
+                                audioUrl: fmt.audioUrl,
+                                filename: name,
+                                demuxer: fmt.demuxer,
+                                codec: fmt.codec || ''
+                            });
+                        } else {
+                            const firstAudioFmt = formats.find(f => f.audioUrl) || formats[0];
+                            if (firstAudioFmt && firstAudioFmt.audioUrl) {
+                                chrome.runtime.sendMessage({
+                                    action: 'downloadYoutubeAudio',
+                                    audioUrl: firstAudioFmt.audioUrl,
+                                    filename: name
+                                });
+                            }
                         }
                     }
                     modalBackdrop.remove();
@@ -1066,7 +1086,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 dlBtn.onmouseup = () => dlBtn.style.transform = 'scale(1)';
                 dlBtn.onclick = () => {
                     if (formats && formats.length > 0) {
-                        showQualityModal();
+                        showYtModal();
                     } else {
                         chrome.runtime.sendMessage({ action: 'startDownloadFromToast', url: downloadUrl });
                     }
@@ -1172,7 +1192,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 }
             }, 6000);
         },
-        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm, hlsFormats, stackNotifications, modalTranslations, uiScale]
+        args: [filename, url, browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download", mediaType, title, themeColor, isDrm, ytFormats, stackNotifications, modalTranslations, uiScale]
     }).catch(() => {});
 }
 
@@ -1229,6 +1249,9 @@ function checkIsSegment(url, contentType, contentLength, currentSettings) {
 
 
 
+    if (urlLower.includes('googlevideo.com/videoplayback')) {
+        return true;
+    }
 
     const path = urlLower.split('?')[0].split('#')[0];
     if (isHidePageComponents && (
@@ -1402,19 +1425,24 @@ async function showMediaNotification(details, settings) {
     const tabId = details.tabId;
     if (tabId < 0) return;
 
-
+    // Skip redundant network-based notifications for YouTube when dedicated YouTube detection is enabled
+    const initiator = details.initiator || details.originUrl || '';
+    const isYtRequest = url.includes('googlevideo.com') || url.includes('youtube.com') || initiator.includes('youtube.com');
+    if (isYtRequest && settings.youtubeDetection && !details.isYtNotification) {
+        return;
+    }
 
     const sessionData = await new Promise(resolve => {
         browser.storage.session.get(url, (res) => resolve(res[url] || []));
     });
     const requestItem = sessionData.length > 0 ? sessionData[sessionData.length - 1] : null;
-    let hlsFormats = null;
+    let ytFormats = requestItem ? requestItem.ytFormats : null;
 
-    if (!hlsFormats && url.toLowerCase().includes('.m3u8')) {
+    if (!ytFormats && url.toLowerCase().includes('.m3u8')) {
         try {
             const hlsVariants = await getM3U8VariantsBg(url);
             if (hlsVariants && hlsVariants.length > 0) {
-                hlsFormats = hlsVariants.map(v => ({
+                ytFormats = hlsVariants.map(v => ({
                     resolution: v.resolution,
                     bandwidth: v.bandwidth,
                     videoUrl: url,
@@ -1477,7 +1505,7 @@ async function showMediaNotification(details, settings) {
 
     if (settings.filenameTemplate) {
         displayFilename = await generateTemplateName(settings.filenameTemplate, url, originalFilename, tabId);
-    } else if (isGenericName) {
+    } else if (url.includes('googlevideo.com') || url.includes('youtube.com') || isGenericName) {
         let pageTitle = "";
         try {
             if (tabId && tabId >= 0) {
@@ -1518,7 +1546,7 @@ async function showMediaNotification(details, settings) {
     const finalDisplayFilename = isDrm ? drmMsg : displayFilename;
     const notificationTitle = isDrm ? (browser.i18n.getMessage("drmWarningTitle") || "DRM Detected") : (browser.i18n.getMessage("mediaNotificationTitle") || "Media detected!");
 
-    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, hlsFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '100%');
+    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '100%');
 
     const notificationButtons = isDrm ? [] : [
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
@@ -1739,6 +1767,7 @@ function initListener() {
                     temporaryHeaderMap.set(details.requestId, details.requestHeaders);
                 }
 
+                if (details.url.toLowerCase().includes('googlevideo.com/videoplayback')) return;
 
                 const urlMatches = detectionRegex.test(decodeURI(details.url));
 
@@ -2045,6 +2074,55 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         addToHistory(message.item);
         return;
     }
+    if (message.action === 'downloadYoutubeVideo') {
+        const pageUrl = sender.tab ? sender.tab.url : "";
+        const pageTitle = sender.tab ? sender.tab.title : "";
+        
+        let finalName = message.filename;
+        const ext = '.' + (message.demuxer || 'mp4');
+        if (!finalName.toLowerCase().endsWith(ext)) {
+            const dotIdx = finalName.lastIndexOf('.');
+            if (dotIdx !== -1) {
+                finalName = finalName.substring(0, dotIdx);
+            }
+            finalName += ext;
+        }
+
+        addToHistory({ url: message.videoUrl, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+
+        let popupUrl = `popup.html?mode=tab&autoDownloadVideoUrl=${encodeURIComponent(message.videoUrl)}&autoDemuxer=${encodeURIComponent(message.demuxer || '')}&autoCodec=${encodeURIComponent(message.codec || '')}`;
+        browser.tabs.create({
+            url: browser.runtime.getURL(popupUrl),
+            active: true
+        });
+        return;
+    }
+    if (message.action === 'downloadYoutubeAudio') {
+        const pageUrl = sender.tab ? sender.tab.url : "";
+        const pageTitle = sender.tab ? sender.tab.title : "";
+        
+        let finalName = message.filename;
+        let audioExt = '.m4a';
+        if (message.audioUrl.includes('mime=audio%2Fwebm') || message.audioUrl.includes('mime=audio/webm')) {
+            audioExt = '.webm';
+        }
+        if (!finalName.toLowerCase().endsWith(audioExt)) {
+            const dotIdx = finalName.lastIndexOf('.');
+            if (dotIdx !== -1) {
+                finalName = finalName.substring(0, dotIdx);
+            }
+            finalName += audioExt;
+        }
+
+        addToHistory({ url: message.audioUrl, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
+
+        let popupUrl = `popup.html?mode=tab&autoDownloadAudioUrl=${encodeURIComponent(message.audioUrl)}`;
+        browser.tabs.create({
+            url: browser.runtime.getURL(popupUrl),
+            active: true
+        });
+        return;
+    }
     if (message.action === 'downloadHlsStream') {
         const pageUrl = sender.tab ? sender.tab.url : "";
         const pageTitle = sender.tab ? sender.tab.title : "";
@@ -2095,7 +2173,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (template) {
                     finalName = await generateTemplateName(template, url, originalName, tabId);
-                } else if ((isGenericName) && pageTitle) {
+                } else if ((url.includes('googlevideo.com') || url.includes('youtube.com') || isGenericName) && pageTitle) {
                     const cleanTitle = pageTitle.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
                     const isAudio = getMediaType(url) === 'audio';
                     const isStream = getMediaType(url) === 'stream';
@@ -2133,10 +2211,188 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         return;
     }
+    if (message.msg && message.msg.name === 'on_media') {
+        try {
+            let media = message.msg.data.media;
+
+
+            function deserializeSerde(obj) {
+                if (obj === null || obj === undefined) return obj;
+                if (typeof obj !== 'object') return obj;
+                if (obj.__serde_tag) {
+                    switch (obj.__serde_tag) {
+                        case 'primitive': return obj.__serde_val;
+                        case 'object': {
+                            let result = {};
+                            for (let [k, v] of Object.entries(obj.__serde_val || {})) {
+                                result[k] = deserializeSerde(v);
+                            }
+                            return result;
+                        }
+                        case 'array': return (obj.__serde_val || []).map(deserializeSerde);
+                        case 'some': return deserializeSerde(obj.__serde_val);
+                        case 'none': return null;
+                        case 'url': return obj.__serde_val;
+                        case 'map': return new Map((obj.__serde_val || []).map(([k, v]) => [deserializeSerde(k), deserializeSerde(v)]));
+                        case 'headers': return obj.__serde_val;
+                        case 'ok': return deserializeSerde(obj.__serde_val);
+                        case 'err': return null;
+                        default: return obj.__serde_val;
+                    }
+                }
+
+                if (Array.isArray(obj)) return obj.map(deserializeSerde);
+                let result = {};
+                for (let [k, v] of Object.entries(obj)) {
+                    result[k] = deserializeSerde(v);
+                }
+                return result;
+            }
+
+
+            if (media && media.__serde_tag) {
+                media = deserializeSerde(media);
+            }
+
+            let pageTitle = media.title;
+            let pageUrl = media.initiator || (sender.tab ? sender.tab.url : "");
+            let urls = [];
+            let ytFormats = [];
+
+
+            if (media.type === 'youtube_format' && Array.isArray(media.playlist)) {
+                for (let entry of media.playlist) {
+                    if (!entry || !entry.av || !entry.av.video) continue;
+                    let videoUrl = typeof entry.av.video === 'object' ? entry.av.video.url : entry.av.video;
+                    let audioUrl = entry.av.audio ? (typeof entry.av.audio === 'object' ? entry.av.audio.url : entry.av.audio) : null;
+                    if (!videoUrl) continue;
+
+                    let width = 0, height = 0, bitrate = 0, contentLength = 0;
+                    if (entry.quality) {
+                        if (entry.quality.size) {
+                            width = entry.quality.size.width || 0;
+                            height = entry.quality.size.height || 0;
+                        }
+                        bitrate = entry.quality.bitrate || 0;
+                    }
+                    if (entry.av.video.content_length) contentLength = entry.av.video.content_length;
+
+                    let label = '';
+                    if (height > 0) {
+                        if (height >= 2160) label = '4K';
+                        else if (height >= 1440) label = '1440p';
+                        else label = height + 'p';
+                    }
+
+
+                    let ext = 'mp4';
+                    if (entry.mime_type && entry.mime_type.includes('webm')) ext = 'webm';
+                    
+                    let taggedVideoUrl = videoUrl;
+                    if (!taggedVideoUrl.includes('.mp4') && !taggedVideoUrl.includes('.webm') && !taggedVideoUrl.includes('.m3u8') && !taggedVideoUrl.includes('.m4a') && !taggedVideoUrl.includes('.mp3')) {
+                        if (taggedVideoUrl.includes('mime=audio')) {
+                            taggedVideoUrl += '#audio.' + (ext === 'webm' ? 'webm' : 'm4a');
+                        } else {
+                            taggedVideoUrl += '#video.' + ext;
+                        }
+                    }
+
+                    let codec = 'unknown';
+                    if (entry.mime_type) {
+                        let match = entry.mime_type.match(/codecs="([^"]+)"/);
+                        if (match) {
+                            let rawCodec = match[1].split('.')[0].toUpperCase();
+                            if (rawCodec.startsWith('VP09') || rawCodec.startsWith('VP9')) codec = 'VP9';
+                            else if (rawCodec.startsWith('AVC')) codec = 'H264';
+                            else if (rawCodec.startsWith('HEVC') || rawCodec.startsWith('HVC')) codec = 'H265';
+                            else if (rawCodec.startsWith('AV01')) codec = 'AV1';
+                            else codec = rawCodec;
+                        }
+                    }
+
+                    let taggedAudioUrl = audioUrl;
+                    if (taggedAudioUrl && !taggedAudioUrl.includes('.m4a') && !taggedAudioUrl.includes('.webm') && !taggedAudioUrl.includes('.mp3')) {
+                        if (taggedAudioUrl.includes('mime=audio%2Fwebm') || taggedAudioUrl.includes('mime=audio/webm')) {
+                            taggedAudioUrl += '#audio.webm';
+                        } else {
+                            taggedAudioUrl += '#audio.m4a';
+                        }
+                    }
+
+                    ytFormats.push({
+                        videoUrl: taggedVideoUrl,
+                        audioUrl: taggedAudioUrl,
+                        width: width,
+                        height: height,
+                        bitrate: bitrate,
+                        contentLength: contentLength,
+                        demuxer: entry.demuxer || 'mp4',
+                        codec: codec,
+                        label: label,
+                        hasAudio: !!entry.av.audio
+                    });
+
+                    if (!urls.includes(taggedVideoUrl)) urls.push(taggedVideoUrl);
+                }
+            }
+
+
+            if (urls.length === 0) {
+                function extractUrls(obj) {
+                    let results = [];
+                    if (typeof obj === 'string') {
+                        if (obj.includes('googlevideo.com/videoplayback') || obj.endsWith('.mp4') || obj.endsWith('.m3u8') || obj.endsWith('.m4a')) {
+                            results.push(obj);
+                        }
+                    } else if (Array.isArray(obj)) {
+                        for (let item of obj) {
+                            results = results.concat(extractUrls(item));
+                        }
+                    } else if (obj !== null && typeof obj === 'object') {
+                        for (let key in obj) {
+                            results = results.concat(extractUrls(obj[key]));
+                        }
+                    }
+                    return results;
+                }
+                
+                let rawUrls = extractUrls(media);
+                for (let mUrl of rawUrls) {
+                    if (!mUrl.includes('.mp4') && !mUrl.includes('.webm') && !mUrl.includes('.m3u8') && !mUrl.includes('.m4a') && !mUrl.includes('.mp3')) {
+                        let ext = 'mp4';
+                        if (mUrl.includes('webm')) ext = 'webm';
+                        if (mUrl.includes('mime=audio')) {
+                            mUrl += '#audio.' + (ext === 'webm' ? 'webm' : 'm4a');
+                        } else {
+                            mUrl += '#video.' + ext;
+                        }
+                    }
+                    if (!urls.includes(mUrl)) urls.push(mUrl);
+                }
+            }
+
+            if (urls.length > 0) {
+
+                if (ytFormats.length > 0) {
+                    ytFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
+                }
+                message = {
+                    action: 'reportDetectedMedia',
+                    urls: urls,
+                    pageTitle: pageTitle,
+                    pageUrl: pageUrl,
+                    is_youtube: true,
+                    ytFormats: ytFormats.length > 0 ? ytFormats : undefined
+                };
+            } else {
+                return;
+            }
+        } catch (err) {}
+    }
 
     if (message.action === 'reportDetectedMedia') {
         getSettings(function(settings) {
-            let { urls, pageTitle, pageUrl } = message;
+            let { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
             if (!urls || !Array.isArray(urls)) return;
             if (settings.ignoreDisabledTypes) {
                 urls = urls.filter(u => {
@@ -2144,8 +2400,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     return !isMediaTypeDisabled(mType, settings);
                 });
             }
+            const isYtPage = (pageUrl && pageUrl.includes('youtube.com')) || (sender.tab?.url && sender.tab.url.includes('youtube.com'));
+            if ((is_youtube || isYtPage) && !settings.youtubeDetection) return;
 
             let senderReferer = pageUrl || sender.tab?.url || "";
+            if (is_youtube || urls.some(u => u.includes('googlevideo.com'))) {
+                senderReferer = "";
+            }
+            
             const tabId = sender.tab?.id;
             
             if (tabId && pageTitle) {
@@ -2160,37 +2422,132 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const updates = {};
                 let hasNew = false;
 
-                urls.forEach(url => {
-                    const mType = getMediaType(url);
-                    if (isMediaTypeDisabled(mType, settings)) return;
-                    const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
 
-                    if (!items[url] && !isDrmMedia) {
-                        updates[url] = [{
-                            url: url,
-                            method: 'GET',
-                            requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
-                            responseHeaders: null,
-                            requestBody: null,
-                            cookie: '',
-                            size: 'unknown',
-                            timeStamp: Date.now(),
-                            tabId: tabId,
-                            pageTitle: pageTitle || sender.tab?.title || "",
-                            pageUrl: pageUrl || sender.tab?.url || ""
-                        }];
-                        hasNew = true;
+                if (ytFormats && ytFormats.length > 0) {
+
+                    let videoFormats = ytFormats.filter(f => f.height > 0);
+                    if (isMediaTypeDisabled('video', settings)) videoFormats = [];
+                    let audioOnlyUrls = urls.filter(u => u.includes('mime=audio') || u.includes('#audio'));
+                    if (isMediaTypeDisabled('audio', settings)) audioOnlyUrls = [];
+
+
+                    if (videoFormats.length > 0) {
+                        const bestFormat = videoFormats[0]; // Already sorted by height desc
+                        const representativeUrl = bestFormat.videoUrl;
+
+                        if (!items[representativeUrl]) {
+                            updates[representativeUrl] = [{
+                                url: representativeUrl,
+                                method: 'GET',
+                                requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                responseHeaders: null,
+                                requestBody: null,
+                                cookie: '',
+                                size: bestFormat.contentLength || 'unknown',
+                                timeStamp: Date.now(),
+                                tabId: tabId,
+                                pageTitle: pageTitle || sender.tab?.title || "",
+                                pageUrl: pageUrl || sender.tab?.url || "",
+                                ytFormats: videoFormats
+                            }];
+                            hasNew = true;
+                        }
                     }
-                });
+
+
+                    if (!is_youtube || videoFormats.length === 0) {
+                        audioOnlyUrls.forEach(url => {
+                            const mType = getMediaType(url);
+                            if (isMediaTypeDisabled(mType, settings)) return;
+                            const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
+
+                            if (!items[url] && !isDrmMedia) {
+                                updates[url] = [{
+                                    url: url,
+                                    method: 'GET',
+                                    requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                    responseHeaders: null,
+                                    requestBody: null,
+                                    cookie: '',
+                                    size: 'unknown',
+                                    timeStamp: Date.now(),
+                                    tabId: tabId,
+                                    pageTitle: pageTitle || sender.tab?.title || "",
+                                    pageUrl: pageUrl || sender.tab?.url || ""
+                                }];
+                                hasNew = true;
+                            }
+                        });
+                    }
+                } else {
+
+                    urls.forEach(url => {
+                        const mType = getMediaType(url);
+                        if (isMediaTypeDisabled(mType, settings)) return;
+                        const isDrmMedia = isDrmTab && (mType === 'video' || mType === 'audio' || mType === 'stream');
+
+                        if (senderReferer && !urlToHeaderMap.has(url)) {
+                            urlToHeaderMap.set(url, {
+                                referer: senderReferer,
+                                origin: senderOrigin,
+                                'user-agent': navigator.userAgent
+                            });
+                            savePersistentHeaders();
+                        }
+
+                        if (!items[url] && !isDrmMedia) {
+                            updates[url] = [{
+                                url: url,
+                                method: 'GET',
+                                requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                                responseHeaders: null,
+                                requestBody: null,
+                                cookie: '',
+                                size: 'unknown',
+                                timeStamp: Date.now(),
+                                tabId: tabId,
+                                pageTitle: pageTitle || sender.tab?.title || "",
+                                pageUrl: pageUrl || sender.tab?.url || ""
+                            }];
+                            hasNew = true;
+                        }
+                    });
+                }
 
                 if (hasNew) {
                     browser.storage.session.set(updates);
+
+                    if (settings.mediaNotification) {
+                        for (const url in updates) {
+                            const req = updates[url][0];
+                            let type = 'video';
+                            if (url.includes('mime=audio') || url.includes('#audio')) {
+                                type = 'audio';
+                            } else {
+                                const detectedType = getMediaType(url);
+                                if (detectedType) {
+                                    type = detectedType;
+                                }
+                            }
+
+                            const details = {
+                                url: url,
+                                tabId: tabId || req.tabId,
+                                isYtNotification: true,
+                                ytFormats: ytFormats,
+                                responseHeaders: [
+                                    { name: 'content-type', value: type === 'video' ? 'video/mp4' : (type === 'audio' ? 'audio/mp4' : 'application/octet-stream') }
+                                ]
+                            };
+                            showMediaNotification(details, settings);
+                        }
+                    }
                 }
             });
         });
         return;
     }
-        if (message.action === 'getMediaRequests') {
+    if (message.action === 'getMediaRequests') {
         browser.storage.session.get(null, function (items) {
             if (cachedSettings.ignoreDisabledTypes) {
                 const filtered = {};
@@ -4612,7 +4969,7 @@ function attachCacheListener() {
     if (cacheListener) return;
 
     if (!browser.webRequest || !browser.webRequest.filterResponseData) {
-        
+        console.warn("filterResponseData not available; not attaching cache listener.");
         return;
     }
 

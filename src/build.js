@@ -41,6 +41,7 @@ const EXCLUDE_FROM_BUILD = new Set(['build.js', 'overrides']);
 
 const EXCLUDE_PER_TARGET = {
     chrome: new Set(['yt_core.js', 'yt_page.js', 'youtubei.js']),
+    'chrome-yt': new Set(),
     firefox: new Set()
 };
 
@@ -156,11 +157,15 @@ switch (command) {
     case 'chrome':
         buildTarget('chrome');
         break;
+    case 'chrome-yt':
+        buildTarget('chrome-yt');
+        break;
     case 'firefox':
         buildTarget('firefox');
         break;
     case 'all':
         buildTarget('chrome');
+        buildTarget('chrome-yt');
         buildTarget('firefox');
         break;
     case 'clean':
@@ -169,6 +174,6 @@ switch (command) {
         break;
     default:
         console.error(`[ERROR] Unknown command: ${command}`);
-        console.error('Usage: node src/build.js [chrome|firefox|all|clean]');
+        console.error('Usage: node src/build.js [chrome|chrome-yt|firefox|all|clean]');
         process.exit(1);
 }

@@ -1172,7 +1172,12 @@
   },
   "dashComputeSegmentsError": {
     "message": "Не удалось вычислить сегменты $Time$: SegmentTimeline отсутствует, и не указана фиксированная длительность.",
-    "description": "Technical error during DASH segment computation."
+    "description": "Technical error during DASH segment computation.",
+    "placeholders": {
+      "Time": {
+        "content": "$1"
+      }
+    }
   },
   "dashNumberSegmentsError": {
     "message": "Не удалось вычислить сегменты на основе номеров: SegmentTimeline отсутствует, а длительность/шкала времени не указаны или равны нулю.",
@@ -2016,8 +2021,7 @@
   "officialWebsite": {
     "message": "Официальный сайт",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "Пользовательский лимит",
     "description": "Label for custom limit setting option."
