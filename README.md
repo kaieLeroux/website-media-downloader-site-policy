@@ -154,23 +154,28 @@ website-media-downloader/
 │   ├── libraries/
 │   ├── styles/
 │   ├── overrides/          # Browser-specific overrides
-│   │   └── chrome/         # Chrome overrides
+│   │   ├── chrome/         # Chrome overrides
+│   │   └── chrome-yt/      # Chrome-YT overrides
 │   ├── *.js / *.html       # Extension logic & UI
 │   ├── manifest.json       # Firefox base manifest
 │   └── build.js            # Build script
 └── build/                  # Build output (git-ignored)
     ├── chrome/
+    ├── chrome-yt/
     └── firefox/
 ```
 
 ## Building
 
 ```bash
-# Build both Chrome and Firefox
+# Build Chrome, Chrome-YT, and Firefox
 node src/build.js all
 
 # Build Chrome only
 node src/build.js chrome
+
+# Build Chrome-YT only
+node src/build.js chrome-yt
 
 # Build Firefox only
 node src/build.js firefox
@@ -179,18 +184,18 @@ node src/build.js firefox
 node src/build.js clean
 ```
 
-Build output goes to `build/chrome/` and `build/firefox/`, each containing a ready-to-load extension.
+Build output goes to `build/chrome/`, `build/chrome-yt/`, and `build/firefox/`, each containing a ready-to-load extension.
 
 ---
 
 ## Installation
 
-Website Media Downloader is available for Chrome and Firefox.
+Website Media Downloader is available for Chrome, Chrome-YT, and Firefox.
 
 ### Chrome / Chromium
-1. Run `node src/build.js chrome`
+1. Run `node src/build.js chrome` (or `node src/build.js chrome-yt` for the YouTube-enabled version)
 2. Open `chrome://extensions/` and enable **Developer mode**
-3. Click **Load unpacked** and select the `build/chrome/` folder
+3. Click **Load unpacked** and select the `build/chrome/` (or `build/chrome-yt/`) folder
 
 ### Firefox Desktop & Android
 You can install the extension directly from the official Firefox Add-ons store:
