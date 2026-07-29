@@ -93,7 +93,12 @@ jobs:
             # Package Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
             mkdir -p chrome-source-temp/src
             cp -r build/chrome/* chrome-source-temp/src/
-            cp README.md LICENSE.md CONTRIBUTING.md chrome-source-temp/
+            cp LICENSE.md CONTRIBUTING.md chrome-source-temp/
+            if [ -f build/chrome/README.md ]; then
+              cp build/chrome/README.md chrome-source-temp/README.md
+            else
+              cp README.md chrome-source-temp/README.md
+            fi
             cp -r licenses chrome-source-temp/
             cd chrome-source-temp
             zip -r ../website-media-downloader-chrome-source-${{ github.event.inputs.tag_name }}.zip ./*
@@ -103,7 +108,12 @@ jobs:
             # Package Chrome-YT clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
             mkdir -p chrome-yt-source-temp/src
             cp -r build/chrome-yt/* chrome-yt-source-temp/src/
-            cp README.md LICENSE.md CONTRIBUTING.md chrome-yt-source-temp/
+            cp LICENSE.md CONTRIBUTING.md chrome-yt-source-temp/
+            if [ -f build/chrome-yt/README.md ]; then
+              cp build/chrome-yt/README.md chrome-yt-source-temp/README.md
+            else
+              cp README.md chrome-yt-source-temp/README.md
+            fi
             cp -r licenses chrome-yt-source-temp/
             cd chrome-yt-source-temp
             zip -r ../website-media-downloader-chrome-yt-source-${{ github.event.inputs.tag_name }}.zip ./*
