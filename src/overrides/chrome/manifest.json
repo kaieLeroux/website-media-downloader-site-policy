@@ -26,7 +26,8 @@
                 "content_page.js"
             ],
             "run_at": "document_start",
-            "world": "MAIN"
+            "world": "MAIN",
+            "all_frames": true
         },
         {
             "matches": [
@@ -36,7 +37,8 @@
                 "surgical_scrapers.js",
                 "content_detector.js"
             ],
-            "run_at": "document_end"
+            "run_at": "document_end",
+            "all_frames": true
         }
     ]
 }
