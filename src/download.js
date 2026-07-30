@@ -1009,14 +1009,45 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const colorResult = await browser.storage.local.get(['theme-color', 'ui-scale']);
-    if (typeof mdui !== 'undefined') {
-        mdui.setColorScheme(colorResult['theme-color'] || '#bbdefb');
+async function initTheme() {
+    const result = await browser.storage.local.get(['theme-color', 'theme-mode']);
+    const themeColor = result['theme-color'] || '#bbdefb';
+    const themeMode = result['theme-mode'] || 'auto';
+
+    if (typeof mdui !== 'undefined' && mdui.setColorScheme) {
+        mdui.setColorScheme(themeColor);
     }
+
+    const htmlEl = document.documentElement;
+    htmlEl.classList.remove('mdui-theme-auto', 'mdui-theme-light', 'mdui-theme-dark', 'theme-pitch-black');
+    
+    if (themeMode === 'auto') {
+        htmlEl.classList.add('mdui-theme-auto');
+    } else if (themeMode === 'light') {
+        htmlEl.classList.add('mdui-theme-light');
+    } else if (themeMode === 'dark') {
+        htmlEl.classList.add('mdui-theme-dark');
+    } else if (themeMode === 'pitch-black') {
+        htmlEl.classList.add('mdui-theme-dark');
+        htmlEl.classList.add('theme-pitch-black');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await initTheme();
+    const colorResult = await browser.storage.local.get('ui-scale');
     if (colorResult['ui-scale']) {
         document.documentElement.style.zoom = colorResult['ui-scale'];
     }
+
+    browser.storage.onChanged.addListener((changes) => {
+        if (changes['theme-color'] || changes['theme-mode']) {
+            initTheme();
+        }
+        if (changes['ui-scale']) {
+            document.documentElement.style.zoom = changes['ui-scale'].newValue || '100%';
+        }
+    });
 
     browser.runtime.sendMessage({ action: 'registerDownloadManagerTab' }).catch(() => {});
 

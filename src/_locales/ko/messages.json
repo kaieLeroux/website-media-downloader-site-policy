@@ -890,6 +890,30 @@
     "message": "테마 색상이 적용되었습니다!",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "테마 모드",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "자동(시스템), 라이트, 다크 또는 피치 블랙 테마 중에서 선택하세요.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "자동 (시스템)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "라이트",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "다크",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "피치 블랙",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "새 탭에서 설정 열기",
     "description": "The helper text for the button to open settings in a new tab."

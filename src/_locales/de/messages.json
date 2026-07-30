@@ -895,6 +895,30 @@
     "message": "Designfarbe angewendet!",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "Design-Modus",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "Wähle zwischen Systemstandard, Hell, Dunkel oder Tiefschwarz.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "Automatisch (System)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "Hell",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "Dunkel",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "Tiefschwarz",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "Einstellungen in neuem Tab öffnen",
     "description": "The helper text for the button to open settings in a new tab."

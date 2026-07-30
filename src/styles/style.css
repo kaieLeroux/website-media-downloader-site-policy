@@ -904,14 +904,14 @@ mdui-card,
 .setting-item h3,
 .setting-text h3,
 .media-headline,
-.settings-section-title,
 .collapsible-header h3,
 .history-title,
 .about-card h3,
 h1, h2, h3, h4 {
     font-weight: 600 !important;
-    text-shadow: 0 -1.5px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.4) !important;
     letter-spacing: 0.018em;
+    color: rgb(var(--mdui-color-on-surface)) !important;
+    text-shadow: none !important;
 }
 
 .setting-text p,
@@ -923,9 +923,59 @@ h1, h2, h3, h4 {
 #selected-count,
 #global-progress-text,
 .about-card p {
+    color: rgb(var(--mdui-color-on-surface-variant)) !important;
+    text-shadow: none !important;
+    line-height: 1.45;
+}
+
+@media (prefers-color-scheme: dark) {
+    html.mdui-theme-auto .setting-item h3,
+    html.mdui-theme-auto .setting-text h3,
+    html.mdui-theme-auto .media-headline,
+    html.mdui-theme-auto .collapsible-header h3,
+    html.mdui-theme-auto .history-title,
+    html.mdui-theme-auto .about-card h3,
+    html.mdui-theme-auto h1, html.mdui-theme-auto h2, html.mdui-theme-auto h3, html.mdui-theme-auto h4 {
+        text-shadow: 0 -1.5px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+        color: rgb(var(--mdui-color-on-surface)) !important;
+    }
+    
+    html.mdui-theme-auto .setting-text p,
+    html.mdui-theme-auto .setting-item p,
+    html.mdui-theme-auto .media-description,
+    html.mdui-theme-auto .download-status-info,
+    html.mdui-theme-auto .collapsible-header p,
+    html.mdui-theme-auto #no-media-detected,
+    html.mdui-theme-auto #selected-count,
+    html.mdui-theme-auto #global-progress-text,
+    html.mdui-theme-auto .about-card p {
+        color: rgba(255, 255, 255, 0.82) !important;
+        text-shadow: 0 -1px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+    }
+}
+
+html.mdui-theme-dark .setting-item h3,
+html.mdui-theme-dark .setting-text h3,
+html.mdui-theme-dark .media-headline,
+html.mdui-theme-dark .collapsible-header h3,
+html.mdui-theme-dark .history-title,
+html.mdui-theme-dark .about-card h3,
+html.mdui-theme-dark h1, html.mdui-theme-dark h2, html.mdui-theme-dark h3, html.mdui-theme-dark h4 {
+    text-shadow: 0 -1.5px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+    color: rgb(var(--mdui-color-on-surface)) !important;
+}
+
+html.mdui-theme-dark .setting-text p,
+html.mdui-theme-dark .setting-item p,
+html.mdui-theme-dark .media-description,
+html.mdui-theme-dark .download-status-info,
+html.mdui-theme-dark .collapsible-header p,
+html.mdui-theme-dark #no-media-detected,
+html.mdui-theme-dark #selected-count,
+html.mdui-theme-dark #global-progress-text,
+html.mdui-theme-dark .about-card p {
     color: rgba(255, 255, 255, 0.82) !important;
     text-shadow: 0 -1px 2px #000000, 0 1px 1px rgba(255, 255, 255, 0.35) !important;
-    line-height: 1.45;
 }
 
 .pill-select,
@@ -944,3 +994,26 @@ h1, h2, h3, h4 {
     text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.9), 0 1px 1px rgba(255, 255, 255, 0.2);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+html.theme-pitch-black,
+html.theme-pitch-black body,
+html.theme-pitch-black mdui-tabs,
+html.theme-pitch-black #media-controls,
+html.theme-pitch-black .settings-group,
+html.theme-pitch-black .setting-item {
+    background-color: #000000 !important;
+    --mdui-color-surface: 0, 0, 0 !important;
+    --mdui-color-surface-dim: 0, 0, 0 !important;
+    --mdui-color-surface-bright: 10, 10, 10 !important;
+    --mdui-color-surface-container-lowest: 0, 0, 0 !important;
+    --mdui-color-surface-container-low: 8, 8, 8 !important;
+    --mdui-color-surface-container: 12, 12, 12 !important;
+    --mdui-color-surface-container-high: 20, 20, 20 !important;
+    --mdui-color-surface-container-highest: 28, 28, 28 !important;
+    --mdui-color-background: 0, 0, 0 !important;
+}
+
+html.theme-pitch-black mdui-card,
+html.theme-pitch-black .media-card {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+

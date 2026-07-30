@@ -895,6 +895,30 @@
     "message": "Couleur du thème appliquée !",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "Mode de thème",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "Choisissez entre le thème Automatique, Clair, Sombre ou Noir absolu.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "Automatique (Système)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "Clair",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "Sombre",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "Noir absolu",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "Ouvrir les paramètres dans un nouvel onglet",
     "description": "The helper text for the button to open settings in a new tab."

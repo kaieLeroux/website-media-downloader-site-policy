@@ -910,6 +910,30 @@
     "message": "Warna tema diterapkan!",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "Mode tema",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "Pilih antara tema Otomatis, Terang, Gelap, atau Hitam Pekat.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "Otomatis (Sistem)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "Terang biasa",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "Gelap",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "Hitam Pekat",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "Buka pengaturan di tab baru",
     "description": "The helper text for the button to open settings in a new tab."

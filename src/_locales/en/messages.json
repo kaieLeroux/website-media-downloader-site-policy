@@ -910,6 +910,30 @@
     "message": "Theme color applied!",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "Theme mode",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "Choose between Auto, Light, Dark, or Pitch Black theme.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "Auto (System)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "Light",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "Dark",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "Pitch Black",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "Open settings in a new tab",
     "description": "The helper text for the button to open settings in a new tab."

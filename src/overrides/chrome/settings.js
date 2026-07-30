@@ -31,7 +31,32 @@ const getRedirectURL = () => {
     return "https://924f7c81-8b1e-4b6e-9e7c-8e4a9e1d2c3f.extensions.allizom.org/";
 };
 
+async function initTheme() {
+  const result = await browser.storage.local.get(['theme-color', 'theme-mode']);
+  const themeColor = result['theme-color'] || '#bbdefb';
+  const themeMode = result['theme-mode'] || 'auto';
+
+  if (typeof mdui !== 'undefined' && mdui.setColorScheme) {
+    mdui.setColorScheme(themeColor);
+  }
+
+  const htmlEl = document.documentElement;
+  htmlEl.classList.remove('mdui-theme-auto', 'mdui-theme-light', 'mdui-theme-dark', 'theme-pitch-black');
+  
+  if (themeMode === 'auto') {
+    htmlEl.classList.add('mdui-theme-auto');
+  } else if (themeMode === 'light') {
+    htmlEl.classList.add('mdui-theme-light');
+  } else if (themeMode === 'dark') {
+    htmlEl.classList.add('mdui-theme-dark');
+  } else if (themeMode === 'pitch-black') {
+    htmlEl.classList.add('mdui-theme-dark');
+    htmlEl.classList.add('theme-pitch-black');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    await initTheme();
 
     const cloudLocationSelect = document.getElementById('cloud-save-location');
     const gdriveDetails = document.getElementById('gdrive-details-container');
@@ -178,7 +203,7 @@ async function initializeSettings() {
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
         'media-notification', 'stack-notifications', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
         'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference',
-        'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
+        'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'theme-mode', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
     ];
 
@@ -206,6 +231,9 @@ async function initializeSettings() {
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'mp3-bitrate') {
                 value = '128';
+                browser.storage.local.set({ [setting]: value });
+            } else if (setting === 'theme-mode') {
+                value = 'auto';
                 browser.storage.local.set({ [setting]: value });
             }
         }
@@ -575,6 +603,7 @@ async function initializeSettings() {
         if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
             const defaultValue = setting === 'limit-media-list' ? '20' :
                                 (setting === 'settings-layout' ? 'default' :
+                                (setting === 'theme-mode' ? 'auto' :
                                 (setting === 'open-preference' ? 'tab' :
                                 (setting === 'download-method' ? 'browser' :
                                 (setting === 'stream-quality' ? 'highest' :
@@ -584,12 +613,26 @@ async function initializeSettings() {
                                 (setting === 'mp3-bitrate' ? '128' :
                                 (setting === 'min-file-size' ? '0' :
                                 (setting === 'ui-scale' ? '100%' :
-                                (setting === 'stream-download' ? 'offline' : 'stream'))))))))))) ;
+                                (setting === 'stream-download' ? 'offline' : 'stream')))))))))))) ;
 
             element.value = value || defaultValue;
             element.addEventListener('change', () => {
                 pendingChanges[setting] = element.value;
                 showApplyBar();
+                if (setting === 'theme-mode') {
+                    const htmlEl = document.documentElement;
+                    htmlEl.classList.remove('mdui-theme-auto', 'mdui-theme-light', 'mdui-theme-dark', 'theme-pitch-black');
+                    if (element.value === 'auto') {
+                        htmlEl.classList.add('mdui-theme-auto');
+                    } else if (element.value === 'light') {
+                        htmlEl.classList.add('mdui-theme-light');
+                    } else if (element.value === 'dark') {
+                        htmlEl.classList.add('mdui-theme-dark');
+                    } else if (element.value === 'pitch-black') {
+                        htmlEl.classList.add('mdui-theme-dark');
+                        htmlEl.classList.add('theme-pitch-black');
+                    }
+                }
                 if (setting === 'limit-media-list') {
                     const limitCustom = document.getElementById('limit-media-list-custom');
                     if (limitCustom) {

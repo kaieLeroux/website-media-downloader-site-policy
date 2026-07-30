@@ -890,6 +890,30 @@
     "message": "Цвет темы применен!",
     "description": "The message shown in a snackbar when a theme color is applied."
   },
+  "themeModeTitle": {
+    "message": "Режим темы",
+    "description": "Title for the theme mode setting."
+  },
+  "themeModeExplain": {
+    "message": "Выберите автоматическую, светлую, тёмную или абсолютно чёрную тему.",
+    "description": "Explanation for the theme mode setting."
+  },
+  "themeModeAuto": {
+    "message": "Авто (Система)",
+    "description": "Auto theme mode option."
+  },
+  "themeModeLight": {
+    "message": "Светлая",
+    "description": "Light theme mode option."
+  },
+  "themeModeDark": {
+    "message": "Тёмная",
+    "description": "Dark theme mode option."
+  },
+  "themeModePitchBlack": {
+    "message": "Абсолютно чёрная",
+    "description": "Pitch Black theme mode option."
+  },
   "openInNewTabHelper": {
     "message": "Открыть настройки в новой вкладке",
     "description": "The helper text for the button to open settings in a new tab."
