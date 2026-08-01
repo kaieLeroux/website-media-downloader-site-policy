@@ -534,6 +534,14 @@ browser.tabs.onRemoved.addListener((tabId) => {
     lastNotificationTime.delete(tabId);
 });
 
+browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'loading') {
+        notifiedUrls.delete(tabId);
+        lastNotificationTime.delete(tabId);
+        tabsWithDrm.delete(tabId);
+    }
+});
+
 async function updateActiveDownloadsBadge() {
     try {
         const settings = await browser.storage.local.get('badge-counter');
