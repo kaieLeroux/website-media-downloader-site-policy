@@ -606,7 +606,8 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
         ytModalQualityLabel: browser.i18n.getMessage("ytModalQualityLabel") || "Kualitas / Resolusi",
         ytModalAudioExplain: browser.i18n.getMessage("ytModalAudioExplain") || "Audio akan langsung diekstrak dan disimpan dalam format audio kualitas tinggi (.m4a/.webm).",
         ytModalCancelBtn: browser.i18n.getMessage("ytModalCancelBtn") || "Batal",
-        ytModalDownloadBtn: browser.i18n.getMessage("ytModalDownloadBtn") || "Unduh"
+        ytModalDownloadBtn: browser.i18n.getMessage("ytModalDownloadBtn") || "Unduh",
+        ytModalLanguageLabel: browser.i18n.getMessage("ytModalLanguageLabel") || "Bahasa Audio"
     };
 
     browser.scripting.executeScript({
@@ -753,6 +754,11 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                             <div style="display: flex; flex-direction: column; gap: 4px;">
                                 <label class="mdu-modal-label">${t.ytModalQualityLabel}</label>
                                 <select id="select-quality" class="mdu-modal-select"></select>
+                            </div>
+
+                            <div id="language-row" style="display: none; flex-direction: column; gap: 4px;">
+                                <label class="mdu-modal-label">${t.ytModalLanguageLabel}</label>
+                                <select id="select-language" class="mdu-modal-select"></select>
                             </div>
                         </div>
 
@@ -937,10 +943,20 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                             fmt.demuxer === selectedDemuxer && 
                             (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
                         );
+
+                        const uniqueResolutions = [];
+                        const seenRes = new Set();
+                        availableFormats.forEach(fmt => {
+                            const resKey = fmt.label || `${fmt.width}x${fmt.height}`;
+                            if (!seenRes.has(resKey)) {
+                                seenRes.add(resKey);
+                                uniqueResolutions.push(fmt);
+                            }
+                        });
                         
-                        availableFormats.forEach((fmt) => {
+                        uniqueResolutions.forEach((fmt) => {
                             const opt = document.createElement('option');
-                            opt.value = formats.indexOf(fmt);
+                            opt.value = fmt.label || `${fmt.width}x${fmt.height}`;
                             let optLabel = fmt.label || `${fmt.width}x${fmt.height}`;
                             if (fmt.contentLength) {
                                 optLabel += ` • ${getHumanReadableSize(fmt.contentLength)}`;
@@ -948,10 +964,48 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                             opt.textContent = optLabel;
                             selectQuality.appendChild(opt);
                         });
+
+                        updateLanguageDropdown();
+                    }
+
+                    function updateLanguageDropdown() {
+                        const selectLanguage = modalBackdrop.querySelector('#select-language');
+                        const languageRow = modalBackdrop.querySelector('#language-row');
+                        if (!selectLanguage || !languageRow) return;
+
+                        selectLanguage.innerHTML = '';
+                        const selectedDemuxer = selectDemuxer.value;
+                        const selectedCodec = selectCodec.value;
+                        const selectedRes = selectQuality.value;
+
+                        const matchingFormats = formats.filter(fmt => 
+                            fmt.demuxer === selectedDemuxer && 
+                            (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN')) &&
+                            ((fmt.label || `${fmt.width}x${fmt.height}`) === selectedRes)
+                        );
+
+                        if (matchingFormats.length > 1 || matchingFormats.some(f => f.audioTrack)) {
+                            languageRow.style.display = 'flex';
+                            matchingFormats.forEach(fmt => {
+                                const opt = document.createElement('option');
+                                opt.value = formats.indexOf(fmt);
+                                opt.textContent = (fmt.audioTrack && fmt.audioTrack.display_name) ? fmt.audioTrack.display_name : "Original / Default";
+                                selectLanguage.appendChild(opt);
+                            });
+                        } else {
+                            languageRow.style.display = 'none';
+                            if (matchingFormats[0]) {
+                                const opt = document.createElement('option');
+                                opt.value = formats.indexOf(matchingFormats[0]);
+                                opt.textContent = "Default";
+                                selectLanguage.appendChild(opt);
+                            }
+                        }
                     }
 
                     selectDemuxer.onchange = updateCodecDropdown;
                     selectCodec.onchange = updateResolutionDropdown;
+                    selectQuality.onchange = updateLanguageDropdown;
 
                     if (demuxers.includes('mp4')) {
                         selectDemuxer.value = 'mp4';
@@ -967,7 +1021,8 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 btnCancel.onclick = () => modalBackdrop.remove();
 
                 btnDownload.onclick = () => {
-                    const selectedIdx = parseInt(selectQuality.value);
+                    const selectLanguage = modalBackdrop.querySelector('#select-language');
+                    const selectedIdx = selectLanguage && selectLanguage.value !== '' ? parseInt(selectLanguage.value) : parseInt(selectQuality.value);
                     const fmt = formats[selectedIdx];
                     if (fmt) {
                         if (fmt.demuxer === 'm3u8') {
@@ -2257,7 +2312,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         demuxer: entry.demuxer || 'mp4',
                         codec: codec,
                         label: label,
-                        hasAudio: !!entry.av.audio
+                        hasAudio: !!entry.av.audio,
+                        audioTrack: entry.av.audio && entry.av.audio.audio_track ? entry.av.audio.audio_track : null
                     });
 
                     if (!urls.includes(taggedVideoUrl)) urls.push(taggedVideoUrl);
@@ -2363,23 +2419,41 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         const bestFormat = videoFormats[0]; // Already sorted by height desc
                         const representativeUrl = bestFormat.videoUrl;
 
-                        if (!items[representativeUrl]) {
-                            updates[representativeUrl] = [{
-                                url: representativeUrl,
-                                method: 'GET',
-                                requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
-                                responseHeaders: null,
-                                requestBody: null,
-                                cookie: '',
-                                size: bestFormat.contentLength || 'unknown',
-                                timeStamp: Date.now(),
-                                tabId: tabId,
-                                pageTitle: pageTitle || sender.tab?.title || "",
-                                pageUrl: pageUrl || sender.tab?.url || "",
-                                ytFormats: videoFormats
-                            }];
-                            hasNew = true;
+                        let mergedFormats = [...videoFormats];
+                        if (items[representativeUrl]) {
+                            const existingItem = items[representativeUrl][0];
+                            if (existingItem && existingItem.ytFormats) {
+                                const existingFormats = existingItem.ytFormats;
+                                existingFormats.forEach(oldFmt => {
+                                    const isDuplicate = mergedFormats.some(newFmt => 
+                                        oldFmt.videoUrl === newFmt.videoUrl && 
+                                        oldFmt.audioUrl === newFmt.audioUrl &&
+                                        (oldFmt.audioTrack?.id === newFmt.audioTrack?.id)
+                                    );
+                                    if (!isDuplicate) {
+                                        mergedFormats.push(oldFmt);
+                                    }
+                                });
+                            }
                         }
+                        
+                        mergedFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
+
+                        updates[representativeUrl] = [{
+                            url: representativeUrl,
+                            method: 'GET',
+                            requestHeaders: senderReferer ? [{name: 'Referer', value: senderReferer}, {name: 'Origin', value: senderOrigin}] : null,
+                            responseHeaders: null,
+                            requestBody: null,
+                            cookie: '',
+                            size: bestFormat.contentLength || 'unknown',
+                            timeStamp: Date.now(),
+                            tabId: tabId,
+                            pageTitle: pageTitle || sender.tab?.title || "",
+                            pageUrl: pageUrl || sender.tab?.url || "",
+                            ytFormats: mergedFormats
+                        }];
+                        hasNew = true;
                     }
 
 

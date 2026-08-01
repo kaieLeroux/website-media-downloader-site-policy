@@ -408,6 +408,10 @@
     "message": "Download",
     "description": "Download button label"
   },
+  "ytModalLanguageLabel": {
+    "message": "Audio Language",
+    "description": "Label for the audio language track dropdown inside youtube download modal"
+  },
   "hidePageComponentsTitle": {
     "message": "Hide page components",
     "description": "Title for the setting to hide html, css, js, and txt files."

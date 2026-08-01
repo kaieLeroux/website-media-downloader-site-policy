@@ -388,6 +388,10 @@
     "message": "ダウンロード",
     "description": "Download button label"
   },
+  "ytModalLanguageLabel": {
+    "message": "音声言語",
+    "description": "Label for the audio language track dropdown inside youtube download modal"
+  },
   "hidePageComponentsTitle": {
     "message": "ページコンポーネントを非表示にする",
     "description": "Title for the setting to hide html, css, js, and txt files."

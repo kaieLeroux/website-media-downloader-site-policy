@@ -61,4 +61,34 @@ const fireNav = () => {
 document.addEventListener("yt-navigate-finish", fireNav);
 document.addEventListener("yt-page-data-updated", fireNav);
 
+let lastVideoId = "";
+let lastAudioUrl = "";
+
+function checkPlayerResponse() {
+  const player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+  if (player && typeof player.getPlayerResponse === 'function') {
+    const response = player.getPlayerResponse();
+    if (response) {
+      const videoId = response.videoDetails?.videoId;
+      const adaptiveFormats = response.streamingData?.adaptiveFormats || [];
+      const audioFormat = adaptiveFormats.find(f => f.mimeType?.includes('audio/') && f.audioTrack);
+      const audioUrl = audioFormat ? audioFormat.url : "";
+      
+      if (videoId && (videoId !== lastVideoId || (audioUrl && audioUrl !== lastAudioUrl))) {
+        lastVideoId = videoId;
+        lastAudioUrl = audioUrl;
+        
+        m({
+          name: "youtube_player_response_updated",
+          data: {
+            videoId: videoId,
+            playerResponse: response
+          }
+        });
+      }
+    }
+  }
+}
+setInterval(checkPlayerResponse, 1000);
+
 

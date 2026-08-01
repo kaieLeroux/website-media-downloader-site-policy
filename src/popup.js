@@ -1827,6 +1827,20 @@ function createMediaItem(item) {
       updateResolutionDropdown();
     }
 
+    const langRow = document.createElement('div');
+    langRow.classList.add('yt-resolution-row');
+    langRow.style.marginTop = '8px';
+    langRow.style.display = 'none';
+
+    const langWrapper = document.createElement('div');
+    langWrapper.classList.add('pill-select-wrapper', 'yt-language-select-wrapper');
+    langWrapper.style.flex = '1';
+
+    const langSelect = document.createElement('select');
+    langSelect.classList.add('pill-select', 'yt-language-select');
+    langWrapper.appendChild(langSelect);
+    langRow.appendChild(langWrapper);
+
     function updateResolutionDropdown() {
         resSelect.innerHTML = '';
         const selectedDemuxer = formatSelect.value;
@@ -1837,9 +1851,19 @@ function createMediaItem(item) {
           (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN'))
         );
 
-        availableFormats.forEach((fmt) => {
+        const uniqueResolutions = [];
+        const seenRes = new Set();
+        availableFormats.forEach(fmt => {
+            const resKey = fmt.label || `${fmt.width}x${fmt.height}`;
+            if (!seenRes.has(resKey)) {
+                seenRes.add(resKey);
+                uniqueResolutions.push(fmt);
+            }
+        });
+
+        uniqueResolutions.forEach((fmt) => {
           const opt = document.createElement('option');
-          opt.value = ytFormats.indexOf(fmt);
+          opt.value = fmt.label || `${fmt.width}x${fmt.height}`;
           let optLabel = fmt.label || `${fmt.width}x${fmt.height}`;
           if (fmt.contentLength) {
             optLabel += ` • ${getHumanReadableSize(fmt.contentLength)}`;
@@ -1848,16 +1872,49 @@ function createMediaItem(item) {
           resSelect.appendChild(opt);
         });
 
-        resSelect.dispatchEvent(new Event('change'));
+        updateLanguageDropdown();
+    }
+
+    function updateLanguageDropdown() {
+        langSelect.innerHTML = '';
+        const selectedDemuxer = formatSelect.value;
+        const selectedCodec = codecSelect.value;
+        const selectedRes = resSelect.value;
+
+        const matchingFormats = ytFormats.filter(fmt =>
+          fmt.demuxer === selectedDemuxer &&
+          (fmt.codec === selectedCodec || (!fmt.codec && selectedCodec === 'UNKNOWN')) &&
+          ((fmt.label || `${fmt.width}x${fmt.height}`) === selectedRes)
+        );
+
+        if (matchingFormats.length > 1 || matchingFormats.some(f => f.audioTrack)) {
+            langRow.style.display = 'flex';
+            matchingFormats.forEach(fmt => {
+                const opt = document.createElement('option');
+                opt.value = ytFormats.indexOf(fmt);
+                opt.textContent = (fmt.audioTrack && fmt.audioTrack.display_name) ? fmt.audioTrack.display_name : "Original / Default";
+                langSelect.appendChild(opt);
+            });
+        } else {
+            langRow.style.display = 'none';
+            if (matchingFormats[0]) {
+                const opt = document.createElement('option');
+                opt.value = ytFormats.indexOf(matchingFormats[0]);
+                opt.textContent = "Default";
+                langSelect.appendChild(opt);
+            }
+        }
+        langSelect.dispatchEvent(new Event('change'));
     }
 
     formatSelect.addEventListener('change', updateCodecDropdown);
     codecSelect.addEventListener('change', updateResolutionDropdown);
+    resSelect.addEventListener('change', updateLanguageDropdown);
 
-    resSelect.addEventListener('change', () => {
-      if (resSelect.value === '') return;
+    langSelect.addEventListener('change', () => {
+      if (langSelect.value === '') return;
 
-      const selectedIdx = parseInt(resSelect.value);
+      const selectedIdx = parseInt(langSelect.value);
       const fmt = ytFormats[selectedIdx];
       if (fmt) {
         activeUrl = fmt.videoUrl;
@@ -1883,6 +1940,7 @@ function createMediaItem(item) {
     resolutionRow.appendChild(resWrapper);
 
     actionsWrapper.appendChild(resolutionRow);
+    actionsWrapper.appendChild(langRow);
 
     updateCodecDropdown();
   }
