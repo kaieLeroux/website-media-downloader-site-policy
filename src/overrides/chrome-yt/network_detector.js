@@ -5068,6 +5068,8 @@ browser.runtime.onInstalled.addListener(async (details) => {
         browser.tabs.create({
             url: 'https://wmd.devianproject.tech/welcome',
         });
+    } else if (details.reason === 'update') {
+        await browser.storage.local.set({ 'wmd_previous_version': details.previousVersion || 'unknown' });
     }
 });
 

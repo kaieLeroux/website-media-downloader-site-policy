@@ -97,14 +97,25 @@ async function checkForUpdates() {
     return;
   }
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
+  const CHANGELOG_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json';
 
   let nativeUpdateFound = false;
+  let requireUninstall = false;
+  try {
+    const changelogRes = await fetch(CHANGELOG_URL + '?t=' + Date.now());
+    if (changelogRes.ok) {
+      const changelogData = await changelogRes.json();
+      requireUninstall = !!changelogData.require_uninstall;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch remote changelog:', e);
+  }
 
   if (browser.runtime.requestUpdateCheck) {
     try {
       const result = await browser.runtime.requestUpdateCheck();
       if (result && result.status === 'update_available') {
-        showUpdateNotification(AMO_URL, result.version || 'new');
+        showUpdateNotification(AMO_URL, result.version || 'new', requireUninstall);
         nativeUpdateFound = true;
       }
     } catch (err) {
@@ -116,7 +127,7 @@ async function checkForUpdates() {
     try {
       const result = await performUpdateCheck();
       if (result.updateAvailable) {
-        showUpdateNotification(result.updateUrl, result.latestVersion);
+        showUpdateNotification(result.updateUrl, result.latestVersion, requireUninstall || result.requireUninstall);
       }
     } catch (error) {
       console.error('Update check failed:', error);
@@ -196,12 +207,21 @@ async function performUpdateCheck() {
     }
 
     if (compareVersions(githubVersion, currentVersion) > 0) {
+      let requireUninstall = false;
+      try {
+        const changelogRes = await fetch('https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json?t=' + Date.now());
+        if (changelogRes.ok) {
+          const data = await changelogRes.json();
+          requireUninstall = !!data.require_uninstall;
+        }
+      } catch (e) {}
+
       if (amoVersion && compareVersions(amoVersion, githubVersion) === 0) {
-        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL };
+        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL, requireUninstall };
       } else {
         const specificUrl = await getSpecificReleaseUrl(githubVersion);
         if (specificUrl) {
-          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl, requireUninstall };
         }
       }
     }
@@ -212,9 +232,17 @@ async function performUpdateCheck() {
         const data = await response.json();
         const githubVersion = data.version;
         if (compareVersions(githubVersion, currentVersion) > 0) {
+          let requireUninstall = false;
+          try {
+            const changelogRes = await fetch('https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json?t=' + Date.now());
+            if (changelogRes.ok) {
+              const data = await changelogRes.json();
+              requireUninstall = !!data.require_uninstall;
+            }
+          } catch (e) {}
           const specificUrl = await getSpecificReleaseUrl(githubVersion);
           if (specificUrl) {
-            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl, requireUninstall };
           }
         }
       }
@@ -275,14 +303,24 @@ function showTopBarUpdateNotification(url, latestVersion) {
   }
 }
 
-function showUpdateDialog(url, latestVersion) {
+function showUpdateDialog(url, latestVersion, requireUninstall = false) {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
 
   const source = getUpdateSourceInfo(url);
   const description = document.createElement('div');
   description.setAttribute('slot', 'description');
-  description.innerHTML = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`) +
+  
+  let msg = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`);
+  if (requireUninstall) {
+    const isId = browser.i18n.getUILanguage() === 'id';
+    const warningText = isId 
+      ? '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>PENTING:</strong> Versi update terbaru ini mengharuskan instal ulang ekstensi. Atau Anda bisa mencobanya terlebih dahulu tanpa instal ulang; jika seumpama media tidak terbaca (error 403), Anda harus melakukan instal ulang.</div>'
+      : '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>IMPORTANT:</strong> The latest update requires a clean reinstallation. Alternatively, you can test it first without reinstalling; if media cannot be detected or returns a 403 error, you must perform a clean reinstallation.</div>';
+    msg += warningText;
+  }
+
+  description.innerHTML = msg +
     `<div style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--on-surface-variant);">
       <span>${browser.i18n.getMessage('updateSourceLabel') || 'Source:'}</span>
       <span style="color: var(--primary); font-weight: 600; background: rgba(var(--mdui-color-primary), 0.1); padding: 1px 8px; border-radius: 99px;">${source.label}</span>
@@ -318,7 +356,7 @@ function showUpdateDialog(url, latestVersion) {
   });
 }
 
-function showUpdateNotification(url, latestVersion) {
+function showUpdateNotification(url, latestVersion, requireUninstall = false) {
   if (sessionStorage.getItem('update-topbar-closed') === 'true') return;
 
   if (sessionStorage.getItem('update-dismissed') === 'true') {
@@ -326,7 +364,7 @@ function showUpdateNotification(url, latestVersion) {
     return;
   }
 
-  showUpdateDialog(url, latestVersion);
+  showUpdateDialog(url, latestVersion, requireUninstall);
 }
 
 async function initTheme() {
@@ -3174,6 +3212,76 @@ async function loadAboutPage() {
     const response = await fetch(browser.runtime.getURL('about.json?t=' + Date.now()));
     const data = await response.json();
 
+    const isFirefox = navigator.userAgent.includes('Firefox') || (typeof browser !== 'undefined' && browser.runtime.getURL && browser.runtime.getURL('').startsWith('moz-extension://'));
+    const reinstallUrl = isFirefox 
+      ? 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/'
+      : `https://github.com/anpa26/website-media-downloader/releases/tag/v${browser.runtime.getManifest().version}`;
+
+    let requireUninstall = false;
+    let hasDismissedWarning = false;
+    try {
+      const [changelogRes, storageData] = await Promise.all([
+        fetch(browser.runtime.getURL('changelog.json')),
+        browser.storage.local.get('wmd_reinstall_about_dismissed')
+      ]);
+      const changelogData = await changelogRes.json();
+      requireUninstall = !!changelogData.require_uninstall;
+      hasDismissedWarning = storageData.wmd_reinstall_about_dismissed === '1';
+    } catch (e) {
+      console.warn("Failed to read settings in About:", e);
+    }
+
+    let reinstallCardHtml = '';
+    if (requireUninstall && !hasDismissedWarning) {
+      reinstallCardHtml = `
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px 16px 12px; background: rgba(var(--mdui-color-error), 0.05); border-radius: var(--app-border-radius); border: 1px solid rgba(var(--mdui-color-error), 0.15); margin-top: 4px;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: rgb(var(--mdui-color-error)); display: flex; align-items: center; gap: 6px;">
+            <mdui-icon style="font-size: 16px;"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></mdui-icon>
+            ${browser.i18n.getMessage("reinstallTitle") || "Reinstallation Recommended"}
+          </div>
+          <p style="font-size: 0.78rem; line-height: 1.5; margin: 4px 0 8px; color: var(--on-surface-variant);">
+            ${browser.i18n.getMessage("reinstallDescription")}
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <mdui-button id="about-confirm-reinstalled" style="--mdui-shape-corner-extra-small: 16px; height: 32px; font-size: 12px; background: rgba(var(--mdui-color-primary), 0.1); color: var(--primary);">
+              ${browser.i18n.getMessage("confirmReinstalledBtn") || "Sudah Reinstall"}
+            </mdui-button>
+            <a href="${reinstallUrl}" target="_blank" style="text-decoration: none;">
+              <mdui-button style="--mdui-shape-corner-extra-small: 16px; height: 32px; font-size: 12px; background: rgb(var(--mdui-color-error)); color: white;">
+                <mdui-icon slot="icon"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></mdui-icon>
+                ${browser.i18n.getMessage("reinstallActionBtn") || "Buka Toko"}
+              </mdui-button>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    let trustedSourcesHtml = '';
+    if (isFirefox) {
+      trustedSourcesHtml = `
+        <div style="display: flex; gap: 8px;">
+          <a href="https://github.com/anpa26/website-media-downloader/releases" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            GitHub Release
+          </a>
+          <a href="https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #FF7139; flex-shrink: 0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 7.312c.459.63.784 1.353.957 2.118-.495-.302-1.177-.46-1.957-.46-.948 0-1.74.268-2.269.705.025-.21.038-.426.038-.645 0-1.696-.647-3.24-1.698-4.401.977.175 1.889.578 2.646 1.165.108.08.214.163.317.249.001.001.002.001.003.002.013.012.026.022.039.033.08.072.158.146.234.222a6.01 6.01 0 0 1 1.69 1.012zm-9.905 2.118c.173-.765.498-1.488.957-2.118a6.01 6.01 0 0 1 1.69-1.012c.076-.076.154-.15.234-.222.013-.011.026-.021.039-.033.001-.001.002-.001.003-.002.103-.086.209-.169.317-.249a5.974 5.974 0 0 1 2.646-1.165C12.493 5.91 11.846 7.454 11.846 9.15c0 .219.013.435.038.645-.529-.437-1.321-.705-2.269-.705-.78 0-1.462.158-1.957.46zm4.343 9.327a3.966 3.966 0 0 1-3.963-3.963c0-2.188 1.776-3.963 3.963-3.963s3.963 1.775 3.963 3.963a3.967 3.967 0 0 1-3.963 3.963z"/></svg>
+            Firefox Add-on
+          </a>
+        </div>
+      `;
+    } else {
+      trustedSourcesHtml = `
+        <div style="display: flex; gap: 8px;">
+          <a href="https://github.com/anpa26/website-media-downloader/releases" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            GitHub Release
+          </a>
+        </div>
+      `;
+    }
+
     let html = `
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 24px;">
         <div style="text-align: center; padding: 24px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
@@ -3196,19 +3304,11 @@ async function loadAboutPage() {
           </div>
           <div id="update-status-text" style="font-size: 0.75rem; font-weight: 500; text-align: center; display: none; color: var(--on-surface-variant); border-top: 1px solid rgba(var(--mdui-color-outline-variant), 0.5); margin-top: 4px; padding-top: 8px;"></div>
         </div>
+        ${reinstallCardHtml}
 
         <div style="padding: 12px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
           <div style="font-size: 0.75rem; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--on-surface-variant); margin-bottom: 8px;">${browser.i18n.getMessage('trustedUpdateSourcesTitle') || 'Trusted Update Sources'}</div>
-          <div style="display: flex; gap: 8px;">
-            <a href="https://github.com/anpa26/website-media-downloader/releases" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
-              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-              GitHub Release
-            </a>
-            <a href="https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
-              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #FF7139; flex-shrink: 0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 7.312c.459.63.784 1.353.957 2.118-.495-.302-1.177-.46-1.957-.46-.948 0-1.74.268-2.269.705.025-.21.038-.426.038-.645 0-1.696-.647-3.24-1.698-4.401.977.175 1.889.578 2.646 1.165.108.08.214.163.317.249.001.001.002.001.003.002.013.012.026.022.039.033.08.072.158.146.234.222a6.01 6.01 0 0 1 1.69 1.012zm-9.905 2.118c.173-.765.498-1.488.957-2.118a6.01 6.01 0 0 1 1.69-1.012c.076-.076.154-.15.234-.222.013-.011.026-.021.039-.033.001-.001.002-.001.003-.002.103-.086.209-.169.317-.249a5.974 5.974 0 0 1 2.646-1.165C12.493 5.91 11.846 7.454 11.846 9.15c0 .219.013.435.038.645-.529-.437-1.321-.705-2.269-.705-.78 0-1.462.158-1.957.46zm4.343 9.327a3.966 3.966 0 0 1-3.963-3.963c0-2.188 1.776-3.963 3.963-3.963s3.963 1.775 3.963 3.963a3.967 3.967 0 0 1-3.963 3.963z"/></svg>
-              Firefox Add-on
-            </a>
-          </div>
+          ${trustedSourcesHtml}
           <a href="https://wmd.devianproject.tech/download" target="_blank" style="margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
             WMD Official Web
@@ -3328,6 +3428,18 @@ async function loadAboutPage() {
     `;
 
     container.innerHTML = html;
+
+    const confirmReinstallBtn = document.getElementById('about-confirm-reinstalled');
+    if (confirmReinstallBtn) {
+      confirmReinstallBtn.addEventListener('click', async () => {
+        try {
+          await browser.storage.local.set({ 'wmd_reinstall_about_dismissed': '1' });
+          loadAboutPage();
+        } catch (e) {
+          console.error("Failed to dismiss reinstall card:", e);
+        }
+      });
+    }
 
     const checkBtn = document.getElementById('manual-check-update');
     const statusText = document.getElementById('update-status-text');

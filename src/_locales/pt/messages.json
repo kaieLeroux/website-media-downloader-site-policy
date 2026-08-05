@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "Reinstalação Recomendada",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "Você atualizou de uma versão anterior. É altamente recomendável reinstalar esta extensão se você tiver problemas de detecção de mídia ou erros 403 (Acesso Negado) devido a alterações significativas nos métodos de detecção de mídia. Se acabou de instalar ou já reinstalou, sinta-se à vontade para ignorar.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "Abrir Loja",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "Ignorar",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "Novo nesta extensão?",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "Origem:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "Já Reinstalado",
+    "description": "Button to confirm reinstallation"
   }
 }

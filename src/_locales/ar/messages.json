@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "يُوصى بإعادة التثبيت",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "لقد قمت بالتحديث من إصدار أقدم. نوصي بشدة بإعادة تثبيت هذا الامتداد إذا كنت تواجه مشكلات في اكتشاف الوسائط أو أخطاء 403 (تم رفض الوصول) بسبب تغييرات كبيرة في طرق اكتشاف الوسائط. إذا قمت بتثبيته للتو أو قمت بالفعل بإعادة تثبيته، فلا تتردد في تخطي هذا.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "افتح المتجر",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "تخطي",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "هل أنت جديد على هذا الامتداد؟",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "المصدر:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "تمت إعادة التثبيت بالفعل",
+    "description": "Button to confirm reinstallation"
   }
 }

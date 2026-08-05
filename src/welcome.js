@@ -18,6 +18,7 @@
 
 (function () {
   const STORAGE_KEY = 'wmd_welcome_shown';
+  const REINSTALL_WARNING_KEY = 'wmd_reinstall_warning_shown';
   const LEARN_URL   = 'https://wmd.devianproject.tech/features?learn=all';
 
   const _browser = (typeof browser !== 'undefined') ? browser : chrome;
@@ -37,6 +38,7 @@
     setTimeout(() => {
       overlay.style.display = 'none';
       card.style.animation  = '';
+      checkReinstallRequirementAfterOnboarding();
     }, 300);
 
     try {
@@ -45,6 +47,20 @@
         result.catch(() => {});
       }
     } catch (e) {}
+  }
+
+  async function checkReinstallRequirementAfterOnboarding() {
+    try {
+      const data = await _browser.storage.local.get([REINSTALL_WARNING_KEY, 'wmd_previous_version']);
+      const res = await fetch(_browser.runtime.getURL('changelog.json'));
+      const changelog = await res.json();
+      
+      if (changelog.require_uninstall && data['wmd_previous_version'] && !data[REINSTALL_WARNING_KEY]) {
+        setTimeout(showReinstallPopup, 300);
+      }
+    } catch (e) {
+      console.error("Failed to check reinstall after onboarding:", e);
+    }
   }
 
   document.getElementById('welcome-learn-btn').addEventListener('click', () => {
@@ -62,26 +78,87 @@
     }
   });
 
-  function checkAndShow() {
+  // Reinstall Popup Functions
+  function showReinstallPopup() {
+    const overlay = document.getElementById('reinstall-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+  }
+
+  function dismissReinstallPopup() {
+    const overlay = document.getElementById('reinstall-overlay');
+    const card    = document.getElementById('reinstall-card');
+    if (!overlay) return;
+
+    card.style.animation = 'wCardZoomOut 0.25s cubic-bezier(0.36,0.07,0.19,0.97) forwards';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      card.style.animation  = '';
+    }, 300);
+
     try {
-      const result = _browser.storage.local.get(STORAGE_KEY);
-      if (result && typeof result.then === 'function') {
-        result.then((data) => {
-          if (!data[STORAGE_KEY]) {
-            setTimeout(showWelcomePopup, 500);
-          }
-        }).catch(() => {
-          setTimeout(showWelcomePopup, 500);
-        });
+      const result = _browser.storage.local.set({ [REINSTALL_WARNING_KEY]: '1' });
+      if (result && typeof result.catch === 'function') {
+        result.catch(() => {});
+      }
+    } catch (e) {}
+  }
+
+  const reinstallActionBtn = document.getElementById('reinstall-action-btn');
+  if (reinstallActionBtn) {
+    reinstallActionBtn.addEventListener('click', () => {
+      dismissReinstallPopup();
+      const isFirefox = navigator.userAgent.includes('Firefox') || (typeof _browser !== 'undefined' && _browser.runtime.getURL && _browser.runtime.getURL('').startsWith('moz-extension://'));
+      const storeUrl = isFirefox 
+        ? 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader'
+        : 'https://wmd.devianproject.tech/';
+      _browser.tabs.create({ url: storeUrl });
+    });
+  }
+
+  const reinstallSkipBtn = document.getElementById('reinstall-skip-btn');
+  if (reinstallSkipBtn) {
+    reinstallSkipBtn.addEventListener('click', () => {
+      dismissReinstallPopup();
+    });
+  }
+
+  const reinstallOverlay = document.getElementById('reinstall-overlay');
+  if (reinstallOverlay) {
+    reinstallOverlay.addEventListener('click', (e) => {
+      if (e.target === reinstallOverlay) {
+        dismissReinstallPopup();
+      }
+    });
+  }
+
+  async function checkAndShow() {
+    try {
+      const data = await _browser.storage.local.get([STORAGE_KEY, REINSTALL_WARNING_KEY, 'wmd_previous_version']);
+      
+      // 1. Check welcome onboarding
+      if (!data[STORAGE_KEY]) {
+        setTimeout(showWelcomePopup, 500);
       } else {
-        _browser.storage.local.get(STORAGE_KEY, (data) => {
-          if (!data[STORAGE_KEY]) {
-            setTimeout(showWelcomePopup, 500);
+        // 2. If onboarding shown, check for reinstall warning
+        try {
+          const res = await fetch(_browser.runtime.getURL('changelog.json'));
+          const changelog = await res.json();
+          
+          if (changelog.require_uninstall && data['wmd_previous_version'] && !data[REINSTALL_WARNING_KEY]) {
+            setTimeout(showReinstallPopup, 500);
           }
-        });
+        } catch (e) {
+          console.error("Failed to read changelog.json:", e);
+        }
       }
     } catch (e) {
-      setTimeout(showWelcomePopup, 500);
+      console.error("Error in checkAndShow:", e);
+      _browser.storage.local.get(STORAGE_KEY, (data) => {
+        if (!data[STORAGE_KEY]) {
+          setTimeout(showWelcomePopup, 500);
+        }
+      });
     }
   }
 

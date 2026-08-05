@@ -1,4 +1,24 @@
 {
+  "reinstallTitle": {
+    "message": "Disarankan Instal Ulang",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "Sebelumnya Anda menggunakan versi lama. Sangat disarankan untuk menginstal ulang ekstensi ini jika beberapa media tidak terdeteksi atau mengalami error 403 (akses ditolak) karena adanya perubahan besar pada cara deteksi media di versi ini. Jika baru memasang atau sudah reinstall, lewati saja.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "Buka Toko",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "Lewati",
+    "description": "Reinstall warning skip button"
+  },
+  "confirmReinstalledBtn": {
+    "message": "Sudah Reinstall",
+    "description": "Button to confirm reinstallation"
+  },
   "welcomeTitle": {
     "message": "Baru menggunakan extension ini?",
     "description": "Welcome popup title"

@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "再インストール推奨",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "古いバージョンからアップデートされました。検出方法の大幅な変更により、メディアが検出されない問題や403エラー（アクセス拒否）が発生する場合は、拡張機能を再インストールすることを強くお勧めします。新規にインストールしたばかりか、すでに再インストール済みの場合は、スキップして構いません。",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "ストアを開く",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "スキップ",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "この拡張機能を初めて使いますか？",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "ソース:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "再インストール済み",
+    "description": "Button to confirm reinstallation"
   }
 }
