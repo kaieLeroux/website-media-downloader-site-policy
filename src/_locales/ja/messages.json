@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "この拡張機能を初めて使いますか？",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "メディアを正しく検出できるよう、この拡張機能の使い方を学んで、何も表示されないときに困らないようにしましょう。",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "機能を学ぶ",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "スキップ",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "メディアをダウンロード",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "ダウンロード方法",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "ダウンロードメカニズムを選択します。注意：モバイルブラウザは「ブラウザ内蔵ダウンロード」方法をサポートしていません。",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "ダウンロード通知"
+  },
+  "fetchNotificationExplain": {
+    "message": "ダウンロードの開始・完了時にデバイスの通知バーに通知を表示します。"
+  },
+  "downloadingTitle": {
+    "message": "ダウンロード中..."
+  },
+  "downloadCompleteTitle": {
+    "message": "ダウンロード完了"
+  },
   "browserDownloadExplain": {
     "message": "ブラウザのネイティブダウンロードマネージャーを使用してメディアをダウンロードします。高速で切断にも対応していますが、一部のサイトとブラウザ（PC用Firefoxなど）でのみ動作します。",
     "description": "The explanation of the browser download method."
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "検出通知を有効にする",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "メディア検出時にページ内にポップアップを表示"
   },
   "mediaNotificationExplain": {
-    "message": "ウェブサイトでメディアが検出されたときに通知を表示します。",
-    "description": "The explanation of the media detection notification setting."
+    "message": "新しいメディアが見つかった時に、閲覧中のページに小さなポップアップを直接表示します。"
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "メディア検出時にデバイスの通知を表示"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "新しいメディアが見つかった時に、デバイスの通知バーに通知を表示します。"
   },
   "stackNotificationsCheckbox": {
     "message": "通知をスタックする",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "アイコンをクリックしたときの拡張機能の開き方を選択します。",
+    "message": "アイコンをクリックしたときの拡張機能の開き方を選択します。注意：モバイルデバイスは「ウィンドウ」オプションをサポートしていません。",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "カスタム制限",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "字幕なし",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "すべての言語 (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "すべての字幕 (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "すべてのオーディオトラックを結合 (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "個別にzip圧縮するのではなく、選択可能な複数のオーディオトラックとして、すべてのオーディオトラックを最終的なビデオファイルに結合します。",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "字幕の埋め込み (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "有効にすると、すべての字幕をダウンロードしたときにMediabunnyを使用してビデオファイル (MKV/MP4) に埋め込みます。無効にすると、字幕はZIPアーカイブでダウンロードされます。",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "字幕埋め込みコンテナ形式",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "すべての字幕 (埋め込み)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "すべての言語 (埋め込み)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "通知設定"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "信頼できるアップデートソース",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "ソース:",
+    "description": "Label for the update source in the update popup"
   }
 }

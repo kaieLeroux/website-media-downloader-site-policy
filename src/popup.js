@@ -56,8 +56,13 @@ function getActiveRequests() {
 async function spoofedFetch(url, options = {}) {
   try {
     const headers = await browser.runtime.sendMessage({ action: 'getSpoofedHeaders', url: url });
+    options.headers = options.headers || {};
+    if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+      options.headers['Referer'] = 'https://www.youtube.com/';
+      options.referrer = 'https://www.youtube.com/';
+      options.headers['Origin'] = 'https://www.youtube.com';
+    }
     if (headers) {
-      options.headers = options.headers || {};
       if (headers.cookie) options.headers['Cookie'] = headers.cookie;
       if (headers.referer) {
         options.headers['Referer'] = headers.referer;
@@ -68,6 +73,12 @@ async function spoofedFetch(url, options = {}) {
     }
   } catch (e) {
     console.warn("Failed to get spoofed headers, falling back to normal fetch:", e);
+    if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+      options.headers = options.headers || {};
+      options.headers['Referer'] = 'https://www.youtube.com/';
+      options.referrer = 'https://www.youtube.com/';
+      options.headers['Origin'] = 'https://www.youtube.com';
+    }
   }
   return fetch(url, options);
 }
@@ -125,6 +136,24 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
+async function getSpecificReleaseUrl(version) {
+  const RELEASES_API_URL = 'https://api.github.com/repos/anpa26/website-media-downloader/releases';
+  try {
+    const res = await fetch(RELEASES_API_URL + '?per_page=20&t=' + Date.now());
+    if (!res.ok) return null;
+    const releases = await res.json();
+    const tag = 'v' + version;
+    // Prefer Latest (non-prerelease) first, then Pre-release
+    const latest = releases.find(r => r.tag_name === tag && !r.prerelease && !r.draft);
+    if (latest) return latest.html_url;
+    const prerelease = releases.find(r => r.tag_name === tag && r.prerelease && !r.draft);
+    if (prerelease) return prerelease.html_url;
+  } catch (e) {
+    console.warn('Failed to fetch specific release URL:', e);
+  }
+  return null;
+}
+
 async function performUpdateCheck() {
   const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
   const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
@@ -170,7 +199,10 @@ async function performUpdateCheck() {
       if (amoVersion && compareVersions(amoVersion, githubVersion) === 0) {
         return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL };
       } else {
-        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+        const specificUrl = await getSpecificReleaseUrl(githubVersion);
+        if (specificUrl) {
+          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+        }
       }
     }
   } else {
@@ -180,7 +212,10 @@ async function performUpdateCheck() {
         const data = await response.json();
         const githubVersion = data.version;
         if (compareVersions(githubVersion, currentVersion) > 0) {
-          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+          const specificUrl = await getSpecificReleaseUrl(githubVersion);
+          if (specificUrl) {
+            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+          }
         }
       }
     } catch (e) {
@@ -190,6 +225,16 @@ async function performUpdateCheck() {
   }
 
   return { updateAvailable: false, latestVersion: currentVersion, updateUrl: '' };
+}
+
+function getUpdateSourceInfo(url) {
+  if (url.includes('addons.mozilla.org')) {
+    return { label: 'Firefox Add-ons', short: 'addons.mozilla.org' };
+  }
+  if (url.includes('github.com')) {
+    return { label: 'GitHub Releases', short: 'github.com' };
+  }
+  return { label: url, short: url };
 }
 
 function showTopBarUpdateNotification(url, latestVersion) {
@@ -203,9 +248,15 @@ function showTopBarUpdateNotification(url, latestVersion) {
     textSpan.textContent = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
   }
 
+  const sourceLabel = document.getElementById('update-source-label');
+  if (sourceLabel) {
+    const info = getUpdateSourceInfo(url);
+    sourceLabel.textContent = info.short;
+    sourceLabel.style.display = 'inline';
+  }
+
   const updateLink = document.getElementById('update-link');
   if (updateLink) {
-
     const newUpdateLink = updateLink.cloneNode(true);
     updateLink.parentNode.replaceChild(newUpdateLink, updateLink);
     newUpdateLink.addEventListener('click', () => {
@@ -228,9 +279,14 @@ function showUpdateDialog(url, latestVersion) {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
 
+  const source = getUpdateSourceInfo(url);
   const description = document.createElement('div');
   description.setAttribute('slot', 'description');
-  description.innerHTML = browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`;
+  description.innerHTML = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`) +
+    `<div style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--on-surface-variant);">
+      <span>${browser.i18n.getMessage('updateSourceLabel') || 'Source:'}</span>
+      <span style="color: var(--primary); font-weight: 600; background: rgba(var(--mdui-color-primary), 0.1); padding: 1px 8px; border-radius: 99px;">${source.label}</span>
+    </div>`;
   dialog.appendChild(description);
 
   const laterButton = document.createElement('mdui-button');
@@ -568,12 +624,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isMobile) {
+    document.documentElement.classList.add('is-mobile');
+    document.body.classList.add('is-mobile');
+  }
+  if (urlParams.get('options') === 'true' || mode === 'tab' || mode === 'window') {
+    document.documentElement.classList.add('is-tab');
+    document.body.classList.add('is-tab');
+  } else {
+    document.documentElement.classList.add('is-popup');
+    document.body.classList.add('is-popup');
+  }
+
   if (urlParams.get('options') === 'true') {
     document.getElementById('navbar').value = 'settings';
   } else {
-    if (mode !== 'tab' && mode !== 'window') {
-      document.body.classList.add('is-popup');
-    }
     if (urlParams.get('tab') === 'history') {
       document.getElementById('navbar').value = 'history';
       loadHistoryList();
@@ -1565,6 +1631,9 @@ function createMediaItem(item) {
   if (ytFormats) {
     mediaDiv.ytFormats = ytFormats;
   }
+  if (item.ytSubtitles) {
+    mediaDiv.ytSubtitles = item.ytSubtitles;
+  }
 
   let activeUrl = bestRequest.originalUrl;
   let activeAudioUrl = null;
@@ -1691,7 +1760,7 @@ function createMediaItem(item) {
   qrBtn.title = browser.i18n.getMessage("qrCodeButton") || "QR Code";
   qrBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    showQRCode(bestRequest.originalUrl);
+    showQRCode(activeUrl);
   });
   header.appendChild(qrBtn);
   mediaDiv.appendChild(header);
@@ -1841,6 +1910,17 @@ function createMediaItem(item) {
     langWrapper.appendChild(langSelect);
     langRow.appendChild(langWrapper);
 
+    const subWrapper = document.createElement('div');
+    subWrapper.classList.add('pill-select-wrapper', 'yt-subtitle-select-wrapper');
+    subWrapper.style.flex = '1';
+    subWrapper.style.marginLeft = '8px';
+    subWrapper.style.display = 'none';
+
+    const subSelect = document.createElement('select');
+    subSelect.classList.add('pill-select', 'yt-subtitle-select');
+    subWrapper.appendChild(subSelect);
+    langRow.appendChild(subWrapper);
+
     function updateResolutionDropdown() {
         resSelect.innerHTML = '';
         const selectedDemuxer = formatSelect.value;
@@ -1876,6 +1956,10 @@ function createMediaItem(item) {
     }
 
     function updateLanguageDropdown() {
+        // Save current selection to restore it later
+        const previousLangVal = langSelect.value;
+        const previousSubVal = subSelect.value;
+
         langSelect.innerHTML = '';
         const selectedDemuxer = formatSelect.value;
         const selectedCodec = codecSelect.value;
@@ -1887,16 +1971,41 @@ function createMediaItem(item) {
           ((fmt.label || `${fmt.width}x${fmt.height}`) === selectedRes)
         );
 
+        let showLangRow = false;
+
         if (matchingFormats.length > 1 || matchingFormats.some(f => f.audioTrack)) {
-            langRow.style.display = 'flex';
+            langWrapper.style.display = 'block';
+            showLangRow = true;
+
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            
+            // Dinamis berdasarkan settings mux-all-audios
+            browser.storage.local.get(['mux-all-audios']).then(res => {
+                if (res['mux-all-audios'] === '1') {
+                    allOpt.textContent = browser.i18n.getMessage("allLanguagesMux") || "All Languages (Embedded)";
+                } else {
+                    allOpt.textContent = browser.i18n.getMessage("allLanguagesZip") || "All Languages (ZIP)";
+                }
+            }).catch(() => {
+                allOpt.textContent = browser.i18n.getMessage("allLanguagesZip") || "All Languages (ZIP)";
+            });
+
+            langSelect.appendChild(allOpt);
+
             matchingFormats.forEach(fmt => {
                 const opt = document.createElement('option');
                 opt.value = ytFormats.indexOf(fmt);
                 opt.textContent = (fmt.audioTrack && fmt.audioTrack.display_name) ? fmt.audioTrack.display_name : "Original / Default";
                 langSelect.appendChild(opt);
             });
+
+            // Restore selection if it still exists
+            if (previousLangVal && Array.from(langSelect.options).some(o => o.value === previousLangVal)) {
+                langSelect.value = previousLangVal;
+            }
         } else {
-            langRow.style.display = 'none';
+            langWrapper.style.display = 'none';
             if (matchingFormats[0]) {
                 const opt = document.createElement('option');
                 opt.value = ytFormats.indexOf(matchingFormats[0]);
@@ -1904,8 +2013,69 @@ function createMediaItem(item) {
                 langSelect.appendChild(opt);
             }
         }
+
+        const ytSubtitles = item.ytSubtitles || null;
+        if (ytSubtitles && ytSubtitles.length > 0) {
+            subWrapper.style.display = 'block';
+            showLangRow = true;
+            if (subSelect.children.length === 0) {
+                const noneOpt = document.createElement('option');
+                noneOpt.value = 'none';
+                noneOpt.textContent = browser.i18n.getMessage("noSubtitles") || "No Subtitles";
+                subSelect.appendChild(noneOpt);
+
+                const allSubOpt = document.createElement('option');
+                allSubOpt.value = 'all';
+                browser.storage.local.get(['embed-subtitles-mkv']).then(res => {
+                    if (res['embed-subtitles-mkv'] === '1') {
+                        allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesMux") || "All Subtitles (Embedded)";
+                    } else {
+                        allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesZip") || "All Subtitles (ZIP)";
+                    }
+                }).catch(() => {
+                    allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesZip") || "All Subtitles (ZIP)";
+                });
+                subSelect.appendChild(allSubOpt);
+
+                ytSubtitles.forEach(sub => {
+                    const opt = document.createElement('option');
+                    opt.value = sub.vttUrl;
+                    opt.textContent = sub.displayName || sub.language;
+                    subSelect.appendChild(opt);
+                });
+            } else {
+                // Dynamically update the text of the "all" option if needed
+                const allSubOpt = Array.from(subSelect.options).find(o => o.value === 'all');
+                if (allSubOpt) {
+                    browser.storage.local.get(['embed-subtitles-mkv']).then(res => {
+                        if (res['embed-subtitles-mkv'] === '1') {
+                            allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesMux") || "All Subtitles (Embedded)";
+                        } else {
+                            allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesZip") || "All Subtitles (ZIP)";
+                        }
+                    }).catch(() => {
+                        allSubOpt.textContent = browser.i18n.getMessage("allSubtitlesZip") || "All Subtitles (ZIP)";
+                    });
+                }
+            }
+
+            // Restore selection if it still exists
+            if (previousSubVal && Array.from(subSelect.options).some(o => o.value === previousSubVal)) {
+                subSelect.value = previousSubVal;
+            }
+        } else {
+            subWrapper.style.display = 'none';
+        }
+
+        if (showLangRow) {
+            langRow.style.display = 'flex';
+        } else {
+            langRow.style.display = 'none';
+        }
+
         langSelect.dispatchEvent(new Event('change'));
     }
+
 
     formatSelect.addEventListener('change', updateCodecDropdown);
     codecSelect.addEventListener('change', updateResolutionDropdown);
@@ -1913,6 +2083,30 @@ function createMediaItem(item) {
 
     langSelect.addEventListener('change', () => {
       if (langSelect.value === '') return;
+
+      if (langSelect.value === 'all') {
+          const selectedDemuxer = formatSelect.value;
+          const selectedCodec = codecSelect.value;
+          const selectedRes = resSelect.value;
+          const matchingFormats = ytFormats.filter(f =>
+            f.demuxer === selectedDemuxer &&
+            (f.codec === selectedCodec || (!f.codec && selectedCodec === 'UNKNOWN')) &&
+            ((f.label || `${f.width}x${f.height}`) === selectedRes)
+          );
+          const firstFmt = matchingFormats[0];
+          if (firstFmt) {
+              activeUrl = firstFmt.videoUrl;
+              activeAudioUrl = 'all';
+              activeSize = firstFmt.contentLength || 'unknown';
+              mediaDiv.dataset.url = activeUrl;
+              mediaDiv.dataset.audioUrl = 'all';
+              mediaDiv.dataset.size = activeSize;
+              const newHumanSize = getHumanReadableSize(activeSize);
+              const newResLabel = firstFmt.label ? ` • ${firstFmt.label}` : '';
+              description.textContent = `${mediaURL.hostname} • ${newHumanSize}${newResLabel} • ${timeStr}`;
+          }
+          return;
+      }
 
       const selectedIdx = parseInt(langSelect.value);
       const fmt = ytFormats[selectedIdx];
@@ -1979,7 +2173,9 @@ function createMediaItem(item) {
         }
       }
     } else {
-      downloadFile(activeUrl, mediaDiv, activeSize, false, activeAudioUrl);
+      const subSelect = mediaDiv.querySelector('.yt-subtitle-select');
+      const activeSubtitleUrl = (subSelect && subSelect.value && subSelect.value !== 'none') ? subSelect.value : null;
+      downloadFile(activeUrl, mediaDiv, activeSize, false, activeAudioUrl, activeSubtitleUrl);
     }
   });
 
@@ -2293,7 +2489,7 @@ async function loadMediaList() {
     }
 
     const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'hide-segments', 'hide-page-components', 'media-sort-order', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom', 'optimize-low-end', 'group-by-type', 'disable-deduplication']);
-    isGroupingEnabled = settings['group-by-type'] === '1' || settings['group-by-type'] === true;
+    isGroupingEnabled = settings['group-by-type'] === undefined || settings['group-by-type'] === '1' || settings['group-by-type'] === true;
 
     const minFileSizeSetting = settings['min-file-size'] || '0';
     let minSizeBytes = 0;
@@ -2335,14 +2531,18 @@ async function loadMediaList() {
       const lastResponseHeaders = requests[requests.length - 1].responseHeaders;
       if (checkIsSegment(rawUrl, lastResponseHeaders, settings)) continue;
 
-      const type = getMediaType(rawUrl, lastResponseHeaders);
+      let type = getMediaType(rawUrl, lastResponseHeaders);
+      const isManualItem = requests.some(r => r.isManual);
+      if (!type && isManualItem) {
+          type = 'file';
+      }
       if (!type) continue;
 
       const showVideo = isFlagEnabled(settings['only-video'], true);
       const showAudio = isFlagEnabled(settings['only-audio'], true);
       const showStream = isFlagEnabled(settings['only-stream'], true);
-      const showImage = isFlagEnabled(settings['only-image'], false);
-      const showSubtitle = isFlagEnabled(settings['only-subtitle'], false);
+      const showImage = isFlagEnabled(settings['only-image'], true);
+      const showSubtitle = isFlagEnabled(settings['only-subtitle'], true);
       const showFile = isFlagEnabled(settings['only-file'], true);
 
       if (type === 'video' && !showVideo) continue;
@@ -2477,7 +2677,7 @@ async function loadMediaList() {
         });
     });
 
-    const isDisableDeduplication = isFlagEnabled(settings['disable-deduplication']);
+    const isDisableDeduplication = isFlagEnabled(settings['disable-deduplication'], true);
     const filenameGroupsMap = new Map();
     groupsWithNames.forEach((item, index) => {
         let nameKey;
@@ -2535,7 +2735,8 @@ async function loadMediaList() {
           isSubtitle: group.type === 'subtitle',
           isImage: group.type === 'image',
           isFile: group.type === 'file',
-          ytFormats: bestRequest.ytFormats || null
+          ytFormats: bestRequest.ytFormats || null,
+          ytSubtitles: bestRequest.ytSubtitles || null
         });
     });
 
@@ -2588,14 +2789,14 @@ async function loadMediaList() {
       }
     });
     let limitStr = settings['limit-media-list'];
-    let limit = 20;
+    let limit = 0;
     if (limitStr === 'custom') {
       limit = parseInt(settings['limit-media-list-custom']) || 0;
     } else if (limitStr) {
       limit = parseInt(limitStr);
     }
     if (settings['optimize-low-end'] === '1' || settings['optimize-low-end'] === true) {
-      limit = 10;
+      limit = 0;
     }
     if (limit > 0 && flattenedRequests.length > limit) {
       flattenedRequests.length = limit;
@@ -2823,8 +3024,8 @@ async function loadHistoryList() {
     const showVideo = isFlagEnabled(settings['only-video'], true);
     const showAudio = isFlagEnabled(settings['only-audio'], true);
     const showStream = isFlagEnabled(settings['only-stream'], true);
-    const showImage = isFlagEnabled(settings['only-image'], false);
-    const showSubtitle = isFlagEnabled(settings['only-subtitle'], false);
+    const showImage = isFlagEnabled(settings['only-image'], true);
+    const showSubtitle = isFlagEnabled(settings['only-subtitle'], true);
     const showFile = isFlagEnabled(settings['only-file'], true);
 
     if (type === 'video' && !showVideo) return;
@@ -2976,8 +3177,8 @@ async function loadAboutPage() {
     let html = `
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 24px;">
         <div style="text-align: center; padding: 24px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
-          <div style="width: 48px; height: 48px; margin: 0 auto 16px; color: var(--primary);">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          <div style="width: 48px; height: 48px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+            <img src="${browser.runtime.getURL('icons/icon.png')}" style="width: 48px; height: 48px; object-fit: contain;">
           </div>
           <h1 style="margin: 0; font-size: 1.4rem; font-weight: 700; color: rgb(var(--mdui-color-on-surface));">${data.extension.name}</h1>
           <p style="font-size: 0.9rem; line-height: 1.6; margin: 16px 0 0; color: var(--on-surface-variant);">${browser.i18n.getMessage("extensionDescriptionAbout") || data.extension.description}</p>
@@ -2995,7 +3196,25 @@ async function loadAboutPage() {
           </div>
           <div id="update-status-text" style="font-size: 0.75rem; font-weight: 500; text-align: center; display: none; color: var(--on-surface-variant); border-top: 1px solid rgba(var(--mdui-color-outline-variant), 0.5); margin-top: 4px; padding-top: 8px;"></div>
         </div>
-    `;
+
+        <div style="padding: 12px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--on-surface-variant); margin-bottom: 8px;">${browser.i18n.getMessage('trustedUpdateSourcesTitle') || 'Trusted Update Sources'}</div>
+          <div style="display: flex; gap: 8px;">
+            <a href="https://github.com/anpa26/website-media-downloader/releases" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              GitHub Release
+            </a>
+            <a href="https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #FF7139; flex-shrink: 0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 7.312c.459.63.784 1.353.957 2.118-.495-.302-1.177-.46-1.957-.46-.948 0-1.74.268-2.269.705.025-.21.038-.426.038-.645 0-1.696-.647-3.24-1.698-4.401.977.175 1.889.578 2.646 1.165.108.08.214.163.317.249.001.001.002.001.003.002.013.012.026.022.039.033.08.072.158.146.234.222a6.01 6.01 0 0 1 1.69 1.012zm-9.905 2.118c.173-.765.498-1.488.957-2.118a6.01 6.01 0 0 1 1.69-1.012c.076-.076.154-.15.234-.222.013-.011.026-.021.039-.033.001-.001.002-.001.003-.002.103-.086.209-.169.317-.249a5.974 5.974 0 0 1 2.646-1.165C12.493 5.91 11.846 7.454 11.846 9.15c0 .219.013.435.038.645-.529-.437-1.321-.705-2.269-.705-.78 0-1.462.158-1.957.46zm4.343 9.327a3.966 3.966 0 0 1-3.963-3.963c0-2.188 1.776-3.963 3.963-3.963s3.963 1.775 3.963 3.963a3.967 3.967 0 0 1-3.963 3.963z"/></svg>
+              Firefox Add-on
+            </a>
+          </div>
+          <a href="https://wmd.devianproject.tech/download" target="_blank" style="margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            WMD Official Web
+          </a>
+        </div>
+      `;
 
     html += `
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -3636,7 +3855,7 @@ async function downloadAudioOnly(url, mediaDiv, specificSize) {
     if (wakeLock) wakeLock.release();
   }
 }
-async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUrl = null) {
+async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUrl = null, subtitleUrl = null, customFilename = null) {
   let wakeLock = null;
   try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
 
@@ -3673,7 +3892,7 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
     const settings = await browser.storage.local.get(['filename-template', 'disable-rename-dialog']);
     const template = (settings['filename-template'] && settings['filename-template'] !== '0') ? settings['filename-template'] : '';
     const disableRename = settings['disable-rename-dialog'] === '1';
-    let finalName = defaultName;
+    let finalName = customFilename || defaultName;
 
     if (template) {
         finalName = await generateTemplateName(template, url, defaultName, targetRequest.pageTitle);
@@ -3737,13 +3956,238 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
         item: { url, filename: newName, timestamp: Date.now(), pageUrl, pageTitle }
     });
 
-    const dlSettings = await browser.storage.local.get(['download-method', 'stream-download', 'background-download']);
+    const dlSettings = await browser.storage.local.get(['download-method', 'stream-download', 'background-download', 'mux-all-audios', 'embed-subtitles-mkv', 'embed-subtitles-container']);
     let downloadMethod = dlSettings['download-method'] || 'browser';
     if (url.includes('#audio.m4a') || url.includes('#audio.webm')) {
         downloadMethod = 'fetch';
     }
     let streamPref = dlSettings['stream-download'] || 'offline';
     const bgDownloadEnabled = dlSettings['background-download'] !== '0';
+    const muxAllAudios = dlSettings['mux-all-audios'] === '1';
+    const embedSubtitlesMkv = dlSettings['embed-subtitles-mkv'] === '1';
+    const embedSubtitlesContainer = dlSettings['embed-subtitles-container'] || 'mkv';
+
+    // Determine if subtitles should be embedded (Mediabunny) vs zipped
+    const isSubtitleEmbed = embedSubtitlesMkv && subtitleUrl && subtitleUrl !== 'none';
+
+    const isYtZipNeeded = (!isSubtitleEmbed && subtitleUrl && subtitleUrl !== 'none') || (audioUrl === 'all' && !muxAllAudios);
+
+    if (isYtZipNeeded) {
+        if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("zipPreparing") || "Preparing ZIP archive...";
+        try {
+            const fetchUrlAsBlob = async (fetchUrl, statusEl, statusPrefix) => {
+                const controller = new AbortController();
+                try {
+                    let probeResp = await spoofedFetch(fetchUrl, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
+                    let isChunked = probeResp.status === 206;
+                    let size = 0;
+                    if (isChunked) {
+                        const cr = probeResp.headers.get('Content-Range');
+                        if (cr) {
+                            const match = cr.match(/\/(\d+)$/);
+                            if (match) size = parseInt(match[1], 10);
+                        }
+                    }
+                    if (!isChunked || !size) {
+                        const resp = await spoofedFetch(fetchUrl);
+                        if (!resp.ok) throw new Error("HTTP " + resp.status);
+                        return await resp.blob();
+                    }
+                    const CHUNK_SIZE = 1024 * 1024;
+                    let chunks = [];
+                    let downloaded = 0;
+                    for (let start = 0; start < size; start += CHUNK_SIZE) {
+                        let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
+                        let retries = 3;
+                        let chunkResp;
+                        while (retries > 0) {
+                            try {
+                                chunkResp = await spoofedFetch(fetchUrl, { headers: { "Range": `bytes=${start}-${end}` } });
+                                if (chunkResp.ok || chunkResp.status === 206) break;
+                            } catch (e) {
+                                console.warn("Chunk fetch failed, retrying...", e);
+                            }
+                            retries--;
+                            if (retries === 0) throw new Error("Failed to fetch chunk " + start);
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
+                        const arrayBuf = await chunkResp.arrayBuffer();
+                        chunks.push(new Uint8Array(arrayBuf));
+                        downloaded += arrayBuf.byteLength;
+                        if (statusEl) {
+                            const pct = Math.round((downloaded / size) * 100);
+                            statusEl.textContent = `${statusPrefix} (${pct}%)`;
+                        }
+                    }
+                    return new Blob(chunks);
+                } catch (e) {
+                    console.error("fetchUrlAsBlob failed, trying fallback:", e);
+                    const resp = await spoofedFetch(fetchUrl);
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    return await resp.blob();
+                }
+            };
+
+            const zipEntries = [];
+            let videoBlob = null;
+            let videoName = newName;
+            const shouldDownloadVideo = true;
+
+            if (shouldDownloadVideo) {
+                if (statusInfo) statusInfo.textContent = "Downloading video stream...";
+                if (audioUrl && audioUrl !== 'all') {
+                    videoBlob = await downloadAndMuxYoutube(url, audioUrl, newName, downloadMethod, loadingBar, true);
+                } else if (audioUrl === 'all') {
+                    if (muxAllAudios) {
+                        const ytFormats = (mediaDiv && mediaDiv.ytFormats) || [];
+                        const uniqueAudios = [];
+                        const seenAudioUrls = new Set();
+                        ytFormats.forEach(fmt => {
+                            if (fmt.audioUrl && !seenAudioUrls.has(fmt.audioUrl)) {
+                                seenAudioUrls.add(fmt.audioUrl);
+                                uniqueAudios.push({
+                                    url: fmt.audioUrl,
+                                    name: (fmt.audioTrack && fmt.audioTrack.displayName) ? fmt.audioTrack.displayName : "Default Audio"
+                                });
+                            }
+                        });
+                        videoBlob = await downloadAndMuxYoutube(url, uniqueAudios, newName, downloadMethod, loadingBar, true);
+                    } else {
+                        const selectedDemuxer = formatSelect.value;
+                        const selectedCodec = codecSelect.value;
+                        const selectedRes = resSelect.value;
+                        const matchingFormats = ytFormats.filter(f =>
+                            f.demuxer === selectedDemuxer &&
+                            (f.codec === selectedCodec || (!f.codec && selectedCodec === 'UNKNOWN')) &&
+                            ((f.label || `${f.width}x${f.height}`) === selectedRes)
+                        );
+                        const defaultFmt = matchingFormats.find(f => f.audioTrack && (f.audioTrack.audioIsDefault || f.audioTrack.audio_is_default)) || matchingFormats[0];
+                        if (defaultFmt && defaultFmt.audioUrl) {
+                            videoBlob = await downloadAndMuxYoutube(url, defaultFmt.audioUrl, newName, downloadMethod, loadingBar, true);
+                        } else {
+                            videoBlob = await fetchUrlAsBlob(url, statusInfo, "Downloading video stream");
+                        }
+                    }
+                } else {
+                    videoBlob = await fetchUrlAsBlob(url, statusInfo, "Downloading video stream");
+                }
+                if (videoBlob) {
+                    zipEntries.push({ name: videoName, input: videoBlob });
+                }
+            }
+
+            if (audioUrl === 'all' && !muxAllAudios) {
+                const ytFormats = (mediaDiv && mediaDiv.ytFormats) || [];
+                const uniqueAudios = [];
+                const seenAudioUrls = new Set();
+                ytFormats.forEach(fmt => {
+                    if (fmt.audioUrl && !seenAudioUrls.has(fmt.audioUrl)) {
+                        seenAudioUrls.add(fmt.audioUrl);
+                        uniqueAudios.push({
+                            url: fmt.audioUrl,
+                            name: (fmt.audioTrack && fmt.audioTrack.displayName) ? fmt.audioTrack.displayName : "Default Audio"
+                        });
+                    }
+                });
+
+                for (let i = 0; i < uniqueAudios.length; i++) {
+                    const item = uniqueAudios[i];
+                    if (statusInfo) statusInfo.textContent = `Downloading audio ${i+1}/${uniqueAudios.length}: ${item.name}...`;
+                    try {
+                        const blob = await fetchUrlAsBlob(item.url, statusInfo, `Downloading audio ${i+1}/${uniqueAudios.length}: ${item.name}`);
+                        let ext = '.m4a';
+                        if (item.url.includes('.webm') || item.url.includes('mime=audio%2Fwebm') || item.url.includes('mime=audio/webm')) {
+                            ext = '.webm';
+                        }
+                        const entryName = `${newName.replace(/\.[a-zA-Z0-9]+$/, '')} - ${item.name}${ext}`;
+                        zipEntries.push({ name: entryName, input: blob });
+                    } catch (err) {
+                        console.error("Failed to download audio track:", item.name, err);
+                    }
+                }
+            }
+
+            if (subtitleUrl && subtitleUrl !== 'none') {
+                const ytSubtitles = (mediaDiv && mediaDiv.ytSubtitles) || [];
+                const subsToDownload = [];
+
+                if (subtitleUrl === 'all') {
+                    subsToDownload.push(...ytSubtitles);
+                } else {
+                    const selectedSub = ytSubtitles.find(s => s.vttUrl === subtitleUrl);
+                    if (selectedSub) {
+                        subsToDownload.push(selectedSub);
+                    } else {
+                        subsToDownload.push({ vttUrl: subtitleUrl, displayName: "Subtitle", language: "und" });
+                    }
+                }
+
+                const subSettings = await browser.storage.local.get(['subtitle-conversion']);
+                const subFormat = subSettings['subtitle-conversion'] || 'none';
+                const targetFormat = subFormat !== 'none' ? subFormat : 'vtt';
+
+                for (let i = 0; i < subsToDownload.length; i++) {
+                    const sub = subsToDownload[i];
+                    if (statusInfo) statusInfo.textContent = `Downloading subtitle ${i+1}/${subsToDownload.length}: ${sub.displayName || sub.language}...`;
+                    try {
+                        const bgFetch = await browser.runtime.sendMessage({ action: 'fetchText', url: sub.vttUrl });
+                        let text = bgFetch && bgFetch.text ? bgFetch.text : null;
+                        if (!text) {
+                            const response = await spoofedFetch(sub.vttUrl);
+                            if (response.ok) text = await response.text();
+                        }
+                        if (text) {
+                            if (targetFormat === 'srt') {
+                                if (typeof window.subsrt !== 'undefined') {
+                                    text = window.subsrt.convert(text, { format: 'srt' });
+                                } else if (text.trim().startsWith('WEBVTT')) {
+                                    text = text.replace(/^WEBVTT[^\n]*\n+/i, '');
+                                    text = text.replace(/([0-9]{2}:[0-9]{2}:[0-9]{2})\.([0-9]{3})/g, '$1,$2');
+                                }
+                            } else if (targetFormat === 'vtt') {
+                                if (!text.trim().startsWith('WEBVTT')) {
+                                    text = "WEBVTT\n\n" + text.trim();
+                                    text = text.replace(/([0-9]{2}:[0-9]{2}:[0-9]{2}),([0-9]{3})/g, '$1.$2');
+                                }
+                            }
+                            const subName = `${newName.replace(/\.[a-zA-Z0-9]+$/, '')} - ${sub.displayName || sub.language}.${targetFormat}`;
+                            zipEntries.push({ name: subName, input: text });
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch subtitle:", sub.displayName, err);
+                    }
+                }
+            }
+
+            if (zipEntries.length === 0) throw new Error("No files downloaded.");
+
+            if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("zipGenerating") || "Generating ZIP archive...";
+            const zipBlob = await downloadZip(zipEntries).blob();
+            const zipName = `${newName.replace(/\.[a-zA-Z0-9]+$/, '')}.zip`;
+
+            if (typeof finalizeDownload === 'function') {
+                await finalizeDownload(zipBlob, zipName, downloadMethod, loadingBar, false, false);
+            } else {
+                const blobUrl = URL.createObjectURL(zipBlob);
+                const a = document.createElement("a");
+                a.href = blobUrl;
+                a.download = zipName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                }, 2000);
+            }
+
+            finishDownloadUI(downloadId, true);
+        } catch (e) {
+            console.error("ZIP creation failed:", e);
+            if (typeof showDialog === 'function') showDialog("Failed to create ZIP: " + e.message);
+            finishDownloadUI(downloadId, false);
+        }
+        return;
+    }
 
     const subSettings = await browser.storage.local.get(['subtitle-conversion']);
     const subFormat = subSettings['subtitle-conversion'] || 'none';
@@ -3825,13 +4269,209 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
         try {
             console.log("downloadFile: Calling downloadAndMuxYoutube...");
 
+            let targetAudio = audioUrl;
+            if (audioUrl === 'all' && muxAllAudios) {
+                const ytFormats = (mediaDiv && mediaDiv.ytFormats) || [];
+                const uniqueAudios = [];
+                const seenAudioUrls = new Set();
+                ytFormats.forEach(fmt => {
+                    if (fmt.audioUrl && !seenAudioUrls.has(fmt.audioUrl)) {
+                        seenAudioUrls.add(fmt.audioUrl);
+                        uniqueAudios.push({
+                            url: fmt.audioUrl,
+                            name: (fmt.audioTrack && fmt.audioTrack.displayName) ? fmt.audioTrack.displayName : "Default Audio"
+                        });
+                    }
+                });
+                targetAudio = uniqueAudios;
+            }
+
             if (window.activeCancellations) {
                 window.activeCancellations.delete(url);
-                window.activeCancellations.delete(audioUrl);
+                if (Array.isArray(targetAudio)) {
+                    targetAudio.forEach(item => window.activeCancellations.delete(item.url));
+                } else {
+                    window.activeCancellations.delete(targetAudio);
+                }
             }
-            await downloadAndMuxYoutube(url, audioUrl, newName, downloadMethod, loadingBar);
+
+            if (isSubtitleEmbed) {
+                // If subtitle embedding is enabled, we first download and mux the video + audio(s) into a temporary blob
+                console.log("downloadFile: isSubtitleEmbed is active. Muxing to temp blob...");
+                if (statusInfo) statusInfo.textContent = "Downloading and muxing video+audio...";
+                const muxedBlob = await downloadAndMuxYoutube(url, targetAudio, newName, downloadMethod, loadingBar, true);
+
+                if (statusInfo) statusInfo.textContent = "Fetching subtitles...";
+
+                // Get all subtitles to embed
+                const ytSubtitles = (mediaDiv && mediaDiv.ytSubtitles) || [];
+                const subsToEmbed = [];
+                if (subtitleUrl === 'all') {
+                    subsToEmbed.push(...ytSubtitles);
+                } else {
+                    const selectedSub = ytSubtitles.find(s => s.vttUrl === subtitleUrl);
+                    subsToEmbed.push(selectedSub || { vttUrl: subtitleUrl, displayName: 'Subtitle', language: 'und' });
+                }
+
+                // Helper: convert 2-letter lang code to 3-letter ISO 639-2/T
+                const toIso3 = (lang) => {
+                    const map = { en:'eng', id:'ind', ja:'jpn', ko:'kor', zh:'zho', fr:'fra', de:'deu',
+                                  es:'spa', pt:'por', ru:'rus', ar:'ara', hi:'hin', tr:'tur', it:'ita',
+                                  nl:'nld', pl:'pol', th:'tha', vi:'vie', sv:'swe', fi:'fin', da:'dan',
+                                  no:'nor', cs:'ces', sk:'slk', ro:'ron', hu:'hun', el:'ell', uk:'ukr' };
+                    if (!lang) return 'und';
+                    const base = lang.split('-')[0].toLowerCase();
+                    if (base.length === 3) return base;
+                    return map[base] || 'und';
+                };
+
+                // Helper: clean YouTube VTT — removes duplicate word-by-word cues, sorts strictly
+                const cleanVtt = (raw) => {
+                    let text = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+                    if (!text.startsWith('WEBVTT')) text = 'WEBVTT\n\n' + text;
+                    text = text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+                    const tsToSec = (ts) => {
+                        const p = ts.trim().split(':');
+                        if (p.length === 3) return +p[0]*3600 + +p[1]*60 + parseFloat(p[2]);
+                        return +p[0]*60 + parseFloat(p[1]);
+                    };
+                    const blocks = text.split(/\n\n+/);
+                    const header = blocks[0];
+                    const cueRe = /^([\d:.]+)\s+-->\s+([\d:.]+)/;
+                    const cues = [];
+                    for (let b = 1; b < blocks.length; b++) {
+                        const block = blocks[b].trim();
+                        if (!block) continue;
+                        const lines = block.split('\n');
+                        let ti = cueRe.test(lines[0]) ? 0 : 1;
+                        if (ti >= lines.length) continue;
+                        const m = lines[ti].match(/^([\d:.]+)\s+-->\s+([\d:.]+)/);
+                        if (!m) continue;
+                        const payload = lines.slice(ti+1).join('\n')
+                            .replace(/<\d{2}:\d{2}:\d{2}\.\d{3}>/g, '').replace(/<\/?c>/g, '')
+                            .replace(/<[^>]+>/g, '').trim();
+                        if (!payload) continue;
+                        cues.push({ s: tsToSec(m[1]), e: tsToSec(m[2]), t1: m[1], t2: m[2], p: payload });
+                    }
+                    // Deduplicate: same start time → keep last (most complete) entry
+                    const seen = new Map();
+                    for (const c of cues) seen.set(c.s, c);
+                    const sorted = Array.from(seen.values()).sort((a, b) => a.s - b.s);
+                    // Ensure strictly non-decreasing: fix any start < prev end
+                    let maxE = 0;
+                    for (const c of sorted) {
+                        if (c.s < maxE) c.s = maxE;
+                        if (c.s >= c.e) c.e = c.s + 0.001;
+                        maxE = c.e;
+                    }
+                    if (!sorted.length) return null;
+                    const f2 = (n) => String(Math.floor(n)).padStart(2,'0');
+                    const toTs = (s) => `${f2(s/3600)}:${f2((s%3600)/60)}:${(s%60).toFixed(3).padStart(6,'0')}`;
+                    return header + '\n\n' + sorted.map((c,i) => `${i+1}\n${toTs(c.s)} --> ${toTs(c.e)}\n${c.p}`).join('\n\n');
+                };
+
+                // Download all subtitle texts first
+                const subData = [];
+                for (let i = 0; i < subsToEmbed.length; i++) {
+                    const sub = subsToEmbed[i];
+                    if (statusInfo) statusInfo.textContent = `Fetching subtitle ${i+1}/${subsToEmbed.length}: ${sub.displayName || sub.language}...`;
+                    try {
+                        const bgFetch = await browser.runtime.sendMessage({ action: 'fetchText', url: sub.vttUrl });
+                        let text = bgFetch && bgFetch.text ? bgFetch.text : null;
+                        if (!text) {
+                            const resp = await spoofedFetch(sub.vttUrl);
+                            if (resp.ok) text = await resp.text();
+                        }
+                        if (text) {
+                            const cleaned = cleanVtt(text);
+                            if (cleaned) subData.push({ text: cleaned, language: sub.language, displayName: sub.displayName });
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch subtitle:', sub.displayName, err);
+                    }
+                }
+
+
+                if (statusInfo) statusInfo.textContent = 'Embedding subtitles with Mediabunny...';
+
+                // Setup Mediabunny Input + Output
+                const mbInput = new window.Mediabunny.Input({
+                    source: new window.Mediabunny.BlobSource(muxedBlob),
+                    formats: window.Mediabunny.ALL_FORMATS
+                });
+
+                let containerExt = '.mkv';
+                const mbOutputFormat = embedSubtitlesContainer === 'mp4'
+                    ? (containerExt = '.mp4', new window.Mediabunny.Mp4OutputFormat())
+                    : new window.Mediabunny.MkvOutputFormat();
+
+                const mbTarget = new window.Mediabunny.BufferTarget();
+                const mbOutput = new window.Mediabunny.Output({ format: mbOutputFormat, target: mbTarget });
+
+                // Init conversion on fresh output (handles video + audio tracks automatically)
+                const conversion = await window.Mediabunny.Conversion.init({ input: mbInput, output: mbOutput });
+
+                // Add subtitle tracks AFTER Conversion.init() but BEFORE execute()
+                const subSources = [];
+                for (let i = 0; i < subData.length; i++) {
+                    const { language, displayName } = subData[i];
+                    const subSource = new window.Mediabunny.TextSubtitleSource('webvtt');
+                    mbOutput.addSubtitleTrack(subSource, {
+                        languageCode: toIso3(language),
+                        name: displayName || `Subtitle ${i+1}`
+                    });
+                    subSources.push(subSource);
+                }
+
+                // Feed subtitle data concurrently with conversion.execute()
+                const feedSubs = async () => {
+                    for (let i = 0; i < subSources.length; i++) {
+                        await subSources[i].add(subData[i].text);
+                        if (typeof subSources[i]._flushAndClose === 'function') {
+                            await subSources[i]._flushAndClose();
+                        }
+                    }
+                };
+
+                await Promise.all([conversion.execute(), feedSubs()]);
+
+                const finalBlob = new Blob([mbTarget.buffer], {
+                    type: embedSubtitlesContainer === 'mp4' ? 'video/mp4' : 'video/x-matroska'
+                });
+                await mbInput.dispose();
+
+                const embedNewName = newName.replace(/\.[a-zA-Z0-9]+$/, '') + containerExt;
+                if (typeof finalizeDownload === 'function') {
+                    await finalizeDownload(finalBlob, embedNewName, downloadMethod, loadingBar, false, false);
+                } else {
+                    const finalBlobUrl = URL.createObjectURL(finalBlob);
+                    const a = document.createElement('a');
+                    a.href = finalBlobUrl;
+                    a.download = embedNewName;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(finalBlobUrl); }, 2000);
+                }
+
+            } else {
+                await downloadAndMuxYoutube(url, targetAudio, newName, downloadMethod, loadingBar);
+            }
+            
             console.log("downloadFile: downloadAndMuxYoutube finished successfully.");
             finishDownloadUI(downloadId, true);
+            if (subtitleUrl && !isSubtitleEmbed) {
+                let subExt = '.vtt';
+                if (subtitleUrl.toLowerCase().includes('fmt=srt') || subtitleUrl.toLowerCase().includes('.srt')) {
+                    subExt = '.srt';
+                }
+                const subSettings = await browser.storage.local.get(['subtitle-conversion']);
+                const subFormat = subSettings['subtitle-conversion'] || 'none';
+                if (subFormat !== 'none') {
+                    subExt = '.' + subFormat;
+                }
+                const subName = newName.replace(/\.[a-zA-Z0-9]+$/, '') + subExt;
+                downloadFile(subtitleUrl, null, 'unknown', false, null, null, subName);
+            }
         } catch (e) {
             console.error("downloadFile: Muxing failed", e);
             if (e.message !== "Cancelled") showDialog(browser.i18n.getMessage("downloadError", [e.message]));
@@ -3890,7 +4530,26 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
 
       if (!bgDownloadEnabled) {
 
+        let showNotif = false;
+        let notifId = '';
         try {
+          const showNotifRes = await browser.storage.local.get('fetch-notification');
+          showNotif = showNotifRes['fetch-notification'] !== '0';
+          notifId = 'fetch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+          if (showNotif) {
+            try {
+              browser.notifications.create(notifId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
+                title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
+                message: newName
+              });
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
+
           const response = await spoofedFetch(url);
 
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -3931,11 +4590,44 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
           const downloadMethod = await browser.storage.local.get('download-method').then(res => res['download-method'] || 'browser');
           await finalizeDownload(blob, newName, downloadMethod, loadingBar, false, false);
 
+          if (showNotif) {
+            try {
+              browser.notifications.clear(notifId);
+              const completeId = notifId + '_complete';
+              browser.notifications.create(completeId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
+                title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
+                message: newName
+              });
+              setTimeout(() => {
+                try { browser.notifications.clear(completeId); } catch (e) {}
+              }, 5000);
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
+
           setTimeout(() => {
             finishDownloadUI(downloadId, true);
           }, 2000);
         } catch (e) {
           console.error("Popup fetch error:", e);
+          if (showNotif && notifId) {
+            try {
+              browser.notifications.clear(notifId);
+              if (e.message !== "Cancelled") {
+                browser.notifications.create(notifId + '_error', {
+                  type: "basic",
+                  iconUrl: browser.runtime.getURL("icons/icon.png"),
+                  title: "Download failed",
+                  message: e.message
+                });
+              }
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
           if (e.message !== "Cancelled") showDialog(browser.i18n.getMessage("downloadError", [e.message]));
           finishDownloadUI(downloadId);
         }
@@ -4175,12 +4867,32 @@ async function addManualUrl(url) {
         timeStamp: Date.now(),
         tabId: activeTabId,
         pageTitle: originalName,
-        pageUrl: activeTabUrl
+        pageUrl: activeTabUrl,
+        isManual: true
     };
 
     const updates = {};
     updates[url] = [item];
     await browser.storage.session.set(updates);
+
+    const loadingSpinner = document.getElementById('loading-media-list');
+    if (loadingSpinner) loadingSpinner.style.display = 'block';
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+            credentials: 'include'
+        });
+        clearTimeout(timeoutId);
+        if (response.body) {
+            response.body.getReader().cancel().catch(() => {});
+        }
+    } catch (e) {
+        console.warn("Manual URL probing fetch aborted or failed:", e);
+    }
 
     await loadMediaList();
 

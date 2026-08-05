@@ -1,7 +1,7 @@
 {
     "name": "Website Media Downloader",
     "manifest_version": 3,
-    "version": "2.2.1",
+    "version": "2.2.5",
     "description": "__MSG_extensionDescription__",
     "author": "anpa26",
     "developer": {
@@ -49,6 +49,7 @@
     "background": {
         "service_worker": "network_detector.js",
         "scripts": [
+            "libraries/wymd.js",
             "libraries/client-zip.js",
             "network_detector.js"
         ]
@@ -69,20 +70,10 @@
                 "*://*.youtube.com/embed/*"
             ],
             "js": [
+                "libraries/wymd.js",
                 "yt_core.js"
             ],
             "run_at": "document_end",
-            "all_frames": true
-        },
-        {
-            "matches": [
-                "*://*.youtube.com/embed/*"
-            ],
-            "js": [
-                "yt_page.js"
-            ],
-            "run_at": "document_end",
-            "world": "MAIN",
             "all_frames": true
         },
         {
@@ -93,29 +84,16 @@
                 "*://*.youtube.com/embed/*"
             ],
             "js": [
+                "libraries/wymd.js",
                 "yt_core.js"
             ],
             "run_at": "document_end",
-            "all_frames": false
-        },
-        {
-            "matches": [
-                "*://*.youtube.com/*"
-            ],
-            "exclude_matches": [
-                "*://*.youtube.com/embed/*"
-            ],
-            "js": [
-                "yt_page.js"
-            ],
-            "run_at": "document_end",
-            "world": "MAIN",
             "all_frames": false
         }
     ],
     "icons": {
-        "96": "icons/icon.svg",
-        "128": "icons/icon.svg"
+        "96": "icons/icon.png",
+        "128": "icons/icon.png"
     },
     "action": {
         "default_title": "__MSG_actionTitle__"

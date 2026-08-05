@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "Nouveau sur cette extension ?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "Apprenez à utiliser correctement cette extension pour que les médias soient détectés et ne soyez pas perdu quand rien ne s'affiche.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "Découvrir les fonctionnalités",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "Passer",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "Télécharger les médias",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "Méthode de téléchargement",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "Choisissez le mécanisme de téléchargement. Remarque : les navigateurs mobiles ne prennent pas en charge la méthode 'Téléchargement intégré au navigateur'.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "Notifications de téléchargement"
+  },
+  "fetchNotificationExplain": {
+    "message": "Affiche une notification dans la barre de notifications de votre appareil quand un téléchargement démarre ou se termine."
+  },
+  "downloadingTitle": {
+    "message": "Téléchargement..."
+  },
+  "downloadCompleteTitle": {
+    "message": "Téléchargement terminé"
+  },
   "browserDownloadExplain": {
     "message": "Télécharger le média en utilisant la method de téléchargement native du navigateur. Rapide et fiable, mais fonctionne uniquement sur certains sites, et ne fonctionne pas sur Firefox pour Android.",
     "description": "The explanation of the browser download method."
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "Activer la notification de détection",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "Afficher un popup sur la page quand un média est détecté"
   },
   "mediaNotificationExplain": {
-    "message": "Afficher une notification lorsqu'un média est détecté sur un site web.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "Affiche un petit popup directement sur la page que vous visitez quand un nouveau média est trouvé."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "Afficher une notification sur l'appareil quand un média est détecté"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "Affiche une notification dans la barre de notifications de votre appareil quand un nouveau média est trouvé."
   },
   "stackNotificationsCheckbox": {
     "message": "Empiler les notifications",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "Choisissez comment l'extension s'ouvre lorsque vous cliquez sur son icône.",
+    "message": "Choisissez comment l'extension s'ouvre lorsque vous cliquez sur son icône. Remarque : les appareils mobiles ne prennent pas en charge l'option 'Fenêtre'.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "Limite personnalisée",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "Pas de sous-titres",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "Toutes les langues (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "Tous les sous-titres (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "Muxer toutes les pistes audio (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "Combine toutes les pistes audio dans le fichier vidéo final sous forme de plusieurs pistes audio sélectionnables au lieu de les compresser séparément dans un zip.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "Intégrer les sous-titres (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Lorsqu'elle est activée, le téléchargement de tous les sous-titres les intègre dans le fichier vidéo (MKV/MP4) à l'aide de Mediabunny. Lorsqu'elle est désactivée, les sous-titres sont téléchargés dans une archive ZIP.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Format du conteneur d'intégration des sous-titres",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Tous les sous-titres (Intégrés)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "Toutes les langues (Intégrées)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "Paramètres de notifications"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "Sources de mise à jour fiables",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "Source :",
+    "description": "Label for the update source in the update popup"
   }
 }

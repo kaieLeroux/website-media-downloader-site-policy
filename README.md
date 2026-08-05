@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.2.5-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -48,7 +48,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## What's New in v2.2.1
+## What's New in v2.2.5
 
 - **Media Card Theme Adaptation**: Adapted media cards to active theme colors and resolved custom hex color rendering issues; ensured theme color presets wrap and scroll cleanly.
 - **UI Scale DPI Settings**: Added UI Scale DPI settings with customizable display scaling options.
@@ -60,7 +60,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## Technical Features (v2.2.1)
+## Technical Features (v2.2.5)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:
@@ -247,10 +247,7 @@ If you want to develop this project further, please don't forget to include me i
 - MP3 Encoding: [lamejs](https://github.com/zhuker/lamejs)
 - Subtitle Processing: [subsrt](https://github.com/papnkukn/subsrt)
 - Media Processing: [libav.js](https://github.com/Yahweasel/libav.js/)
-- YouTube API: [YouTube.js](https://github.com/LuanRT/YouTube.js)
-
-### Iconography
-- Extension Iconography: Icons are derived from the Google Material Symbols and Icons library, utilized under the Apache License 2.0. Specific SVG implementations have been customized for the user interface.
+- YouTube API: [wymd.js](https://github.com/anpa26/wymd.js)
 
 ---
 

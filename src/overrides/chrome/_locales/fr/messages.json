@@ -224,6 +224,10 @@
         "message": "Méthode de téléchargement",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "Choisissez le mécanisme de téléchargement. Remarque : les navigateurs mobiles ne prennent pas en charge la méthode 'Téléchargement intégré au navigateur'.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "Télécharger le média en utilisant la method de téléchargement native du navigateur. Rapide et fiable, mais fonctionne uniquement sur certains sites, et ne fonctionne pas sur Firefox pour Android.",
         "description": "The explanation of the browser download method."
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "Choisissez comment l'extension s'ouvre lorsque vous cliquez sur son icône.",
+        "message": "Choisissez comment l'extension s'ouvre lorsque vous cliquez sur son icône. Remarque : les appareils mobiles ne prennent pas en charge l'option 'Fenêtre'.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

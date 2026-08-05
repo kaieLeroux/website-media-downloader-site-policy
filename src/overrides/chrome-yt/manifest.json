@@ -45,20 +45,10 @@
                 "*://*.youtube.com/embed/*"
             ],
             "js": [
+                "libraries/wymd.js",
                 "yt_core.js"
             ],
             "run_at": "document_end",
-            "all_frames": true
-        },
-        {
-            "matches": [
-                "*://*.youtube.com/embed/*"
-            ],
-            "js": [
-                "yt_page.js"
-            ],
-            "run_at": "document_end",
-            "world": "MAIN",
             "all_frames": true
         },
         {
@@ -69,23 +59,10 @@
                 "*://*.youtube.com/embed/*"
             ],
             "js": [
+                "libraries/wymd.js",
                 "yt_core.js"
             ],
             "run_at": "document_end",
-            "all_frames": false
-        },
-        {
-            "matches": [
-                "*://*.youtube.com/*"
-            ],
-            "exclude_matches": [
-                "*://*.youtube.com/embed/*"
-            ],
-            "js": [
-                "yt_page.js"
-            ],
-            "run_at": "document_end",
-            "world": "MAIN",
             "all_frames": false
         }
     ]

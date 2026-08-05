@@ -21,6 +21,11 @@ on:
           - 'both'
           - 'chrome only'
           - 'firefox only'
+      prerelease:
+        description: 'Publish as Pre-release'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -138,6 +143,7 @@ jobs:
           tag_name: ${{ github.event.inputs.tag_name }}
           name: ${{ steps.commit_info.outputs.release_name }}
           body: ${{ steps.commit_info.outputs.body }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: |
             website-media-downloader-chrome-*.zip
             website-media-downloader-firefox-*.xpi

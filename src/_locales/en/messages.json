@@ -1,4 +1,36 @@
 {
+  "welcomeTitle": {
+    "message": "New to this extension?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "Learn how to use this extension correctly so media can be detected and you won't be confused when nothing shows up.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "Learn the Features",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "Skip",
+    "description": "Welcome popup dismiss button"
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "Embed subtitles (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "When enabled, downloading all subtitles embeds them into the video file (MKV/MP4) using Mediabunny. When disabled, subtitles are downloaded in a ZIP archive.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Subtitle embed container format",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "All Subtitles (Embedded)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
   "actionTitle": {
     "message": "Download media",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -244,6 +276,22 @@
     "message": "Download method",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "Choose the download mechanism. Note: Mobile browsers do not support the 'Browser built-in' method.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "Download notifications"
+  },
+  "fetchNotificationExplain": {
+    "message": "Shows a notification in your device notification bar when a download starts and finishes."
+  },
+  "downloadingTitle": {
+    "message": "Downloading..."
+  },
+  "downloadCompleteTitle": {
+    "message": "Download completed"
+  },
   "browserDownloadExplain": {
     "message": "Downloads files using your browser's built in system. It is fast and can resume if disconnected, but may not work on all sites.",
     "description": "The explanation of the browser download method."
@@ -357,12 +405,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "Enable detection notification",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "Show popup on page when media detected"
   },
   "mediaNotificationExplain": {
-    "message": "Shows a notification on your screen whenever new media is successfully detected.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "Shows a small popup directly on the page you are browsing when new media is found."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "Show device notification when media detected"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "Shows a notification in your device notification bar when new media is found."
   },
   "stackNotificationsCheckbox": {
     "message": "Stack notifications",
@@ -489,7 +541,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "Sets how the application opens when you click its icon in the browser.",
+    "message": "Sets how the application opens when you click its icon in the browser. Note: mobile devices do not support 'Window'.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -1705,6 +1757,10 @@
     "message": "Subtitles",
     "description": "Folder title for subtitles."
   },
+  "noSubtitles": {
+    "message": "No Subtitles",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
   "groupByFileTitle": {
     "message": "Files",
     "description": "Folder title for generic files."
@@ -2058,5 +2114,36 @@
   "limitCustom": {
     "message": "Custom Limit",
     "description": "Label for custom limit setting option."
+  },
+  "allLanguagesZip": {
+    "message": "All Languages (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "All Subtitles (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "Mux all audio tracks (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "Combines all audio tracks into the final video file as multiple selectable audio tracks instead of zipping them separately.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "allLanguagesMux": {
+    "message": "All Languages (Embedded)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "Notification Settings"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "Trusted Update Sources",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "Source:",
+    "description": "Label for the update source in the update popup"
   }
 }

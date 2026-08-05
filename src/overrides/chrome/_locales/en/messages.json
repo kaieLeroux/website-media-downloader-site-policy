@@ -244,6 +244,10 @@
         "message": "Download method",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "Choose the download mechanism. Note: Mobile browsers do not support the 'Browser built-in' method.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "Downloads files using your browser's built in system. It is fast and can resume if disconnected, but may not work on all sites.",
         "description": "The explanation of the browser download method."
@@ -458,7 +462,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "Sets how the application opens when you click its icon in the browser.",
+        "message": "Sets how the application opens when you click its icon in the browser. Note: mobile devices do not support 'Window'.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

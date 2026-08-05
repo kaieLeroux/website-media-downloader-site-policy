@@ -220,7 +220,7 @@ If you want to develop this project further, please don't forget to include me i
 - MP3 Encoding: [lamejs](https://github.com/zhuker/lamejs)
 - Subtitle Processing: [subsrt](https://github.com/papnkukn/subsrt)
 - Media Processing: [libav.js](https://github.com/Yahweasel/libav.js/)
-- YouTube API: [YouTube.js](https://github.com/LuanRT/YouTube.js)
+- YouTube API: [wymd.js](https://github.com/anpa26/wymd.js)
 
 ### Iconography
 - Extension Iconography: Icons are derived from the Google Material Symbols and Icons library, utilized under the Apache License 2.0. Specific SVG implementations have been customized for the user interface.

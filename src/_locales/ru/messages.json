@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "Впервые используете это расширение?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "Узнайте, как правильно использовать это расширение, чтобы медиафайлы обнаруживались и вы не растерялись, когда ничего не отображается.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "Изучить функции",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "Пропустить",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "Скачать медиа",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "Метод скачивания",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "Выберите механизм загрузки. Примечание: мобильные браузеры не поддерживают метод 'Встроенная загрузка браузера'.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "Уведомления о загрузке"
+  },
+  "fetchNotificationExplain": {
+    "message": "Показывает уведомление в панели уведомлений устройства при начале и завершении загрузки."
+  },
+  "downloadingTitle": {
+    "message": "Скачивание..."
+  },
+  "downloadCompleteTitle": {
+    "message": "Загрузка завершена"
+  },
   "browserDownloadExplain": {
     "message": "Скачивание с использованием встроенного менеджера загрузок браузера. Это быстро и поддерживает докачку при обрыве связи, но работает только на некоторых сайтах и в определенных браузерах (Firefox для ПК).",
     "description": "The explanation of the browser download method."
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "Включить уведомление об обнаружении",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "Показывать всплывающее окно на странице при обнаружении медиа"
   },
   "mediaNotificationExplain": {
-    "message": "Отображать уведомление при обнаружении медиа на веб-сайте.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "Показывает небольшое всплывающее окно прямо на просматриваемой странице при обнаружении нового медиа."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "Показывать уведомление устройства при обнаружении медиа"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "Показывает уведомление в панели уведомлений устройства при обнаружении нового медиа."
   },
   "stackNotificationsCheckbox": {
     "message": "Накапливать уведомления",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "Выберите, как открывается расширение при нажатии на иконку.",
+    "message": "Выберите, как открывается расширение при нажатии на иконку. Примечание: мобильные устройства не поддерживают вариант 'Окно'.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "Пользовательский лимит",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "Без субтитров",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "Все языки (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "Все субтитры (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "Объединить все аудиодорожки (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "Объединяет все аудиодорожки в итоговый видеофайл в виде нескольких выбираемых аудиодорожек вместо их раздельного архивирования в zip.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "Встроить субтитры (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Если включено, скачивание всех субтитров встроит их в видеофайл (MKV/MP4) с помощью Mediabunny. Если выключено, субтитры будут скачаны в виде ZIP-архива.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Контейнерный формат встроенных субтитров",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Все субтитры (Встроенные)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "Все языки (Встроенные)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "Настройки уведомлений"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "Надежные источники обновлений",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "Источник:",
+    "description": "Label for the update source in the update popup"
   }
 }

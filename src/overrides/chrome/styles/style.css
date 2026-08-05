@@ -32,6 +32,12 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    width: 550px;
+    height: 600px;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -39,11 +45,28 @@ body {
     background-color: rgb(var(--mdui-color-surface));
     color: rgb(var(--mdui-color-on-surface));
     overflow-x: hidden;
+    overflow-y: auto;
 }
 
-body.is-popup {
-    width: 550px;
-    height: 600px;
+html.is-tab,
+body.is-tab {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+}
+
+html.is-mobile,
+body.is-mobile {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (max-width: 600px) {
+    html:not(.is-popup),
+    body:not(.is-popup) {
+        width: 100% !important;
+        height: 100% !important;
+    }
 }
 
 mdui-tabs {

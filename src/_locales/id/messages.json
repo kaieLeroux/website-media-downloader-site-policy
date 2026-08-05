@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "Baru menggunakan extension ini?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "Pelajari cara menggunakan extension ini dengan benar agar media dapat terdeteksi dan tidak bingung saat tidak ada yang muncul.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "Pelajari Fitur Sekarang",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "Lewati",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "Unduh media",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -244,6 +260,22 @@
     "message": "Metode unduhan",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "Pilih mekanisme unduhan berkas. Catatan: Peramban (browser) HP/Mobile tidak mendukung metode 'Unduhan bawaan peramban'.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "Notifikasi unduhan"
+  },
+  "fetchNotificationExplain": {
+    "message": "Menampilkan notifikasi di bilah notifikasi perangkat saat unduhan dimulai dan selesai."
+  },
+  "downloadingTitle": {
+    "message": "Mengunduh..."
+  },
+  "downloadCompleteTitle": {
+    "message": "Unduhan selesai"
+  },
   "browserDownloadExplain": {
     "message": "Mengunduh file menggunakan sistem bawaan peramban. Cara ini cepat dan bisa dilanjutkan jika terputus, tapi tidak didukung di semua situs.",
     "description": "The explanation of the browser download method."
@@ -301,7 +333,7 @@
     "description": "Toggle visibility of video files"
   },
   "onlyVideoExplain": {
-    "message": "Hanya menampilkan file video saja di daftar media.",
+    "message": "Menampilkan file video di daftar media.",
     "description": "Explains purpose of video filter"
   },
   "onlyAudioTitle": {
@@ -309,7 +341,7 @@
     "description": "Toggle visibility of audio files"
   },
   "onlyAudioExplain": {
-    "message": "Hanya menampilkan file musik dan suara saja di daftar media.",
+    "message": "Menampilkan file musik dan suara di daftar media.",
     "description": "Explains purpose of audio filter"
   },
   "onlyStreamTitle": {
@@ -317,7 +349,7 @@
     "description": "Toggle visibility of stream files"
   },
   "onlyStreamExplain": {
-    "message": "Hanya menampilkan file siaran langsung atau format streaming di daftar media.",
+    "message": "Menampilkan file siaran langsung atau format streaming di daftar media.",
     "description": "Explains purpose of stream filter"
   },
   "onlyImageTitle": {
@@ -325,7 +357,7 @@
     "description": "Toggle visibility of image files"
   },
   "onlyImageExplain": {
-    "message": "Hanya menampilkan file gambar dan foto di daftar media.",
+    "message": "Menampilkan file gambar dan foto di daftar media.",
     "description": "Explains purpose of image filter"
   },
   "onlySubtitleTitle": {
@@ -333,7 +365,7 @@
     "description": "Toggle visibility of subtitle files"
   },
   "onlySubtitleExplain": {
-    "message": "Hanya menampilkan file teks terjemahan atau takarir di daftar media.",
+    "message": "Menampilkan file teks terjemahan atau takarir di daftar media.",
     "description": "Explains the filter for subtitle files"
   },
   "onlyFileTitle": {
@@ -341,7 +373,7 @@
     "description": "Toggle visibility of download links and general files"
   },
   "onlyFileExplain": {
-    "message": "Hanya menampilkan berkas umum dan tautan unduhan di daftar media.",
+    "message": "Menampilkan berkas umum dan tautan unduhan di daftar media.",
     "description": "Explains the filter for download links"
   },
   "ignoreDisabledTypesTitle": {
@@ -357,12 +389,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "Aktifkan notifikasi deteksi",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "Tampilkan popup di halaman saat media terdeteksi"
   },
   "mediaNotificationExplain": {
-    "message": "Menampilkan pemberitahuan di layar Anda setiap kali ada media baru yang berhasil dideteksi.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "Menampilkan popup kecil langsung di halaman yang sedang Anda buka saat media baru ditemukan."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "Tampilkan notifikasi perangkat saat media terdeteksi"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "Menampilkan notifikasi di bilah notifikasi perangkat Anda saat media baru ditemukan."
   },
   "stackNotificationsCheckbox": {
     "message": "Tumpuk notifikasi",
@@ -489,7 +525,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "Mengatur tampilan aplikasi saat Anda mengklik ikonnya di peramban.",
+    "message": "Mengatur tampilan aplikasi saat Anda mengklik ikonnya di peramban. Catatan: perangkat mobile tidak mendukung pilihan 'Jendela'.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -1700,6 +1736,10 @@
     "message": "Subtitel",
     "description": "Folder title for subtitles."
   },
+  "noSubtitles": {
+    "message": "Tanpa Subtitel",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
   "groupByFileTitle": {
     "message": "Berkas Lainnya",
     "description": "Folder title for generic files."
@@ -2049,10 +2089,56 @@
   "officialWebsite": {
     "message": "Website Resmi",
     "description": "Label for the official website link in the About page."
-  }
-,
+  },
   "limitCustom": {
     "message": "Batas Kustom",
     "description": "Label for custom limit setting option."
+  },
+  "allLanguagesZip": {
+    "message": "Semua Bahasa (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "Semua Subtitel (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "Gabung semua bahasa audio (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "Menggabungkan semua bahasa audio ke dalam satu file video akhir sebagai track audio yang dapat dipilih, alih-alih mengompresinya secara terpisah ke zip.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "Gabungkan subtitle (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Jika diaktifkan, mengunduh semua subtitle akan menggabungkannya ke dalam satu file video (MKV/MP4) menggunakan Mediabunny. Jika dinonaktifkan, subtitle akan diunduh sebagai file ZIP terpisah.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Format kontainer gabungan subtitle",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Semua Subtitle (Digabungkan)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "Semua Bahasa (Digabungkan)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "Pengaturan Notifikasi"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "Sumber Pembaruan Tepercaya",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "Sumber:",
+    "description": "Label for the update source in the update popup"
   }
 }

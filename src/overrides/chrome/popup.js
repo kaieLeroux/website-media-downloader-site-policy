@@ -56,8 +56,13 @@ function getActiveRequests() {
 async function spoofedFetch(url, options = {}) {
   try {
     const headers = await browser.runtime.sendMessage({ action: 'getSpoofedHeaders', url: url });
+    options.headers = options.headers || {};
+    if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+      options.headers['Referer'] = 'https://www.youtube.com/';
+      options.referrer = 'https://www.youtube.com/';
+      options.headers['Origin'] = 'https://www.youtube.com';
+    }
     if (headers) {
-      options.headers = options.headers || {};
       if (headers.cookie) options.headers['Cookie'] = headers.cookie;
       if (headers.referer) {
         options.headers['Referer'] = headers.referer;
@@ -68,6 +73,12 @@ async function spoofedFetch(url, options = {}) {
     }
   } catch (e) {
     console.warn("Failed to get spoofed headers, falling back to normal fetch:", e);
+    if (url.includes('googlevideo.com') || url.includes('youtube.com')) {
+      options.headers = options.headers || {};
+      options.headers['Referer'] = 'https://www.youtube.com/';
+      options.referrer = 'https://www.youtube.com/';
+      options.headers['Origin'] = 'https://www.youtube.com';
+    }
   }
   return fetch(url, options);
 }
@@ -125,6 +136,24 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
+async function getSpecificReleaseUrl(version) {
+  const RELEASES_API_URL = 'https://api.github.com/repos/anpa26/website-media-downloader/releases';
+  try {
+    const res = await fetch(RELEASES_API_URL + '?per_page=20&t=' + Date.now());
+    if (!res.ok) return null;
+    const releases = await res.json();
+    const tag = 'v' + version;
+    // Prefer Latest (non-prerelease) first, then Pre-release
+    const latest = releases.find(r => r.tag_name === tag && !r.prerelease && !r.draft);
+    if (latest) return latest.html_url;
+    const prerelease = releases.find(r => r.tag_name === tag && r.prerelease && !r.draft);
+    if (prerelease) return prerelease.html_url;
+  } catch (e) {
+    console.warn('Failed to fetch specific release URL:', e);
+  }
+  return null;
+}
+
 async function performUpdateCheck() {
   const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
   const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
@@ -170,7 +199,10 @@ async function performUpdateCheck() {
       if (amoVersion && compareVersions(amoVersion, githubVersion) === 0) {
         return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL };
       } else {
-        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+        const specificUrl = await getSpecificReleaseUrl(githubVersion);
+        if (specificUrl) {
+          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+        }
       }
     }
   } else {
@@ -180,7 +212,10 @@ async function performUpdateCheck() {
         const data = await response.json();
         const githubVersion = data.version;
         if (compareVersions(githubVersion, currentVersion) > 0) {
-          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: RELEASES_URL };
+          const specificUrl = await getSpecificReleaseUrl(githubVersion);
+          if (specificUrl) {
+            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+          }
         }
       }
     } catch (e) {
@@ -190,6 +225,16 @@ async function performUpdateCheck() {
   }
 
   return { updateAvailable: false, latestVersion: currentVersion, updateUrl: '' };
+}
+
+function getUpdateSourceInfo(url) {
+  if (url.includes('addons.mozilla.org')) {
+    return { label: 'Firefox Add-ons', short: 'addons.mozilla.org' };
+  }
+  if (url.includes('github.com')) {
+    return { label: 'GitHub Releases', short: 'github.com' };
+  }
+  return { label: url, short: url };
 }
 
 function showTopBarUpdateNotification(url, latestVersion) {
@@ -203,9 +248,15 @@ function showTopBarUpdateNotification(url, latestVersion) {
     textSpan.textContent = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
   }
 
+  const sourceLabel = document.getElementById('update-source-label');
+  if (sourceLabel) {
+    const info = getUpdateSourceInfo(url);
+    sourceLabel.textContent = info.short;
+    sourceLabel.style.display = 'inline';
+  }
+
   const updateLink = document.getElementById('update-link');
   if (updateLink) {
-
     const newUpdateLink = updateLink.cloneNode(true);
     updateLink.parentNode.replaceChild(newUpdateLink, updateLink);
     newUpdateLink.addEventListener('click', () => {
@@ -228,9 +279,14 @@ function showUpdateDialog(url, latestVersion) {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
 
+  const source = getUpdateSourceInfo(url);
   const description = document.createElement('div');
   description.setAttribute('slot', 'description');
-  description.innerHTML = browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`;
+  description.innerHTML = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`) +
+    `<div style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--on-surface-variant);">
+      <span>${browser.i18n.getMessage('updateSourceLabel') || 'Source:'}</span>
+      <span style="color: var(--primary); font-weight: 600; background: rgba(var(--mdui-color-primary), 0.1); padding: 1px 8px; border-radius: 99px;">${source.label}</span>
+    </div>`;
   dialog.appendChild(description);
 
   const laterButton = document.createElement('mdui-button');
@@ -568,12 +624,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isMobile) {
+    document.documentElement.classList.add('is-mobile');
+    document.body.classList.add('is-mobile');
+  }
+  if (urlParams.get('options') === 'true' || mode === 'tab' || mode === 'window') {
+    document.documentElement.classList.add('is-tab');
+    document.body.classList.add('is-tab');
+  } else {
+    document.documentElement.classList.add('is-popup');
+    document.body.classList.add('is-popup');
+  }
+
   if (urlParams.get('options') === 'true') {
     document.getElementById('navbar').value = 'settings';
   } else {
-    if (mode !== 'tab' && mode !== 'window') {
-      document.body.classList.add('is-popup');
-    }
     if (urlParams.get('tab') === 'history') {
       document.getElementById('navbar').value = 'history';
       loadHistoryList();
@@ -2277,14 +2343,18 @@ async function loadMediaList() {
       const lastResponseHeaders = requests[requests.length - 1].responseHeaders;
       if (checkIsSegment(rawUrl, lastResponseHeaders, settings)) continue;
 
-      const type = getMediaType(rawUrl, lastResponseHeaders);
+      let type = getMediaType(rawUrl, lastResponseHeaders);
+      const isManualItem = requests.some(r => r.isManual);
+      if (!type && isManualItem) {
+          type = 'file';
+      }
       if (!type) continue;
 
       const showVideo = isFlagEnabled(settings['only-video'], true);
       const showAudio = isFlagEnabled(settings['only-audio'], true);
       const showStream = isFlagEnabled(settings['only-stream'], true);
-      const showImage = isFlagEnabled(settings['only-image'], false);
-      const showSubtitle = isFlagEnabled(settings['only-subtitle'], false);
+      const showImage = isFlagEnabled(settings['only-image'], true);
+      const showSubtitle = isFlagEnabled(settings['only-subtitle'], true);
       const showFile = isFlagEnabled(settings['only-file'], true);
 
       if (type === 'video' && !showVideo) continue;
@@ -2419,7 +2489,7 @@ async function loadMediaList() {
         });
     });
 
-    const isDisableDeduplication = isFlagEnabled(settings['disable-deduplication']);
+    const isDisableDeduplication = isFlagEnabled(settings['disable-deduplication'], true);
     const filenameGroupsMap = new Map();
     groupsWithNames.forEach((item, index) => {
         let nameKey;
@@ -2530,14 +2600,14 @@ async function loadMediaList() {
       }
     });
     let limitStr = settings['limit-media-list'];
-    let limit = 20;
+    let limit = 0;
     if (limitStr === 'custom') {
       limit = parseInt(settings['limit-media-list-custom']) || 0;
     } else if (limitStr) {
       limit = parseInt(limitStr);
     }
     if (settings['optimize-low-end'] === '1' || settings['optimize-low-end'] === true) {
-      limit = 10;
+      limit = 0;
     }
     if (limit > 0 && flattenedRequests.length > limit) {
       flattenedRequests.length = limit;
@@ -2765,8 +2835,8 @@ async function loadHistoryList() {
     const showVideo = isFlagEnabled(settings['only-video'], true);
     const showAudio = isFlagEnabled(settings['only-audio'], true);
     const showStream = isFlagEnabled(settings['only-stream'], true);
-    const showImage = isFlagEnabled(settings['only-image'], false);
-    const showSubtitle = isFlagEnabled(settings['only-subtitle'], false);
+    const showImage = isFlagEnabled(settings['only-image'], true);
+    const showSubtitle = isFlagEnabled(settings['only-subtitle'], true);
     const showFile = isFlagEnabled(settings['only-file'], true);
 
     if (type === 'video' && !showVideo) return;
@@ -2918,8 +2988,8 @@ async function loadAboutPage() {
     let html = `
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 24px;">
         <div style="text-align: center; padding: 24px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
-          <div style="width: 48px; height: 48px; margin: 0 auto 16px; color: var(--primary);">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          <div style="width: 48px; height: 48px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+            <img src="${browser.runtime.getURL('icons/icon.png')}" style="width: 48px; height: 48px; object-fit: contain;">
           </div>
           <h1 style="margin: 0; font-size: 1.4rem; font-weight: 700; color: rgb(var(--mdui-color-on-surface));">${data.extension.name}</h1>
           <p style="font-size: 0.9rem; line-height: 1.6; margin: 16px 0 0; color: var(--on-surface-variant);">${browser.i18n.getMessage("extensionDescriptionAbout") || data.extension.description}</p>
@@ -2937,7 +3007,25 @@ async function loadAboutPage() {
           </div>
           <div id="update-status-text" style="font-size: 0.75rem; font-weight: 500; text-align: center; display: none; color: var(--on-surface-variant); border-top: 1px solid rgba(var(--mdui-color-outline-variant), 0.5); margin-top: 4px; padding-top: 8px;"></div>
         </div>
-    `;
+
+        <div style="padding: 12px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--on-surface-variant); margin-bottom: 8px;">${browser.i18n.getMessage('trustedUpdateSourcesTitle') || 'Trusted Update Sources'}</div>
+          <div style="display: flex; gap: 8px;">
+            <a href="https://github.com/anpa26/website-media-downloader/releases" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              GitHub Release
+            </a>
+            <a href="https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader/" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #FF7139; flex-shrink: 0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 7.312c.459.63.784 1.353.957 2.118-.495-.302-1.177-.46-1.957-.46-.948 0-1.74.268-2.269.705.025-.21.038-.426.038-.645 0-1.696-.647-3.24-1.698-4.401.977.175 1.889.578 2.646 1.165.108.08.214.163.317.249.001.001.002.001.003.002.013.012.026.022.039.033.08.072.158.146.234.222a6.01 6.01 0 0 1 1.69 1.012zm-9.905 2.118c.173-.765.498-1.488.957-2.118a6.01 6.01 0 0 1 1.69-1.012c.076-.076.154-.15.234-.222.013-.011.026-.021.039-.033.001-.001.002-.001.003-.002.103-.086.209-.169.317-.249a5.974 5.974 0 0 1 2.646-1.165C12.493 5.91 11.846 7.454 11.846 9.15c0 .219.013.435.038.645-.529-.437-1.321-.705-2.269-.705-.78 0-1.462.158-1.957.46zm4.343 9.327a3.966 3.966 0 0 1-3.963-3.963c0-2.188 1.776-3.963 3.963-3.963s3.963 1.775 3.963 3.963a3.967 3.967 0 0 1-3.963 3.963z"/></svg>
+              Firefox Add-on
+            </a>
+          </div>
+          <a href="https://wmd.devianproject.tech/download" target="_blank" style="margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 8px 12px; background: rgba(var(--mdui-color-primary), 0.08); border: 1px solid rgba(var(--mdui-color-primary), 0.15); border-radius: 12px; transition: background 0.2s;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            WMD Official Web
+          </a>
+        </div>
+      `;
 
     html += `
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -3826,7 +3914,26 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
 
       if (!bgDownloadEnabled) {
 
+        let showNotif = false;
+        let notifId = '';
         try {
+          const showNotifRes = await browser.storage.local.get('fetch-notification');
+          showNotif = showNotifRes['fetch-notification'] !== '0';
+          notifId = 'fetch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+          if (showNotif) {
+            try {
+              browser.notifications.create(notifId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
+                title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
+                message: newName
+              });
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
+
           const response = await spoofedFetch(url);
 
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -3867,11 +3974,44 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
           const downloadMethod = await browser.storage.local.get('download-method').then(res => res['download-method'] || 'browser');
           await finalizeDownload(blob, newName, downloadMethod, loadingBar, false, false);
 
+          if (showNotif) {
+            try {
+              browser.notifications.clear(notifId);
+              const completeId = notifId + '_complete';
+              browser.notifications.create(completeId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
+                title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
+                message: newName
+              });
+              setTimeout(() => {
+                try { browser.notifications.clear(completeId); } catch (e) {}
+              }, 5000);
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
+
           setTimeout(() => {
             finishDownloadUI(downloadId, true);
           }, 2000);
         } catch (e) {
           console.error("Popup fetch error:", e);
+          if (showNotif && notifId) {
+            try {
+              browser.notifications.clear(notifId);
+              if (e.message !== "Cancelled") {
+                browser.notifications.create(notifId + '_error', {
+                  type: "basic",
+                  iconUrl: browser.runtime.getURL("icons/icon.png"),
+                  title: "Download failed",
+                  message: e.message
+                });
+              }
+            } catch (err) {
+              console.warn("Notifications API error:", err);
+            }
+          }
           if (e.message !== "Cancelled") showDialog(browser.i18n.getMessage("downloadError", [e.message]));
           finishDownloadUI(downloadId);
         }
@@ -4119,12 +4259,32 @@ async function addManualUrl(url) {
         timeStamp: Date.now(),
         tabId: activeTabId,
         pageTitle: originalName,
-        pageUrl: activeTabUrl
+        pageUrl: activeTabUrl,
+        isManual: true
     };
 
     const updates = {};
     updates[url] = [item];
     await browser.storage.session.set(updates);
+
+    const loadingSpinner = document.getElementById('loading-media-list');
+    if (loadingSpinner) loadingSpinner.style.display = 'block';
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+            credentials: 'include'
+        });
+        clearTimeout(timeoutId);
+        if (response.body) {
+            response.body.getReader().cancel().catch(() => {});
+        }
+    } catch (e) {
+        console.warn("Manual URL probing fetch aborted or failed:", e);
+    }
 
     await loadMediaList();
 

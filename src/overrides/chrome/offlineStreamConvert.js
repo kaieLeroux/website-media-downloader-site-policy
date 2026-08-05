@@ -1328,7 +1328,7 @@ async function convertAudioToMp3IfEnabled(blob, filename, loadingBar = null, che
                 return reject(new Error("Cancelled"));
             }
             const bitrateRes = await browser.storage.local.get('mp3-bitrate');
-            const bitrate = bitrateRes['mp3-bitrate'] || '128';
+            const bitrate = bitrateRes['mp3-bitrate'] || '320';
             worker.postMessage({ id: Date.now(), data: buffer, filename, bitrate });
         }).catch(err => {
             console.error("Failed to read blob for MP3 conversion:", err);

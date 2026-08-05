@@ -224,6 +224,10 @@
         "message": "Download-Methode",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "Wählen Sie den Download-Mechanismus. Hinweis: Mobile Browser unterstützen die Methode 'Integrierter Browser-Download' nicht.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "Lädt Medien über den nativen Download-Manager des Browsers herunter. Schnell und stabil bei Verbindungsabbrüchen, funktioniert jedoch nur auf bestimmten Websites und Browsern (z.B. Firefox am PC).",
         "description": "The explanation of the browser download method."
@@ -321,7 +325,7 @@
         "description": "Toggle visibility of download links and general files"
     },
     "onlyFileExplain": {
-        "message": "Zeigt nur allgemeine Dateien und Download-Links in der Medienliste an.",
+        "message": "Erkannte allgemeine Dateien und Download-Links in der Medienliste anzeigen.",
         "description": "Explains the filter for download links"
     },
     "ignoreDisabledTypesTitle": {
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "Wähle, wie das Add-on geöffnet werden soll, wenn du auf das Symbol klickst.",
+        "message": "Wähle, wie das Add-on geöffnet werden soll, wenn du auf das Symbol klickst. Hinweis: Mobilgeräte unterstützen die Option 'Fenster' nicht.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

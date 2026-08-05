@@ -40,7 +40,7 @@ const BUILD_DIR = path.join(ROOT, 'build');
 const EXCLUDE_FROM_BUILD = new Set(['build.js', 'overrides']);
 
 const EXCLUDE_PER_TARGET = {
-    chrome: new Set(['yt_core.js', 'yt_page.js', 'youtubei.js']),
+    chrome: new Set(['yt_core.js', 'wymd.js']),
     'chrome-yt': new Set(),
     firefox: new Set()
 };

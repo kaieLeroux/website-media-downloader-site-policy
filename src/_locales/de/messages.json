@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "Neu bei dieser Erweiterung?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "Lerne, wie du diese Erweiterung richtig verwendest, damit Medien erkannt werden und du nicht verwirrt bist, wenn nichts angezeigt wird.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "Funktionen entdecken",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "Überspringen",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "Medien herunterladen",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "Download-Methode",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "Wählen Sie den Download-Mechanismus. Hinweis: Mobile Browser unterstützen die Methode 'Integrierter Browser-Download' nicht.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "Download-Benachrichtigungen"
+  },
+  "fetchNotificationExplain": {
+    "message": "Zeigt eine Benachrichtigung in der Benachrichtigungsleiste an, wenn ein Download startet oder endet."
+  },
+  "downloadingTitle": {
+    "message": "Herunterladen..."
+  },
+  "downloadCompleteTitle": {
+    "message": "Download abgeschlossen"
+  },
   "browserDownloadExplain": {
     "message": "Lädt Medien über den nativen Download-Manager des Browsers herunter. Schnell und stabil bei Verbindungsabbrüchen, funktioniert jedoch nur auf bestimmten Websites und Browsern (z.B. Firefox am PC).",
     "description": "The explanation of the browser download method."
@@ -321,7 +353,7 @@
     "description": "Toggle visibility of download links and general files"
   },
   "onlyFileExplain": {
-    "message": "Zeigt nur allgemeine Dateien und Download-Links in der Medienliste an.",
+    "message": "Erkannte allgemeine Dateien und Download-Links in der Medienliste anzeigen.",
     "description": "Explains the filter for download links"
   },
   "ignoreDisabledTypesTitle": {
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "Erkennungsbenachrichtigung aktivieren",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "Popup auf der Seite anzeigen, wenn Medien erkannt werden"
   },
   "mediaNotificationExplain": {
-    "message": "Eine Benachrichtigung anzeigen, wenn Medien auf einer Website erkannt werden.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "Zeigt ein kleines Popup direkt auf der besuchten Seite an, wenn neue Medien gefunden werden."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "Gerätebenachrichtigung anzeigen, wenn Medien erkannt werden"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "Zeigt eine Benachrichtigung in der Benachrichtigungsleiste Ihres Geräts an, wenn neue Medien gefunden werden."
   },
   "stackNotificationsCheckbox": {
     "message": "Benachrichtigungen stapeln",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "Wähle, wie das Add-on geöffnet werden soll, wenn du auf das Symbol klickst.",
+    "message": "Wähle, wie das Add-on geöffnet werden soll, wenn du auf das Symbol klickst. Hinweis: Mobilgeräte unterstützen die Option 'Fenster' nicht.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "Benutzerdefiniertes Limit",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "Keine Untertitel",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "Alle Sprachen (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "Alle Untertitel (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "Alle Audiospuren zusammenführen (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "Kombiniert alle Audiospuren in der endgültigen Videodatei als mehrere auswählbare Audiospuren, anstatt sie separat als ZIP-Archiv zu komprimieren.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "Untertitel einbetten (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Wenn aktiviert, werden beim Herunterladen aller Untertitel diese mithilfe von Mediabunny in die Videodatei (MKV/MP4) eingebettet. Wenn deaktiviert, werden die Untertitel in einem ZIP-Archiv heruntergeladen.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Untertitel-Einbettungs-Containerformat",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Alle Untertitel (Eingebettet)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "Alle Sprachen (Eingebettet)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "Benachrichtigungseinstellungen"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "Vertrauenswürdige Update-Quellen",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "Quelle:",
+    "description": "Label for the update source in the update popup"
   }
 }

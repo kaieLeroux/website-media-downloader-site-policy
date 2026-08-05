@@ -224,6 +224,10 @@
         "message": "Método de download",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "Escolha o mecanismo de download. Nota: Os navegadores móveis não suportam o método 'Download integrado do navegador'.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "Baixe a mídia menggunakan o gerenciador de downloads nativo do navegador. Rápido e lida com desconexões, mas só funciona em alguns sites e em alguns navegadores (Firefox para PC).",
         "description": "The explanation of the browser download method."
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "Escolha como o add-on será aberto quando você clicar no ícone.",
+        "message": "Escolha como o add-on será aberto quando você clicar no ícone. Nota: os dispositivos móveis não suportam a opção 'Janela'.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

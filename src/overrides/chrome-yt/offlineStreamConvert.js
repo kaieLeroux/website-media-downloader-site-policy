@@ -1328,7 +1328,7 @@ async function convertAudioToMp3IfEnabled(blob, filename, loadingBar = null, che
                 return reject(new Error("Cancelled"));
             }
             const bitrateRes = await browser.storage.local.get('mp3-bitrate');
-            const bitrate = bitrateRes['mp3-bitrate'] || '128';
+            const bitrate = bitrateRes['mp3-bitrate'] || '320';
             worker.postMessage({ id: Date.now(), data: buffer, filename, bitrate });
         }).catch(err => {
             console.error("Failed to read blob for MP3 conversion:", err);
@@ -3080,7 +3080,7 @@ async function selectMPDAudioRepresentation(reps) {
 }
 
 
-async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMethod, loadingBar) {
+async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMethod, loadingBar, returnBlob = false) {
     console.log("downloadAndMuxYoutube: Starting...");
     const statusInfo = loadingBar ? loadingBar.parentNode.querySelector('.download-status-info') : null;
     if (statusInfo) statusInfo.textContent = "Initializing...";
@@ -3292,16 +3292,33 @@ async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMetho
         };
 
         console.log("downloadAndMuxYoutube: Fetching video and audio data...");
-        const [videoData, audioData] = await Promise.all([
-            fetchAsUint8Array(videoUrl).then(data => {
-                console.log("downloadAndMuxYoutube: Video data fetched (" + data.length + " bytes)");
-                return data;
-            }),
-            fetchAsUint8Array(audioUrl).then(data => {
-                console.log("downloadAndMuxYoutube: Audio data fetched (" + data.length + " bytes)");
-                return data;
-            })
-        ]);
+        const isMultiAudio = Array.isArray(audioUrl);
+        let videoData;
+        let audioDatas = [];
+
+        if (isMultiAudio) {
+            videoData = await fetchAsUint8Array(videoUrl);
+            console.log("downloadAndMuxYoutube: Video data fetched (" + videoData.length + " bytes)");
+            for (let i = 0; i < audioUrl.length; i++) {
+                if (statusInfo) statusInfo.textContent = `Fetching audio ${i+1}/${audioUrl.length}: ${audioUrl[i].name}...`;
+                const data = await fetchAsUint8Array(audioUrl[i].url);
+                console.log(`downloadAndMuxYoutube: Audio data ${i+1} fetched (${data.length} bytes)`);
+                audioDatas.push({ data: data, url: audioUrl[i].url, name: audioUrl[i].name });
+            }
+        } else {
+            const [vData, aData] = await Promise.all([
+                fetchAsUint8Array(videoUrl).then(data => {
+                    console.log("downloadAndMuxYoutube: Video data fetched (" + data.length + " bytes)");
+                    return data;
+                }),
+                fetchAsUint8Array(audioUrl).then(data => {
+                    console.log("downloadAndMuxYoutube: Audio data fetched (" + data.length + " bytes)");
+                    return data;
+                })
+            ]);
+            videoData = vData;
+            audioDatas.push({ data: aData, url: audioUrl, name: "Default Audio" });
+        }
 
         console.log("downloadAndMuxYoutube: Data fetch complete. Starting muxing...");
 
@@ -3357,29 +3374,41 @@ async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMetho
         }
 
         const videoExt = getExtFromUrl(videoUrl);
-        const audioExt = getExtFromUrl(audioUrl);
         const videoFile = 'input_video' + videoExt;
-        const audioFile = 'input_audio' + audioExt;
-        const targetExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '.mkv';
+        const targetExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : (isMultiAudio ? '.mkv' : '.mp4');
         const outputFile = 'output' + targetExt;
         
-        console.log("LibAV: videoExt=" + videoExt + ", audioExt=" + audioExt + ", output=" + outputFile);
+        console.log("LibAV: videoExt=" + videoExt + ", output=" + outputFile);
 
         await libav.writeFile(videoFile, videoData);
-        await libav.writeFile(audioFile, audioData);
-        
-        console.log("LibAV: wrote " + videoFile + " size=" + videoData.length + ", " + audioFile + " size=" + audioData.length);
 
-        const exitCode = await libav.ffmpeg([
-            "-y", 
-            "-i", videoFile, 
-            "-i", audioFile, 
-            "-map", "0:v:0", 
-            "-map", "1:a:0", 
-            "-c:v", "copy", 
-            "-c:a", "copy", 
-            outputFile
-        ]);
+        const ffmpegArgs = ["-y", "-i", videoFile];
+        const audioFiles = [];
+
+        for (let i = 0; i < audioDatas.length; i++) {
+            const audioExt = getExtFromUrl(audioDatas[i].url);
+            const audioFile = `input_audio_${i}` + audioExt;
+            await libav.writeFile(audioFile, audioDatas[i].data);
+            audioFiles.push(audioFile);
+            ffmpegArgs.push("-i", audioFile);
+        }
+
+        ffmpegArgs.push("-map", "0:v:0");
+        for (let i = 0; i < audioFiles.length; i++) {
+            ffmpegArgs.push("-map", `${i + 1}:a:0`);
+        }
+
+        ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
+
+        if (isMultiAudio) {
+            for (let i = 0; i < audioDatas.length; i++) {
+                ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${audioDatas[i].name}`);
+            }
+        }
+
+        ffmpegArgs.push(outputFile);
+
+        const exitCode = await libav.ffmpeg(ffmpegArgs);
         
         console.log("LibAV ffmpeg exit code:", exitCode);
         
@@ -3397,6 +3426,9 @@ async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMetho
         // Use the video title as filename
         const finalFilename = filename.replace(/\.[^/.]+$/, "") + targetExt;
 
+        if (returnBlob) {
+            return blob;
+        }
         await finalizeDownload(blob, finalFilename, downloadMethod, loadingBar, false, false);
     } catch (e) {
         if (e.message === "Cancelled") {

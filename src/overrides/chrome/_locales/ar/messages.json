@@ -224,6 +224,10 @@
         "message": "طريقة التنزيل",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "اختر آلية التنزيل. ملاحظة: لا تدعم متصفحات الهاتف المحمول طريقة 'تنزيل المتصفح المدمج'.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "التنزيل باستخدام مدير التنزيل المدمج في المتصفح. هذا سريع ويدعم استكمال التنزيل، ولكنه يعمل فقط في بعض المواقع والمتصفحات (Firefox للكمبيوتر).",
         "description": "The explanation of the browser download method."
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "اختر كيف يتم فتح الإضافة عند النقر فوق الأيقونة.",
+        "message": "اختر كيف يتم فتح الإضافة عند النقر فوق الأيقونة. ملاحظة: لا تدعم أجهزة الهاتف المحمول خيار 'نافذة'.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "이 확장 프로그램이 처음이신가요?",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "미디어가 제대로 감지되고 아무것도 표시되지 않을 때 당황하지 않도록 이 확장 프로그램의 올바른 사용법을 배워보세요.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "기능 알아보기",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "건너뛰기",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "미디어 다운로드",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "다운로드 방법",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "다운로드 방식을 선택하십시오. 참고: 모바일 브라우저는 '브라우저 내장 다운로드' 방식을 지원하지 않습니다.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "다운로드 알림"
+  },
+  "fetchNotificationExplain": {
+    "message": "다운로드가 시작되거나 완료되면 기기의 알림 바에 알림을 표시합니다."
+  },
+  "downloadingTitle": {
+    "message": "다운로드 중..."
+  },
+  "downloadCompleteTitle": {
+    "message": "다운로드 완료"
+  },
   "browserDownloadExplain": {
     "message": "브라우저의 기본 다운로드 관리자를 사용하여 다운로드합니다. 속도가 빠르고 연결 끊김을 지원하지만, 일부 사이트와 브라우저(Firefox PC)에서만 작동합니다.",
     "description": "The explanation of the browser download method."
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "감지 알림 활성화",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "미디어 감지 시 페이지에 팝업 표시"
   },
   "mediaNotificationExplain": {
-    "message": "웹사이트에서 미디어가 감지되면 알림을 표시합니다.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "새 미디어가 발견되면 현재 보고 있는 페이지에 작은 팝업을 직접 표시합니다."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "미디어 감지 시 기기 알림 표시"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "새 미디어가 발견되면 기기의 알림 바에 알림을 표시합니다."
   },
   "stackNotificationsCheckbox": {
     "message": "알림 쌓기",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "아이콘을 클릭할 때 추가 기능이 열리는 방식을 선택하세요.",
+    "message": "아이콘을 클릭할 때 추가 기능이 열리는 방식을 선택하세요. 참고: 모바일 기기는 '창' 옵션을 지원하지 않습니다.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "사용자 지정 제한",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "자막 없음",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "모든 언어 (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "모든 자막 (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "모든 오디오 트랙 병합 (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "오디오 트랙을 개별적으로 zip으로 압축하는 대신, 최종 비디오 파일에 여러 개의 오디오 트랙으로 병합합니다.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "자막 삽입 (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "활성화하면 모든 자막을 다운로드할 때 Mediabunny를 사용하여 비디오 파일(MKV/MP4)에 자막이 삽입됩니다. 비활성화하면 자막이 ZIP 아카이브로 다운로드됩니다.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "자막 삽입 컨테이너 형식",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "모든 자막 (삽입됨)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "모든 언어 (삽입됨)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "알림 설정"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "신뢰할 수 있는 업데이트 소스",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "소스:",
+    "description": "Label for the update source in the update popup"
   }
 }

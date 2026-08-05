@@ -224,6 +224,10 @@
         "message": "Метод скачивания",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "Выберите механизм загрузки. Примечание: мобильные браузеры не поддерживают метод 'Встроенная загрузка браузера'.",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "Скачивание с использованием встроенного менеджера загрузок браузера. Это быстро и поддерживает докачку при обрыве связи, но работает только на некоторых сайтах и в определенных браузерах (Firefox для ПК).",
         "description": "The explanation of the browser download method."
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "Выберите, как открывается расширение при нажатии на иконку.",
+        "message": "Выберите, как открывается расширение при нажатии на иконку. Примечание: мобильные устройства не поддерживают вариант 'Окно'.",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

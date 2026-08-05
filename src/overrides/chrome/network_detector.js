@@ -386,6 +386,51 @@ async function loadPersistentHeaders() {
 }
 loadPersistentHeaders();
 
+function registerStaticYoutubeRules() {
+    if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest) return;
+    const rules = [
+        {
+            id: 99901,
+            priority: 10,
+            action: {
+                type: 'modifyHeaders',
+                requestHeaders: [
+                    { header: 'referer', operation: 'set', value: 'https://www.youtube.com/' },
+                    { header: 'origin', operation: 'set', value: 'https://www.youtube.com' },
+                    { header: 'User-Agent', operation: 'set', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                ]
+            },
+            condition: {
+                urlFilter: '||googlevideo.com',
+                initiatorDomains: [chrome.runtime.id],
+                resourceTypes: ['xmlhttprequest', 'media', 'other']
+            }
+        },
+        {
+            id: 99902,
+            priority: 10,
+            action: {
+                type: 'modifyHeaders',
+                requestHeaders: [
+                    { header: 'referer', operation: 'set', value: 'https://www.youtube.com/' },
+                    { header: 'origin', operation: 'set', value: 'https://www.youtube.com' },
+                    { header: 'User-Agent', operation: 'set', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                ]
+            },
+            condition: {
+                urlFilter: '||youtube.com',
+                initiatorDomains: [chrome.runtime.id],
+                resourceTypes: ['xmlhttprequest', 'media', 'other']
+            }
+        }
+    ];
+    chrome.declarativeNetRequest.updateSessionRules({
+        addRules: rules,
+        removeRuleIds: [99901, 99902]
+    }).catch(err => console.warn("Static YouTube rules failed:", err));
+}
+registerStaticYoutubeRules();
+
 let isOptimizeLowEnd = false;
 browser.storage.local.get('optimize-low-end').then(res => {
     isOptimizeLowEnd = res['optimize-low-end'] === '1';
@@ -531,17 +576,16 @@ browser.webRequest.onBeforeSendHeaders.addListener(
 );
 
 let cachedSettings = {
-    mimeDetection: true,
-    urlDetection: true,
     mediaNotification: true,
+    mediaSystemNotification: true,
     stackNotifications: false,
     hideSegments: false,
     hidePageComponents: true,
     onlyVideo: true,
     onlyAudio: true,
     onlyStream: true,
-    onlyImage: false,
-    onlySubtitle: false,
+    onlyImage: true,
+    onlySubtitle: true,
     onlyFile: true,
     ignoreDisabledTypes: false,
     optimizeLowEnd: false,
@@ -551,7 +595,7 @@ let cachedSettings = {
 
 function getSettings(callback) {
     browser.storage.local.get([
-        'mime-detection', 'url-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
+        'mime-detection', 'url-detection', 'media-notification', 'media-system-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types', 'optimize-low-end',
         'filename-template', 'theme-color', 'ui-scale'
     ], function (result) {
@@ -559,14 +603,15 @@ function getSettings(callback) {
             mimeDetection: isFlagEnabled(result['mime-detection'], true),
             urlDetection: isFlagEnabled(result['url-detection'], true),
             mediaNotification: isFlagEnabled(result['media-notification'], true),
+            mediaSystemNotification: isFlagEnabled(result['media-system-notification'], true),
             stackNotifications: isFlagEnabled(result['stack-notifications'], false),
             hideSegments: isFlagEnabled(result['hide-segments'], false),
             hidePageComponents: isFlagEnabled(result['hide-page-components'], true),
             onlyVideo: isFlagEnabled(result['only-video'], true),
             onlyAudio: isFlagEnabled(result['only-audio'], true),
             onlyStream: isFlagEnabled(result['only-stream'], true),
-            onlyImage: isFlagEnabled(result['only-image'], false),
-            onlySubtitle: isFlagEnabled(result['only-subtitle'], false),
+            onlyImage: isFlagEnabled(result['only-image'], true),
+            onlySubtitle: isFlagEnabled(result['only-subtitle'], true),
             onlyFile: isFlagEnabled(result['only-file'], true),
             ignoreDisabledTypes: isFlagEnabled(result['ignore-disabled-types'], false),
             optimizeLowEnd: isFlagEnabled(result['optimize-low-end'], false),
@@ -1524,18 +1569,20 @@ async function showMediaNotification(details, settings) {
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
     ];
 
-    browser.notifications.create({
-        type: "basic",
-        iconUrl: browser.runtime.getURL("src/icons/icon.svg"),
-        title: notificationTitle,
-        message: finalDisplayFilename,
-        buttons: notificationButtons
-    }, (notificationId) => {
-        if (browser.runtime.lastError) {
-            console.warn("Notification error (normal in some mobile browsers):", browser.runtime.lastError.message);
-        }
-        notificationUrls.set(notificationId, { url, tabId });
-    });
+    if (settings.mediaSystemNotification) {
+        browser.notifications.create({
+            type: "basic",
+            iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+            title: notificationTitle,
+            message: finalDisplayFilename,
+            buttons: notificationButtons
+        }, (notificationId) => {
+            if (browser.runtime.lastError) {
+                console.warn("Notification error (normal in some mobile browsers):", browser.runtime.lastError.message);
+            }
+            notificationUrls.set(notificationId, { url, tabId });
+        });
+    }
 }
 
 browser.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
@@ -2010,7 +2057,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 browser.notifications.clear(notificationId);
                 browser.notifications.create({
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.svg"),
+                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
                     title: drmTitle,
                     message: drmMsg,
                     buttons: []
@@ -2212,7 +2259,19 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.action === 'getSpoofedHeaders') {
-        sendResponse(urlToHeaderMap.get(message.url) || null);
+        let headers = urlToHeaderMap.get(message.url) || null;
+        if (!headers && (message.url.includes('googlevideo.com') || message.url.includes('youtube.com'))) {
+            headers = {
+                'referer': 'https://www.youtube.com/',
+                'origin': 'https://www.youtube.com',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            };
+            urlToHeaderMap.set(message.url, headers);
+            if (typeof registerHeaderSpoofRules === 'function') {
+                registerHeaderSpoofRules(message.url, headers);
+            }
+        }
+        sendResponse(headers);
         return;
     }
 
@@ -3956,7 +4015,7 @@ async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
 }
 async function handleFetchDownload(url, filename, originalRequest = null, providedId = null, isResuming = false, isManualResume = false, providedResumeOffset = null, providedMediaType = null, providedDropboxSessionId = null) {
     providedResumeOffset = parseInt(providedResumeOffset) || 0;
-    const settings = await browser.storage.local.get(['speed-boost', 'speed-boost-resume', 'connections', 'save-to-gdrive', 'gdrive-stream', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token']);
+    const settings = await browser.storage.local.get(['speed-boost', 'speed-boost-resume', 'connections', 'save-to-gdrive', 'gdrive-stream', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token', 'fetch-notification']);
     const speedBoostEnabled = settings['speed-boost'] === '1';
     const speedBoostResumeEnabled = settings['speed-boost-resume'] === '1';
     const connections = parseInt(settings['connections'] || '4', 10);
@@ -3967,6 +4026,20 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 
     const abortController = new AbortController();
     const downloadId = providedId || ('dl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+
+    const showNotif = settings['fetch-notification'] !== '0';
+    if (showNotif) {
+        try {
+            browser.notifications.create(downloadId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
+                message: filename
+            });
+        } catch (err) {
+            console.warn("Notifications API error:", err);
+        }
+    }
 
     if (!activeDownloads.has(downloadId)) {
         activeDownloads.set(downloadId, { 
@@ -4446,7 +4519,41 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
             cloud: gdriveFallBack
         });
         processSaveQueue();
+
+        if (showNotif) {
+            try {
+                browser.notifications.clear(downloadId);
+                const completeId = downloadId + '_complete';
+                browser.notifications.create(completeId, {
+                    type: "basic",
+                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
+                    message: finalFilename
+                });
+                setTimeout(() => {
+                    try { browser.notifications.clear(completeId); } catch (e) {}
+                }, 5000);
+            } catch (err) {
+                console.warn("Notifications API error:", err);
+            }
+        }
     } catch (error) {
+        if (showNotif) {
+            try {
+                browser.notifications.clear(downloadId);
+                if (error.name !== 'AbortError' && error.message !== 'Cancelled') {
+                    browser.notifications.create(downloadId + '_error', {
+                        type: "basic",
+                        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                        title: "Download failed",
+                        message: error.message
+                    });
+                }
+            } catch (err) {
+                console.warn("Notifications API error:", err);
+            }
+        }
+
         if (error.name === 'AbortError') {
             const item = activeDownloads.get(downloadId);
             if (item && item.isPaused) return; 
@@ -4468,11 +4575,14 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
         const defaults = {
-            'download-method': 'browser',
+            'download-method': 'fetch',
             'mime-detection': '1',
             'url-detection': '1',
             'media-cache': '1',
-            'history-page': '0'
+            'history-page': '0',
+            'detect-download-links': '1',
+            'disable-deduplication': '1',
+            'open-preference': 'popup'
         };
         await browser.storage.local.set(defaults);
 
@@ -4485,7 +4595,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
 initListener();
 
 browser.storage.local.get('open-preference', function (result) {
-    if (result['open-preference'] === 'popup') {
+    if (result['open-preference'] === 'popup' || result['open-preference'] === undefined) {
         browser.action.setPopup({ popup: 'popup.html' });
     } else {
         browser.action.setPopup({ popup: '' });

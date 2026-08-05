@@ -201,8 +201,8 @@ async function initializeSettings() {
     const settings = [
         'url-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
-        'media-notification', 'stack-notifications', 'download-method', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
-        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference',
+        'media-notification', 'media-system-notification', 'stack-notifications', 'download-method', 'fetch-notification', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
+        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'mux-all-audios',
         'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'theme-mode', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
     ];
@@ -214,13 +214,14 @@ async function initializeSettings() {
         if (value === undefined) {
             const defaultsEnabled = [
                 'url-detection', 'mime-detection', 'hide-page-components', 'hide-segments',
-                'media-notification', 'only-video', 'only-audio', 'only-stream',
-                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3', 'auto-check-update', 'badge-counter'
+                'media-notification', 'media-system-notification', 'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
+                'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3', 'auto-check-update', 'badge-counter',
+                'detect-download-links', 'disable-deduplication', 'fetch-notification', 'group-by-type'
             ];
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['only-image', 'only-subtitle', 'ignore-disabled-types', 'detect-download-links', 'disable-deduplication', 'history-page', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications'].includes(setting)) {
+            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'mux-all-audios'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -230,7 +231,7 @@ async function initializeSettings() {
                 value = '4';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'mp3-bitrate') {
-                value = '128';
+                value = '320';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'theme-mode') {
                 value = 'auto';
@@ -583,7 +584,8 @@ async function initializeSettings() {
         }
 
         if (element.tagName === 'MDUI-TEXT-FIELD' || (element.tagName === 'INPUT' && (element.type === 'text' || element.type === 'number'))) {
-            element.value = value || '';
+            const defVal = setting === 'limit-media-list-custom' ? '0' : '';
+            element.value = (value !== undefined && value !== null && value !== '') ? value : defVal;
             element.oninput = () => {
                 pendingChanges[setting] = element.value;
                 showApplyBar();
@@ -601,16 +603,16 @@ async function initializeSettings() {
         }
 
         if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
-            const defaultValue = setting === 'limit-media-list' ? '20' :
+            const defaultValue = setting === 'limit-media-list' ? 'custom' :
                                 (setting === 'settings-layout' ? 'default' :
                                 (setting === 'theme-mode' ? 'auto' :
-                                (setting === 'open-preference' ? 'tab' :
-                                (setting === 'download-method' ? 'browser' :
+                                (setting === 'open-preference' ? 'popup' :
+                                (setting === 'download-method' ? 'fetch' :
                                 (setting === 'stream-quality' ? 'highest' :
                                 (setting === 'subtitle-conversion' ? 'none' :
                                 (setting === 'connections' ? '4' :
                                 (setting === 'media-sort-order' ? 'newest' :
-                                (setting === 'mp3-bitrate' ? '128' :
+                                (setting === 'mp3-bitrate' ? '320' :
                                 (setting === 'min-file-size' ? '0' :
                                 (setting === 'ui-scale' ? '100%' :
                                 (setting === 'stream-download' ? 'offline' : 'stream')))))))))))) ;
@@ -703,6 +705,7 @@ async function initializeSettings() {
             item.style.display = minSelectInitial.value === 'custom' ? 'flex' : 'none';
         }
     }
+
 
     if (optimizeLowEndInitial && optimizeLowEndInitial.checked) {
         const mediaCache = document.getElementById('media-cache');

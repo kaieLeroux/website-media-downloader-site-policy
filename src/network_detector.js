@@ -75,6 +75,28 @@ if (typeof downloadZip === 'undefined') {
     }
 }
 
+if (typeof YoutubeMultiTrack === 'undefined' && typeof importScripts !== 'undefined') {
+    try {
+        if (typeof window === 'undefined') {
+            self.window = self;
+        }
+        importScripts('libraries/wymd.js');
+        if (self.window === self) {
+            delete self.window;
+        }
+    } catch (e) {
+        console.error("Failed to import wymd.js:", e);
+    }
+}
+
+let youtubeExtractor = null;
+function getYoutubeExtractor() {
+    if (!youtubeExtractor && typeof YoutubeMultiTrack !== 'undefined') {
+        youtubeExtractor = new YoutubeMultiTrack({ useCookies: true });
+    }
+    return youtubeExtractor;
+}
+
 if (!browser.storage.session) {
     browser.storage.session = {
         get: (keys, cb) => browser.storage.local.get(keys, cb),
@@ -366,6 +388,33 @@ function isFlagEnabled(val, defaultVal = false) {
 
 browser.webRequest.onBeforeSendHeaders.addListener(
     (details) => {
+        const isFromExtension = details.initiator?.startsWith('chrome-extension://') ||
+                                details.originUrl?.startsWith('moz-extension://') ||
+                                details.url.includes('blob:chrome-extension://') ||
+                                details.url.includes('blob:moz-extension://');
+
+        if (isFromExtension && (details.url.includes('/youtubei/v1/player') || details.url.includes('googlevideo.com') || details.url.includes('youtube.com'))) {
+            let hasOrigin = false;
+            let hasReferer = false;
+            for (let h of details.requestHeaders) {
+                const name = h.name.toLowerCase();
+                if (name === 'origin') {
+                    h.value = 'https://www.youtube.com';
+                    hasOrigin = true;
+                } else if (name === 'referer') {
+                    h.value = 'https://www.youtube.com/';
+                    hasReferer = true;
+                }
+            }
+            if (!hasOrigin) {
+                details.requestHeaders.push({ name: 'Origin', value: 'https://www.youtube.com' });
+            }
+            if (!hasReferer) {
+                details.requestHeaders.push({ name: 'Referer', value: 'https://www.youtube.com/' });
+            }
+            return { requestHeaders: details.requestHeaders };
+        }
+
         const capturedHeaders = {};
         let hasHeaders = false;
 
@@ -393,9 +442,7 @@ browser.webRequest.onBeforeSendHeaders.addListener(
             savePersistentHeaders();
         }
 
-        const isFromExtension = details.initiator?.startsWith('chrome-extension://') ||
-                               details.originUrl?.startsWith('moz-extension://') ||
-                               details.url.includes('blob:chrome-extension://');
+
 
         const isMediaRequest = details.type === 'media' ||
                                details.type === 'xmlhttprequest' ||
@@ -403,13 +450,18 @@ browser.webRequest.onBeforeSendHeaders.addListener(
                                details.url.includes('download') ||
                                detectionRegex.test(details.url);
 
+        // Filter extension-origin values from all requests (harmless, web pages won't have these anyway)
         if (isMediaRequest || isFromExtension) {
-            const stored = urlToHeaderMap.get(details.url);
-
             details.requestHeaders = details.requestHeaders.filter(h => {
                 const val = h.value.toLowerCase();
                 return !val.startsWith('chrome-extension://') && !val.startsWith('moz-extension://');
             });
+        }
+
+        // Header spoofing (inject stored Referer/Origin/Cookie) — ONLY for extension-initiated requests.
+        // Applying this to regular web page requests corrupts their CORS headers and breaks sites.
+        if (isFromExtension) {
+            const stored = urlToHeaderMap.get(details.url);
 
             if (stored) {
                 for (const [name, value] of Object.entries(stored)) {
@@ -425,13 +477,11 @@ browser.webRequest.onBeforeSendHeaders.addListener(
                         details.requestHeaders.push({ name: name, value: value });
                     }
 
-                    if (name === 'referer' && isFromExtension) {
+                    if (name === 'referer') {
                         details.referrer = value;
                     }
                 }
-            }
 
-            if (isFromExtension) {
                 const storedSFS = stored?.['sec-fetch-site'];
                 const storedSFM = stored?.['sec-fetch-mode'];
                 const storedSFD = stored?.['sec-fetch-dest'];
@@ -463,14 +513,15 @@ let cachedSettings = {
     urlDetection: true,
     youtubeDetection: true,
     mediaNotification: true,
+    mediaSystemNotification: true,
     stackNotifications: false,
     hideSegments: false,
     hidePageComponents: true,
     onlyVideo: true,
     onlyAudio: true,
     onlyStream: true,
-    onlyImage: false,
-    onlySubtitle: false,
+    onlyImage: true,
+    onlySubtitle: true,
     onlyFile: true,
     ignoreDisabledTypes: false,
     optimizeLowEnd: false,
@@ -480,7 +531,7 @@ let cachedSettings = {
 
 function getSettings(callback) {
     browser.storage.local.get([
-        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
+        'mime-detection', 'url-detection', 'youtube-detection', 'media-notification', 'media-system-notification', 'stack-notifications', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types', 'optimize-low-end',
         'filename-template', 'theme-color', 'ui-scale'
     ], function (result) {
@@ -489,14 +540,15 @@ function getSettings(callback) {
             urlDetection: isFlagEnabled(result['url-detection'], true),
             youtubeDetection: isFlagEnabled(result['youtube-detection'], true),
             mediaNotification: isFlagEnabled(result['media-notification'], true),
+            mediaSystemNotification: isFlagEnabled(result['media-system-notification'], true),
             stackNotifications: isFlagEnabled(result['stack-notifications'], false),
             hideSegments: isFlagEnabled(result['hide-segments'], false),
             hidePageComponents: isFlagEnabled(result['hide-page-components'], true),
             onlyVideo: isFlagEnabled(result['only-video'], true),
             onlyAudio: isFlagEnabled(result['only-audio'], true),
             onlyStream: isFlagEnabled(result['only-stream'], true),
-            onlyImage: isFlagEnabled(result['only-image'], false),
-            onlySubtitle: isFlagEnabled(result['only-subtitle'], false),
+            onlyImage: isFlagEnabled(result['only-image'], true),
+            onlySubtitle: isFlagEnabled(result['only-subtitle'], true),
             onlyFile: isFlagEnabled(result['only-file'], true),
             ignoreDisabledTypes: isFlagEnabled(result['ignore-disabled-types'], false),
             optimizeLowEnd: isFlagEnabled(result['optimize-low-end'], false),
@@ -1543,18 +1595,25 @@ async function showMediaNotification(details, settings) {
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
     ];
 
-    browser.notifications.create({
+    const isFirefox = typeof browser.runtime.getBrowserInfo === 'function' || !browser.offscreen;
+    const notificationOptions = {
         type: "basic",
-        iconUrl: browser.runtime.getURL("src/icons/icon.svg"),
+        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
         title: notificationTitle,
-        message: finalDisplayFilename,
-        buttons: notificationButtons
-    }, (notificationId) => {
-        if (browser.runtime.lastError) {
-            console.warn("Notification error (normal in some mobile browsers):", browser.runtime.lastError.message);
-        }
-        notificationUrls.set(notificationId, { url, tabId });
-    });
+        message: finalDisplayFilename
+    };
+    if (!isFirefox) {
+        notificationOptions.buttons = notificationButtons;
+    }
+
+    if (settings.mediaSystemNotification) {
+        browser.notifications.create(notificationOptions, (notificationId) => {
+            if (browser.runtime.lastError) {
+                console.warn("Notification error (normal in some mobile browsers):", browser.runtime.lastError.message);
+            }
+            notificationUrls.set(notificationId, { url, tabId });
+        });
+    }
 }
 
 browser.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
@@ -2000,6 +2059,17 @@ browser.downloads.onChanged.addListener((delta) => {
 });
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'extract' && message.videoId) {
+        const extractor = getYoutubeExtractor();
+        if (extractor) {
+            extractor.extractAllStreams(message.videoId)
+                .then(data => sendResponse({ success: true, data }))
+                .catch(err => sendResponse({ success: false, error: err.message }));
+        } else {
+            sendResponse({ success: false, error: 'YoutubeMultiTrack library not loaded' });
+        }
+        return true; // Keep message channel open for async response
+    }
     if (message.action === 'heartbeat') {
         sendResponse({ status: 'alive' });
         return true;
@@ -2028,13 +2098,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         for (const [notificationId, data] of notificationUrls.entries()) {
             if (data.tabId === tabId) {
                 browser.notifications.clear(notificationId);
-                browser.notifications.create({
+                const isFirefox = typeof browser.runtime.getBrowserInfo === 'function' || !browser.offscreen;
+                const notificationOptions = {
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.svg"),
+                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
                     title: drmTitle,
-                    message: drmMsg,
-                    buttons: []
-                });
+                    message: drmMsg
+                };
+                if (!isFirefox) {
+                    notificationOptions.buttons = [];
+                }
+                browser.notifications.create(notificationOptions);
                 notificationUrls.delete(notificationId);
             }
         }
@@ -2384,7 +2458,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.action === 'reportDetectedMedia') {
         getSettings(function(settings) {
-            let { urls, pageTitle, pageUrl, is_youtube, ytFormats } = message;
+            let { urls, pageTitle, pageUrl, is_youtube, ytFormats, ytSubtitles } = message;
             if (!urls || !Array.isArray(urls)) return;
             if (settings.ignoreDisabledTypes) {
                 urls = urls.filter(u => {
@@ -2428,6 +2502,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         const representativeUrl = bestFormat.videoUrl;
 
                         let mergedFormats = [...videoFormats];
+                        let existingSubtitles = ytSubtitles || null;
                         if (items[representativeUrl]) {
                             const existingItem = items[representativeUrl][0];
                             if (existingItem && existingItem.ytFormats) {
@@ -2442,6 +2517,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                         mergedFormats.push(oldFmt);
                                     }
                                 });
+                            }
+                            if (existingItem && existingItem.ytSubtitles && !existingSubtitles) {
+                                existingSubtitles = existingItem.ytSubtitles;
                             }
                         }
                         
@@ -2459,7 +2537,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                             tabId: tabId,
                             pageTitle: pageTitle || sender.tab?.title || "",
                             pageUrl: pageUrl || sender.tab?.url || "",
-                            ytFormats: mergedFormats
+                            ytFormats: mergedFormats,
+                            ytSubtitles: existingSubtitles
                         }];
                         hasNew = true;
                     }
@@ -2579,7 +2658,19 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.action === 'getSpoofedHeaders') {
-        sendResponse(urlToHeaderMap.get(message.url) || null);
+        let headers = urlToHeaderMap.get(message.url) || null;
+        if (!headers && (message.url.includes('googlevideo.com') || message.url.includes('youtube.com'))) {
+            headers = {
+                'referer': 'https://www.youtube.com/',
+                'origin': 'https://www.youtube.com',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            };
+            urlToHeaderMap.set(message.url, headers);
+            if (typeof registerHeaderSpoofRules === 'function') {
+                registerHeaderSpoofRules(message.url, headers);
+            }
+        }
+        sendResponse(headers);
         return true;
     }
 
@@ -4315,7 +4406,7 @@ async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
 }
 async function handleFetchDownload(url, filename, originalRequest = null, providedId = null, isResuming = false, isManualResume = false, providedResumeOffset = null, providedMediaType = null, providedDropboxSessionId = null) {
     providedResumeOffset = parseInt(providedResumeOffset) || 0;
-    const settings = await browser.storage.local.get(['speed-boost', 'speed-boost-resume', 'connections', 'save-to-gdrive', 'gdrive-stream', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token']);
+    const settings = await browser.storage.local.get(['speed-boost', 'speed-boost-resume', 'connections', 'save-to-gdrive', 'gdrive-stream', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token', 'fetch-notification']);
     const speedBoostEnabled = settings['speed-boost'] === '1';
     const speedBoostResumeEnabled = settings['speed-boost-resume'] === '1';
     const connections = parseInt(settings['connections'] || '4', 10);
@@ -4326,6 +4417,20 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 
     const abortController = new AbortController();
     const downloadId = providedId || ('dl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+
+    const showNotif = settings['fetch-notification'] !== '0';
+    if (showNotif) {
+        try {
+            browser.notifications.create(downloadId, {
+                type: "basic",
+                iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
+                message: filename
+            });
+        } catch (err) {
+            console.warn("Notifications API error:", err);
+        }
+    }
 
     if (!activeDownloads.has(downloadId)) {
         activeDownloads.set(downloadId, { 
@@ -4805,7 +4910,41 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
             cloud: gdriveFallBack
         });
         processSaveQueue();
+
+        if (showNotif) {
+            try {
+                browser.notifications.clear(downloadId);
+                const completeId = downloadId + '_complete';
+                browser.notifications.create(completeId, {
+                    type: "basic",
+                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
+                    message: finalFilename
+                });
+                setTimeout(() => {
+                    try { browser.notifications.clear(completeId); } catch (e) {}
+                }, 5000);
+            } catch (err) {
+                console.warn("Notifications API error:", err);
+            }
+        }
     } catch (error) {
+        if (showNotif) {
+            try {
+                browser.notifications.clear(downloadId);
+                if (error.name !== 'AbortError' && error.message !== 'Cancelled') {
+                    browser.notifications.create(downloadId + '_error', {
+                        type: "basic",
+                        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                        title: "Download failed",
+                        message: error.message
+                    });
+                }
+            } catch (err) {
+                console.warn("Notifications API error:", err);
+            }
+        }
+
         if (error.name === 'AbortError') {
             const item = activeDownloads.get(downloadId);
             if (item && item.isPaused) return; 
@@ -4827,11 +4966,14 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
         const defaults = {
-            'download-method': 'browser',
+            'download-method': 'fetch',
             'mime-detection': '1',
             'url-detection': '1',
             'media-cache': '1',
-            'history-page': '0'
+            'history-page': '0',
+            'detect-download-links': '1',
+            'disable-deduplication': '1',
+            'open-preference': 'popup'
         };
         await browser.storage.local.set(defaults);
 
@@ -4844,7 +4986,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
 initListener();
 
 browser.storage.local.get('open-preference', function (result) {
-    if (result['open-preference'] === 'popup') {
+    if (result['open-preference'] === 'popup' || result['open-preference'] === undefined) {
         browser.action.setPopup({ popup: 'popup.html' });
     } else {
         browser.action.setPopup({ popup: '' });

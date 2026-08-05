@@ -224,6 +224,10 @@
         "message": "ダウンロード方法",
         "description": "The title of the download method section in the settings tab."
     },
+    "downloadMethodExplain": {
+        "message": "ダウンロードメカニズムを選択します。注意：モバイルブラウザは「ブラウザ内蔵ダウンロード」方法をサポートしていません。",
+        "description": "The explanation of the download method option."
+    },
     "browserDownloadExplain": {
         "message": "ブラウザのネイティブダウンロードマネージャーを使用してメディアをダウンロードします。高速で切断にも対応していますが、一部のサイトとブラウザ（PC用Firefoxなど）でのみ動作します。",
         "description": "The explanation of the browser download method."
@@ -438,7 +442,7 @@
         "description": "The title of the add-on opening preference section in the settings tab."
     },
     "openPreferenceExplain": {
-        "message": "アイコンをクリックしたときの拡張機能の開き方を選択します。",
+        "message": "アイコンをクリックしたときの拡張機能の開き方を選択します。注意：モバイルデバイスは「ウィンドウ」オプションをサポートしていません。",
         "description": "The explanation of the add-on opening preference."
     },
     "newTabCheckbox": {

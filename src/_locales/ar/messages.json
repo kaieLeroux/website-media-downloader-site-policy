@@ -1,4 +1,20 @@
 {
+  "welcomeTitle": {
+    "message": "هل أنت جديد على هذا الامتداد؟",
+    "description": "Welcome popup title"
+  },
+  "welcomeDescription": {
+    "message": "تعلم كيفية استخدام هذا الامتداد بشكل صحيح حتى يمكن اكتشاف الوسائط ولا تشعر بالحيرة عندما لا يظهر شيء.",
+    "description": "Welcome popup description text"
+  },
+  "welcomeLearnBtn": {
+    "message": "تعلم الميزات",
+    "description": "Welcome popup learn button"
+  },
+  "welcomeDismissBtn": {
+    "message": "تخطي",
+    "description": "Welcome popup dismiss button"
+  },
   "actionTitle": {
     "message": "تنزيل الوسائط",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -224,6 +240,22 @@
     "message": "طريقة التنزيل",
     "description": "The title of the download method section in the settings tab."
   },
+  "downloadMethodExplain": {
+    "message": "اختر آلية التنزيل. ملاحظة: لا تدعم متصفحات الهاتف المحمول طريقة 'تنزيل المتصفح المدمج'.",
+    "description": "The explanation of the download method option."
+  },
+  "fetchNotificationTitle": {
+    "message": "إشعارات التنزيل"
+  },
+  "fetchNotificationExplain": {
+    "message": "يعرض إشعارًا في شريط إشعارات جهازك عند بدء التنزيل وانتهائه."
+  },
+  "downloadingTitle": {
+    "message": "تنزيل..."
+  },
+  "downloadCompleteTitle": {
+    "message": "اكتمل التنزيل"
+  },
   "browserDownloadExplain": {
     "message": "التنزيل باستخدام مدير التنزيل المدمج في المتصفح. هذا سريع ويدعم استكمال التنزيل، ولكنه يعمل فقط في بعض المواقع والمتصفحات (Firefox للكمبيوتر).",
     "description": "The explanation of the browser download method."
@@ -337,12 +369,16 @@
     "description": "The title of the notification when media is detected."
   },
   "mediaNotificationCheckbox": {
-    "message": "تمكين إشعار الاكتشاف",
-    "description": "The label of the checkbox to enable media detection notification."
+    "message": "إظهار نافذة منبثقة في الصفحة عند اكتشاف وسائط"
   },
   "mediaNotificationExplain": {
-    "message": "عرض إشعار عند اكتشاف وسائط في موقع ويب.",
-    "description": "The explanation of the media detection notification setting."
+    "message": "يعرض نافذة منبثقة صغيرة مباشرة في الصفحة التي تتصفحها عند العثور على وسائط جديدة."
+  },
+  "mediaSystemNotificationCheckbox": {
+    "message": "إظهار إشعار الجهاز عند اكتشاف وسائط"
+  },
+  "mediaSystemNotificationExplain": {
+    "message": "يعرض إشعارًا في شريط إشعارات جهازك عند العثور على وسائط جديدة."
   },
   "stackNotificationsCheckbox": {
     "message": "تكديس الإشعارات",
@@ -469,7 +505,7 @@
     "description": "The title of the add-on opening preference section in the settings tab."
   },
   "openPreferenceExplain": {
-    "message": "اختر كيف يتم فتح الإضافة عند النقر فوق الأيقونة.",
+    "message": "اختر كيف يتم فتح الإضافة عند النقر فوق الأيقونة. ملاحظة: لا تدعم أجهزة الهاتف المحمول خيار 'نافذة'.",
     "description": "The explanation of the add-on opening preference."
   },
   "newTabCheckbox": {
@@ -2053,5 +2089,56 @@
   "limitCustom": {
     "message": "حد مخصص",
     "description": "Label for custom limit setting option."
+  },
+  "noSubtitles": {
+    "message": "بلا ترجمة",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
+  },
+  "allLanguagesZip": {
+    "message": "كل اللغات (ZIP)",
+    "description": "Option to download all audio languages in a ZIP archive."
+  },
+  "allSubtitlesZip": {
+    "message": "كل الترجمات (ZIP)",
+    "description": "Option to download all subtitles in a ZIP archive."
+  },
+  "muxAllAudiosCheckbox": {
+    "message": "دمج كل المسارات الصوتية (YouTube)",
+    "description": "Setting title for muxing all audio tracks on YouTube download."
+  },
+  "muxAllAudiosExplain": {
+    "message": "يجمع كل المسارات الصوتية في ملف الفيديو النهائي كمسارات صوتية متعددة قابلة للتحديد بدلاً من ضغطها بشكل منفصل في ملف zip.",
+    "description": "Setting explanation for muxing all audio tracks on YouTube download."
+  },
+  "embedSubtitlesMkvTitle": {
+    "message": "دمج الترجمات (يوتيوب)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "عند التفعيل، سيتم دمج جميع الترجمات التي تم تنزيلها في ملف الفيديو (MKV/MP4) باستخدام Mediabunny. عند التعطيل، يتم تنزيل الترجمات كأرشيف ZIP.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "تنسيق حاوية دمج الترجمة",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "كل الترجمات (مدمجة)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
+  "allLanguagesMux": {
+    "message": "كل اللغات (مدمجة)",
+    "description": "Option to download all audio tracks embedded in the video"
+  },
+  "settingsNotificationSectionTitle": {
+    "message": "إعدادات الإشعارات"
+  },
+  "trustedUpdateSourcesTitle": {
+    "message": "مصادر التحديث الموثوقة",
+    "description": "Title for trusted update sources section in about page"
+  },
+  "updateSourceLabel": {
+    "message": "المصدر:",
+    "description": "Label for the update source in the update popup"
   }
 }
