@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "Рекомендуется переустановка",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "Вы обновились с более старой версии. Настоятельно рекомендуется переустановить расширение, если вы столкнулись с проблемами обнаружения медиафайлов или ошибками 403 (Доступ запрещен) из-за значительных изменений в методах обнаружения. Если вы только что установили или уже переустановили его, можете пропустить это сообщение.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "Открыть магазин",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "Пропустить",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "Впервые используете это расширение?",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "Источник:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "Уже переустановлено",
+    "description": "Button to confirm reinstallation"
   }
 }

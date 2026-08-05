@@ -48,7 +48,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## What's New in v2.2.5
+## What's New in v2.2.6
 
 - **Media Card Theme Adaptation**: Adapted media cards to active theme colors and resolved custom hex color rendering issues; ensured theme color presets wrap and scroll cleanly.
 - **UI Scale DPI Settings**: Added UI Scale DPI settings with customizable display scaling options.
@@ -60,7 +60,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## Technical Features (v2.2.5)
+## Technical Features (v2.2.6)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

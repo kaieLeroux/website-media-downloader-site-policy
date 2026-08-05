@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "Neuinstallation empfohlen",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "Sie haben von einer älteren Version aktualisiert. Es wird dringend empfohlen, diese Erweiterung neu zu installieren, wenn Probleme bei der Medienerkennung oder 403-Fehler (Zugriff verweigert) aufgrund wesentlicher Änderungen der Erkennungsmethoden auftreten. Wenn Sie sie gerade erst installiert oder bereits neu installiert haben, können Sie dies überspringen.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "Store öffnen",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "Überspringen",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "Neu bei dieser Erweiterung?",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "Quelle:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "Bereits neu installiert",
+    "description": "Button to confirm reinstallation"
   }
 }

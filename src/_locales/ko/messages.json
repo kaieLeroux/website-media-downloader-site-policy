@@ -1,4 +1,20 @@
 {
+  "reinstallTitle": {
+    "message": "재설치 권장",
+    "description": "Reinstall warning title"
+  },
+  "reinstallDescription": {
+    "message": "이전 버전에서 업데이트되었습니다. 미디어 감지 방식의 중요한 변경으로 인해 미디어가 감지되지 않거나 403 오류(접근 거부)가 발생하는 경우, 이 확장 프로그램을 재설치하는 것을 적극 권장합니다. 새로 설치하셨거나 이미 재설치하신 경우 이 메시지를 건너뛰셔도 됩니다.",
+    "description": "Reinstall warning description"
+  },
+  "reinstallActionBtn": {
+    "message": "스토어 열기",
+    "description": "Reinstall warning action button"
+  },
+  "reinstallSkipBtn": {
+    "message": "건너뛰기",
+    "description": "Reinstall warning skip button"
+  },
   "welcomeTitle": {
     "message": "이 확장 프로그램이 처음이신가요?",
     "description": "Welcome popup title"
@@ -2140,5 +2156,9 @@
   "updateSourceLabel": {
     "message": "소스:",
     "description": "Label for the update source in the update popup"
+  },
+  "confirmReinstalledBtn": {
+    "message": "이미 재설치함",
+    "description": "Button to confirm reinstallation"
   }
 }
