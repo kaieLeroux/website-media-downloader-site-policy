@@ -19,5 +19,5 @@
   "action_url": "https://github.com/anpa26/website-media-downloader",
   "button_position": "center",
   "show_skip": true,
-  "storage_key": "wmd_update_announcement_v2_5"
+  "storage_key": "wmd_announcement_v2_5"
 }
