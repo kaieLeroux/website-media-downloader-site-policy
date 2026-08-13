@@ -84,29 +84,6 @@ if (!browser.storage.session) {
     };
 }
 
-const mediaTypes = [
-    "video/x-flv",
-    "video/x-msvideo",
-    "video/x-ms-wmv",
-    "video/quicktime",
-    "video/mp4",
-    "audio/x-pcm",
-    "audio/wav",
-    "audio/mpeg",
-    "audio/aac",
-    "audio/ogg",
-    "audio/x-ms-wma",
-    "application/vnd.apple.mpegurl",
-    "application/x-mpegURL",
-    "text/vtt",
-    "application/x-subrip",
-    "text/srt",
-    "application/x-ass",
-    "text/x-ass",
-    "application/ttml+xml",
-    "application/x-dfxp+xml"
-];
-
 let urlList = [];
 let headersSentListener, headersReceivedListener;
 const activeDownloads = new Map();
@@ -1694,6 +1671,9 @@ function initListener() {
             }
             if (temporaryRequestBodyMap.has(details.requestId)) {
                 temporaryRequestBodyMap.delete(details.requestId);
+            }
+            if (temporaryCookieMap.has(details.requestId)) {
+                temporaryCookieMap.delete(details.requestId);
             }
         };
 
@@ -4286,7 +4266,6 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
 
         let gdriveSessionUri = null;
         let dropboxSessionId = providedDropboxSessionId || null;
-        let dropboxOffset = 0;
         if (dropboxStreamEnabled && !dropboxSessionId) {
             try {
                 dropboxSessionId = await startDropboxStreamUpload(filename || getFileName(url));
@@ -4323,7 +4302,6 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
             if (currentBufferSize === 0 && (!isFinal || !gdriveSessionUri)) return;
 
             let dataToUpload = null;
-            let dataToCache = null;
             let uploadSize = 0;
 
             const fullData = new Uint8Array(currentBufferSize);

@@ -444,14 +444,6 @@
     "message": "Язык аудио",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "Скрыть компоненты страницы",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "Некоторые веб-сайты могут рассматривать файлы HTML, CSS, JS или TXT как видео или аудио. Включите это, чтобы скрыть их.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "Скачать",
     "description": "The action label to download media from the notification."
@@ -799,6 +791,28 @@
   "clearHistoryButton": {
     "message": "Очистить историю",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "Экспорт",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "Импорт",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "История успешно импортирована!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "Не удалось импортировать историю: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "История загрузок не найдена.",
@@ -2133,6 +2147,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "Если включено, скачивание всех субтитров встроит их в видеофайл (MKV/MP4) с помощью Mediabunny. Если выключено, субтитры будут скачаны в виде ZIP-архива.",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Вшивать субтитры (Обычное видео)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Если включено, на карточке обычного видео будет отображаться выбор субтитров для их вшивания.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Выберите субтитры для вшивания:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "Контейнерный формат встроенных субтитров",

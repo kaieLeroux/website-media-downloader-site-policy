@@ -97,14 +97,25 @@ async function checkForUpdates() {
     return;
   }
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
+  const CHANGELOG_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json';
 
   let nativeUpdateFound = false;
+  let requireUninstall = false;
+  try {
+    const changelogRes = await fetch(CHANGELOG_URL + '?t=' + Date.now());
+    if (changelogRes.ok) {
+      const changelogData = await changelogRes.json();
+      requireUninstall = !!changelogData.require_uninstall;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch remote changelog:', e);
+  }
 
   if (browser.runtime.requestUpdateCheck) {
     try {
       const result = await browser.runtime.requestUpdateCheck();
       if (result && result.status === 'update_available') {
-        showUpdateNotification(AMO_URL, result.version || 'new');
+        showUpdateNotification(AMO_URL, result.version || 'new', requireUninstall);
         nativeUpdateFound = true;
       }
     } catch (err) {
@@ -116,7 +127,7 @@ async function checkForUpdates() {
     try {
       const result = await performUpdateCheck();
       if (result.updateAvailable) {
-        showUpdateNotification(result.updateUrl, result.latestVersion);
+        showUpdateNotification(result.updateUrl, result.latestVersion, requireUninstall || result.requireUninstall);
       }
     } catch (error) {
       console.error('Update check failed:', error);
@@ -196,12 +207,21 @@ async function performUpdateCheck() {
     }
 
     if (compareVersions(githubVersion, currentVersion) > 0) {
+      let requireUninstall = false;
+      try {
+        const changelogRes = await fetch('https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json?t=' + Date.now());
+        if (changelogRes.ok) {
+          const data = await changelogRes.json();
+          requireUninstall = !!data.require_uninstall;
+        }
+      } catch (e) {}
+
       if (amoVersion && compareVersions(amoVersion, githubVersion) === 0) {
-        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL };
+        return { updateAvailable: true, latestVersion: githubVersion, updateUrl: AMO_URL, requireUninstall };
       } else {
         const specificUrl = await getSpecificReleaseUrl(githubVersion);
         if (specificUrl) {
-          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+          return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl, requireUninstall };
         }
       }
     }
@@ -212,9 +232,17 @@ async function performUpdateCheck() {
         const data = await response.json();
         const githubVersion = data.version;
         if (compareVersions(githubVersion, currentVersion) > 0) {
+          let requireUninstall = false;
+          try {
+            const changelogRes = await fetch('https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/changelog.json?t=' + Date.now());
+            if (changelogRes.ok) {
+              const data = await changelogRes.json();
+              requireUninstall = !!data.require_uninstall;
+            }
+          } catch (e) {}
           const specificUrl = await getSpecificReleaseUrl(githubVersion);
           if (specificUrl) {
-            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl };
+            return { updateAvailable: true, latestVersion: githubVersion, updateUrl: specificUrl, requireUninstall };
           }
         }
       }
@@ -275,14 +303,24 @@ function showTopBarUpdateNotification(url, latestVersion) {
   }
 }
 
-function showUpdateDialog(url, latestVersion) {
+function showUpdateDialog(url, latestVersion, requireUninstall = false) {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
 
   const source = getUpdateSourceInfo(url);
   const description = document.createElement('div');
   description.setAttribute('slot', 'description');
-  description.innerHTML = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`) +
+
+  let msg = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`);
+  if (requireUninstall) {
+    const isId = browser.i18n.getUILanguage() === 'id';
+    const warningText = isId
+      ? '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>PENTING:</strong> Versi update terbaru ini mengharuskan instal ulang ekstensi. Atau Anda bisa mencobanya terlebih dahulu tanpa instal ulang; jika seumpama media tidak terbaca (error 403), Anda harus melakukan instal ulang.</div>'
+      : '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>IMPORTANT:</strong> The latest update requires a clean reinstallation. Alternatively, you can test it first without reinstalling; if media cannot be detected or returns a 403 error, you must perform a clean reinstallation.</div>';
+    msg += warningText;
+  }
+
+  description.innerHTML = msg +
     `<div style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--on-surface-variant);">
       <span>${browser.i18n.getMessage('updateSourceLabel') || 'Source:'}</span>
       <span style="color: var(--primary); font-weight: 600; background: rgba(var(--mdui-color-primary), 0.1); padding: 1px 8px; border-radius: 99px;">${source.label}</span>
@@ -318,7 +356,7 @@ function showUpdateDialog(url, latestVersion) {
   });
 }
 
-function showUpdateNotification(url, latestVersion) {
+function showUpdateNotification(url, latestVersion, requireUninstall = false) {
   if (sessionStorage.getItem('update-topbar-closed') === 'true') return;
 
   if (sessionStorage.getItem('update-dismissed') === 'true') {
@@ -326,7 +364,318 @@ function showUpdateNotification(url, latestVersion) {
     return;
   }
 
-  showUpdateDialog(url, latestVersion);
+  showUpdateDialog(url, latestVersion, requireUninstall);
+}
+
+async function checkAndShowEventPopup() {
+  try {
+    const welcomeData = await browser.storage.local.get(['wmd_reinstall_warning_shown', 'wmd_previous_version']);
+
+    let requireUninstall = false;
+    try {
+      const res = await fetch(browser.runtime.getURL('changelog.json'));
+      const changelog = await res.json();
+      if (changelog.require_uninstall && welcomeData['wmd_previous_version'] && !welcomeData['wmd_reinstall_warning_shown']) {
+        requireUninstall = true;
+      }
+    } catch (e) {}
+
+    if (requireUninstall) {
+      return;
+    }
+
+    const rawUrl = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1-event';
+    const response = await fetch(`${rawUrl}/info.json?t=` + Date.now());
+    if (!response.ok) return;
+
+    const info = await response.json();
+    if (!info || info.enabled === false || !info.storage_key) return;
+
+    const storageResult = await browser.storage.local.get(info.storage_key);
+    if (storageResult[info.storage_key]) {
+      return;
+    }
+
+    const dialog = document.createElement('mdui-dialog');
+    dialog.closeOnOverlayClick = !info.show_skip ? false : true;
+    dialog.closeOnEsc = !info.show_skip ? false : true;
+
+    if (info.title) {
+      const headline = document.createElement('div');
+      headline.setAttribute('slot', 'headline');
+      headline.style.width = '100%';
+      headline.style.fontWeight = 'bold';
+      headline.textContent = info.title;
+
+      const titlePos = (info.title_position || 'left').toLowerCase();
+      if (titlePos === 'center') {
+        headline.style.textAlign = 'center';
+      } else if (titlePos === 'right') {
+        headline.style.textAlign = 'right';
+      } else {
+        headline.style.textAlign = 'left';
+      }
+      dialog.appendChild(headline);
+    }
+
+    const contentDiv = document.createElement('div');
+    contentDiv.setAttribute('slot', 'description');
+    contentDiv.style.display = 'flex';
+    contentDiv.style.flexDirection = 'column';
+    contentDiv.style.gap = '12px';
+
+    let slides = [];
+    if (info.slides && Array.isArray(info.slides)) {
+      slides = info.slides;
+    } else if (info.images && Array.isArray(info.images) && info.images.length > 0) {
+      slides = info.images.map(img => ({ image: img, description: info.description }));
+    } else if (info.image) {
+      slides = [{ image: info.image, description: info.description }];
+    } else if (info.description) {
+      slides = [{ description: info.description }];
+    }
+
+    let descEl = null;
+
+    if (slides.length === 1) {
+      const slide = slides[0];
+      if (slide.image) {
+        const img = document.createElement('img');
+        img.src = `${rawUrl}/${slide.image}`;
+        img.style.width = '100%';
+        img.style.borderRadius = '8px';
+        img.style.maxHeight = '240px';
+        img.style.objectFit = 'cover';
+        contentDiv.appendChild(img);
+      }
+      if (slide.description) {
+        descEl = document.createElement('p');
+        descEl.style.margin = '0';
+        descEl.style.lineHeight = '1.4';
+        descEl.textContent = slide.description;
+        contentDiv.appendChild(descEl);
+      }
+    } else if (slides.length > 1) {
+      const hasAnyImage = slides.some(slide => !!slide.image);
+
+      let track = null;
+      let currentIndex = 0;
+      const totalSlides = slides.length;
+
+      const dotsContainer = document.createElement('div');
+      dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px;';
+
+      slides.forEach((_, idx) => {
+        const dot = document.createElement('div');
+        dot.className = 'carousel-dot';
+        dot.style.cssText = 'width: 6px; height: 6px; border-radius: 50%; cursor: pointer; transition: all 0.2s;';
+        dot.addEventListener('click', () => {
+          currentIndex = idx;
+          updateCarousel();
+        });
+        dotsContainer.appendChild(dot);
+      });
+
+      const prevBtn = document.createElement('button');
+      prevBtn.innerHTML = '&#10094;';
+
+      const nextBtn = document.createElement('button');
+      nextBtn.innerHTML = '&#10095;';
+
+      const setArrowStyleCarousel = (btn, isRight) => {
+        btn.style.cssText = `position: absolute; ${isRight ? 'right' : 'left'}: 8px; z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;`;
+        btn.onmouseover = () => btn.style.background = 'rgba(0,0,0,0.8)';
+        btn.onmouseout = () => btn.style.background = 'rgba(0,0,0,0.5)';
+      };
+
+      const setArrowStyleText = (btn) => {
+        btn.style.cssText = 'background: none; color: rgb(var(--mdui-color-primary)); border: none; cursor: pointer; font-size: 16px; font-weight: bold; padding: 4px 12px; display: flex; align-items: center; justify-content: center; position: static; width: auto; height: auto;';
+        btn.onmouseover = null;
+        btn.onmouseout = null;
+      };
+
+      let carouselContainer = null;
+      if (hasAnyImage) {
+        carouselContainer = document.createElement('div');
+        carouselContainer.style.position = 'relative';
+        carouselContainer.style.width = '100%';
+        carouselContainer.style.overflow = 'hidden';
+        carouselContainer.style.borderRadius = '8px';
+        carouselContainer.style.display = 'flex';
+        carouselContainer.style.alignItems = 'center';
+        carouselContainer.style.marginBottom = '8px';
+
+        track = document.createElement('div');
+        track.style.display = 'flex';
+        track.style.width = '100%';
+        track.style.transition = 'transform 0.3s ease';
+
+        slides.forEach(slide => {
+          const slideContainer = document.createElement('div');
+          slideContainer.style.width = '100%';
+          slideContainer.style.flexShrink = '0';
+          slideContainer.style.maxHeight = '240px';
+          slideContainer.style.height = '240px';
+          slideContainer.style.display = 'flex';
+          slideContainer.style.alignItems = 'center';
+          slideContainer.style.justifyContent = 'center';
+          slideContainer.style.borderRadius = '8px';
+          slideContainer.style.overflow = 'hidden';
+
+          if (slide.image) {
+            const img = document.createElement('img');
+            img.src = `${rawUrl}/${slide.image}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            slideContainer.appendChild(img);
+          }
+          track.appendChild(slideContainer);
+        });
+        carouselContainer.appendChild(track);
+        contentDiv.appendChild(carouselContainer);
+      }
+
+      descEl = document.createElement('p');
+      descEl.style.margin = '0';
+      descEl.style.lineHeight = '1.4';
+      descEl.style.minHeight = '48px';
+      contentDiv.appendChild(descEl);
+
+      const navRow = document.createElement('div');
+      navRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 8px; margin-bottom: 4px; width: 100%;';
+      contentDiv.appendChild(navRow);
+
+      const updateCarousel = () => {
+        const currentSlide = slides[currentIndex];
+
+        if (currentSlide && currentSlide.image && carouselContainer) {
+          carouselContainer.style.display = 'flex';
+          navRow.style.display = 'none';
+
+          setArrowStyleCarousel(prevBtn, false);
+          setArrowStyleCarousel(nextBtn, true);
+          carouselContainer.appendChild(prevBtn);
+          carouselContainer.appendChild(nextBtn);
+
+          dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px; margin-top: -4px; margin-bottom: 4px;';
+          contentDiv.insertBefore(dotsContainer, descEl);
+
+          if (track) {
+            track.style.transform = `translateX(-${currentIndex * 100}%)`;
+          }
+        } else {
+          if (carouselContainer) {
+            carouselContainer.style.display = 'none';
+          }
+
+          navRow.style.display = 'flex';
+
+          setArrowStyleText(prevBtn);
+          setArrowStyleText(nextBtn);
+          navRow.appendChild(prevBtn);
+          navRow.appendChild(dotsContainer);
+          navRow.appendChild(nextBtn);
+
+          dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px;';
+        }
+
+        const dots = dotsContainer.querySelectorAll('.carousel-dot');
+        dots.forEach((dot, idx) => {
+          if (idx === currentIndex) {
+            dot.style.background = 'rgb(var(--mdui-color-primary))';
+            dot.style.transform = 'scale(1.2)';
+          } else {
+            dot.style.background = 'rgba(var(--mdui-color-on-surface), 0.3)';
+            dot.style.transform = 'scale(1)';
+          }
+        });
+
+        if (currentSlide && currentSlide.description) {
+          descEl.textContent = currentSlide.description;
+          descEl.style.display = 'block';
+        } else {
+          descEl.style.display = 'none';
+        }
+      };
+
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        updateCarousel();
+      });
+
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % totalSlides;
+        updateCarousel();
+      });
+
+      updateCarousel();
+    }
+
+    dialog.appendChild(contentDiv);
+
+    const actionWrapper = document.createElement('div');
+    actionWrapper.setAttribute('slot', 'action');
+    actionWrapper.style.display = 'flex';
+    actionWrapper.style.width = '100%';
+    actionWrapper.style.gap = '8px';
+
+    const pos = (info.button_position || 'right').toLowerCase();
+
+    const actionBtn = document.createElement('mdui-button');
+    actionBtn.variant = 'filled';
+    actionBtn.textContent = info.button_text || 'OK';
+    actionBtn.addEventListener('click', async () => {
+      await browser.storage.local.set({ [info.storage_key]: true });
+      dialog.open = false;
+      if (info.action_url) {
+        window.open(info.action_url, '_blank');
+      }
+    });
+
+    let skipBtn = null;
+    if (info.show_skip) {
+      skipBtn = document.createElement('mdui-button');
+      skipBtn.variant = 'text';
+      skipBtn.textContent = browser.i18n.getMessage("cancelButton") || 'Skip';
+      skipBtn.addEventListener('click', async () => {
+        await browser.storage.local.set({ [info.storage_key]: true });
+        dialog.open = false;
+      });
+    }
+
+    if (pos === 'center') {
+      actionWrapper.style.flexDirection = 'column';
+      actionWrapper.style.justifyContent = 'center';
+      actionWrapper.style.alignItems = 'center';
+      actionWrapper.appendChild(actionBtn);
+      if (skipBtn) actionWrapper.appendChild(skipBtn);
+    } else {
+      actionWrapper.style.flexDirection = 'row';
+      actionWrapper.style.alignItems = 'center';
+      if (pos === 'left') {
+        actionWrapper.style.justifyContent = 'flex-start';
+      } else {
+        actionWrapper.style.justifyContent = 'flex-end';
+      }
+      actionWrapper.appendChild(actionBtn);
+      if (skipBtn) actionWrapper.appendChild(skipBtn);
+    }
+
+    dialog.appendChild(actionWrapper);
+    document.body.appendChild(dialog);
+    dialog.open = true;
+
+    dialog.addEventListener('closed', () => {
+      dialog.remove();
+    });
+  } catch (error) {
+    console.error('Error fetching/displaying event popup:', error);
+  }
 }
 
 async function initTheme() {
@@ -355,6 +704,7 @@ async function initTheme() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   checkForUpdates();
+  checkAndShowEventPopup();
   await initTheme();
 
   const scaleResult = await browser.storage.local.get('ui-scale');
@@ -556,6 +906,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('clear-history').addEventListener('click', () => clearHistory());
+  document.getElementById('export-history').addEventListener('click', () => exportHistory());
+  document.getElementById('import-history').addEventListener('click', () => {
+    document.getElementById('import-history-input').click();
+  });
+  document.getElementById('import-history-input').addEventListener('change', handleImportHistory);
 
   document.getElementById('refresh-list').addEventListener('click', () => loadMediaList());
   document.getElementById('clear-list').addEventListener('click', () => clearMediaList());
@@ -1769,6 +2124,117 @@ function createMediaItem(item) {
   inlinePreview.appendChild(largeVideo);
   mediaDiv.appendChild(inlinePreview);
 
+  if ((isVideo || isStream) && !ytFormats && typeof window.Mediabunny !== 'undefined') {
+     browser.storage.local.get(['embed-subtitles-nonyt']).then(res => {
+         const embedSubtitlesNonYt = res['embed-subtitles-nonyt'] === '1';
+         if (embedSubtitlesNonYt) {
+             const subtitles = allMediaRequests.filter(req => req.type === 'subtitle' || req.isSubtitle);
+             if (subtitles.length > 0) {
+                 const subRow = document.createElement('div');
+                 subRow.classList.add('yt-resolution-row');
+                 subRow.style.marginTop = '8px';
+                 subRow.style.width = '100%';
+
+                 const subButtonWrapper = document.createElement('div');
+                 subButtonWrapper.classList.add('pill-select-wrapper', 'nonyt-subtitle-select-wrapper');
+                 subButtonWrapper.style.width = '100%';
+
+                 const subButton = document.createElement('button');
+                 subButton.classList.add('pill-select');
+                 subButton.style.textAlign = 'center';
+                 subButton.style.display = 'flex';
+                 subButton.style.alignItems = 'center';
+                 subButton.style.justifyContent = 'center';
+                 subButton.style.gap = '6px';
+                 subButton.style.cursor = 'pointer';
+                 subButton.style.width = '100%';
+                 subButton.style.paddingRight = '32px';
+                 
+                 const label = browser.i18n.getMessage("selectSubtitlesToEmbed") || "Select Subtitles";
+                 subButton.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 4px; flex-shrink: 0;"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-4H6V8h12v4z"/></svg> <span class="sub-btn-text">${label} (0)</span>`;
+                 
+                 subButton.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     
+                     const dialog = document.createElement('mdui-dialog');
+                     dialog.headline = label;
+                     
+                     const container = document.createElement('div');
+                     container.style.display = 'flex';
+                     container.style.flexDirection = 'column';
+                     container.style.gap = '8px';
+                     container.style.marginTop = '16px';
+                     container.style.maxHeight = '250px';
+                     container.style.overflowY = 'auto';
+                     
+                     let currentSelected = [];
+                     if (mediaDiv.dataset.selectedSubtitles) {
+                         try {
+                             currentSelected = JSON.parse(mediaDiv.dataset.selectedSubtitles);
+                         } catch (err) {}
+                     }
+                     
+                     const checkboxes = [];
+                     subtitles.forEach((sub) => {
+                         const mduiCheckbox = document.createElement('mdui-checkbox');
+                         mduiCheckbox.value = sub.bestRequest.originalUrl;
+                         mduiCheckbox.style.fontSize = '0.85rem';
+                         const name = sub.resolvedFilename || getFileName(sub.bestRequest.originalUrl);
+                         mduiCheckbox.textContent = name;
+                         if (currentSelected.includes(sub.bestRequest.originalUrl)) {
+                             mduiCheckbox.checked = true;
+                         }
+                         container.appendChild(mduiCheckbox);
+                         checkboxes.push(mduiCheckbox);
+                     });
+                     dialog.appendChild(container);
+                     
+                     const cancelBtn = document.createElement('mdui-button');
+                     cancelBtn.slot = "action";
+                     cancelBtn.variant = "text";
+                     cancelBtn.textContent = browser.i18n.getMessage("cancelButton") || "Cancel";
+                     cancelBtn.addEventListener('click', () => {
+                         dialog.open = false;
+                     });
+                     
+                     const selectBtn = document.createElement('mdui-button');
+                     selectBtn.slot = "action";
+                     selectBtn.variant = "tonal";
+                     selectBtn.textContent = browser.i18n.getMessage("selectButton") || "Select";
+                     selectBtn.addEventListener('click', () => {
+                         const newSelected = [];
+                         checkboxes.forEach(cb => {
+                             if (cb.checked) {
+                                 newSelected.push(cb.value);
+                             }
+                         });
+                         mediaDiv.dataset.selectedSubtitles = JSON.stringify(newSelected);
+                         const btnText = subButton.querySelector('.sub-btn-text');
+                         if (btnText) {
+                             btnText.textContent = `${label} (${newSelected.length})`;
+                         }
+                         dialog.open = false;
+                     });
+                     
+                     dialog.appendChild(cancelBtn);
+                     dialog.appendChild(selectBtn);
+                     
+                     document.body.appendChild(dialog);
+                     dialog.open = true;
+                     
+                     dialog.addEventListener('closed', () => {
+                         dialog.remove();
+                     });
+                 });
+
+                 subButtonWrapper.appendChild(subButton);
+                 subRow.appendChild(subButtonWrapper);
+                 actionsWrapper.insertBefore(subRow, actions);
+             }
+         }
+     }).catch(err => console.error("Error reading embed-subtitles-nonyt setting:", err));
+  }
+
   const actionsWrapper = document.createElement('div');
   actionsWrapper.classList.add('media-actions-wrapper');
 
@@ -2180,7 +2646,7 @@ function checkIsSegment(url, responseHeaders, settings) {
     const size = parseInt(contentLength) || 0;
 
     const isHideSegments = settings ? isFlagEnabled(settings['hide-segments']) : true;
-    const isHidePageComponents = settings ? isFlagEnabled(settings['hide-page-components']) : true;
+    const isHidePageComponents = isHideSegments;
 
     const path = urlLower.split('?')[0].split('#')[0];
     if (isHidePageComponents && (
@@ -2977,6 +3443,41 @@ async function loadHistoryList() {
 async function clearHistory() {
   await browser.storage.local.remove('download-history');
   loadHistoryList();
+}
+
+async function exportHistory() {
+  const historyResult = await browser.storage.local.get('download-history');
+  const history = historyResult['download-history'] || [];
+  const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.download = `wmd-history-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function handleImportHistory(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) throw new Error('Invalid format');
+    const existing = (await browser.storage.local.get('download-history'))['download-history'] || [];
+    const merged = [...imported, ...existing];
+    await browser.storage.local.set({ 'download-history': merged });
+    loadHistoryList();
+    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+      mdui.snackbar({ message: browser.i18n.getMessage('historyImportSuccess') || 'History imported successfully!', placement: 'top' });
+    }
+  } catch (err) {
+    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+      mdui.snackbar({ message: browser.i18n.getMessage('historyImportError', [err.message]) || `Failed to import history: ${err.message}`, placement: 'top' });
+    }
+  }
 }
 
 async function loadAboutPage() {

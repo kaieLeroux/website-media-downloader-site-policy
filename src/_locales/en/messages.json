@@ -43,6 +43,18 @@
     "message": "When enabled, downloading all subtitles embeds them into the video file (MKV/MP4) using Mediabunny. When disabled, subtitles are downloaded in a ZIP archive.",
     "description": "Explanation for subtitle embedding setting"
   },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Embed subtitles (Standard video)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "When enabled, displays a subtitle selector card on standard video items to embed selected subtitles.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Select Subtitles to Embed:",
+    "description": "Label for checklist to select subtitles to embed"
+  },
   "embedSubtitlesContainerTitle": {
     "message": "Subtitle embed container format",
     "description": "Format selector title for subtitle embedding"
@@ -484,14 +496,6 @@
     "message": "Audio Language",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "Hide page components",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "Hides website system files like HTML and CSS so your media list stays clean and relevant.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "Download",
     "description": "The action label to download media from the notification."
@@ -839,6 +843,28 @@
   "clearHistoryButton": {
     "message": "Clear history",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "Export",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "Import",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "History imported successfully!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "Failed to import history: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "No download history found.",

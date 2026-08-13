@@ -1463,15 +1463,11 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
       }
     }
 
-    const segCount = items.filter(it => it.type === 'segment').length;
-
     let container = null; 
 
     let currentKeyBuffer = null;   
     let currentKeyUri = null;      
     let currentKeyIV = null;       
-
-    let processedSegmentIndex = 0; 
 
     function makeSequenceIV(seq) {
       const iv = new Uint8Array(16);
@@ -1554,7 +1550,6 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
     let gdriveSessionUri = null;
     let dropboxSessionId = null;
     let dropboxOffset = 0;
-    let useDropboxStream = isDropboxStream;
     let currentUploadOffset = 0;
 
     if (isDropboxStream) {
@@ -3095,8 +3090,7 @@ async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMetho
         console.log("downloadAndMuxYoutube: Selecting LibAV variant...");
         const isMp4 = filename.toLowerCase().includes('.mp4');
         const libavVar = isMp4 ? 'LibAV_h264' : 'LibAV';
-        const libavScript = isMp4 ? 'libraries/libav-6.5.7.1.js' : 'libraries/libav-6.8.8.0.js';
-        const libavWasm = isMp4 ? 'libraries/libav-6.5.7.1.wasm.wasm' : 'libraries/libav-6.8.8.0.wasm.wasm';
+        const libavScript = 'libraries/libav.js';
 
         if (!window[libavVar] || !window[libavVar].LibAV) {
             console.log("downloadAndMuxYoutube: Loading script " + libavScript);
@@ -3123,7 +3117,6 @@ async function downloadAndMuxYoutube(videoUrl, audioUrl, filename, downloadMetho
         console.log("downloadAndMuxYoutube: Initializing LibAV instance...");
         libav = await window[libavVar].LibAV({
             noworker: true,
-            wasmurl: browser.runtime.getURL(libavWasm),
             base: browser.runtime.getURL('libraries')
         });
         console.log("downloadAndMuxYoutube: LibAV instance ready.");

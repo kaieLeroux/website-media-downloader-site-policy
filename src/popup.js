@@ -35,7 +35,6 @@ if (!browser.storage.session) {
 }
 
 let downloadingCount = 0;
-let ratingCount = 0;
 let allMediaRequests = [];
 let allFilteredRequests = [];
 let renderedCount = 0;
@@ -167,7 +166,6 @@ async function getSpecificReleaseUrl(version) {
 
 async function performUpdateCheck() {
   const MANIFEST_URL = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1/src/manifest.json';
-  const RELEASES_URL = 'https://github.com/anpa26/website-media-downloader/releases';
   const AMO_URL = 'https://addons.mozilla.org/en-US/firefox/addon/website-media-downloader';
   const AMO_API_URL = 'https://addons.mozilla.org/api/v5/addons/addon/website-media-downloader/';
 
@@ -367,6 +365,324 @@ function showUpdateNotification(url, latestVersion, requireUninstall = false) {
   showUpdateDialog(url, latestVersion, requireUninstall);
 }
 
+async function checkAndShowEventPopup() {
+  try {
+    const welcomeData = await browser.storage.local.get(['wmd_reinstall_warning_shown', 'wmd_previous_version']);
+
+    let requireUninstall = false;
+    try {
+      const res = await fetch(browser.runtime.getURL('changelog.json'));
+      const changelog = await res.json();
+      if (changelog.require_uninstall && welcomeData['wmd_previous_version'] && !welcomeData['wmd_reinstall_warning_shown']) {
+        requireUninstall = true;
+      }
+    } catch (e) {}
+
+    if (requireUninstall) {
+      return;
+    }
+
+    const rawUrl = 'https://raw.githubusercontent.com/anpa26/website-media-downloader/wmd-1-event';
+    const response = await fetch(`${rawUrl}/info.json?t=` + Date.now());
+    if (!response.ok) return;
+
+    const info = await response.json();
+    if (!info || info.enabled === false || !info.storage_key) return;
+
+    const storageResult = await browser.storage.local.get(info.storage_key);
+    if (storageResult[info.storage_key]) {
+      return;
+    }
+
+    const dialog = document.createElement('mdui-dialog');
+    dialog.closeOnOverlayClick = !info.show_skip ? false : true;
+    dialog.closeOnEsc = !info.show_skip ? false : true;
+
+    if (info.title) {
+      const headline = document.createElement('div');
+      headline.setAttribute('slot', 'headline');
+      headline.style.width = '100%';
+      headline.style.fontWeight = 'bold';
+      headline.textContent = info.title;
+
+      const titlePos = (info.title_position || 'left').toLowerCase();
+      if (titlePos === 'center') {
+        headline.style.textAlign = 'center';
+      } else if (titlePos === 'right') {
+        headline.style.textAlign = 'right';
+      } else {
+        headline.style.textAlign = 'left';
+      }
+      dialog.appendChild(headline);
+    }
+
+    const contentDiv = document.createElement('div');
+    contentDiv.setAttribute('slot', 'description');
+    contentDiv.style.display = 'flex';
+    contentDiv.style.flexDirection = 'column';
+    contentDiv.style.gap = '12px';
+
+    let slides = [];
+    if (info.slides && Array.isArray(info.slides)) {
+      slides = info.slides;
+    } else if (info.images && Array.isArray(info.images) && info.images.length > 0) {
+      slides = info.images.map(img => ({ image: img, description: info.description }));
+    } else if (info.image) {
+      slides = [{ image: info.image, description: info.description }];
+    } else if (info.description) {
+      slides = [{ description: info.description }];
+    }
+
+    let descEl = null;
+
+    if (slides.length === 1) {
+      const slide = slides[0];
+      if (slide.image) {
+        const img = document.createElement('img');
+        img.src = `${rawUrl}/${slide.image}`;
+        img.style.width = '100%';
+        img.style.borderRadius = '8px';
+        img.style.maxHeight = '240px';
+        img.style.objectFit = 'cover';
+        contentDiv.appendChild(img);
+      }
+      if (slide.description) {
+        descEl = document.createElement('p');
+        descEl.style.margin = '0';
+        descEl.style.lineHeight = '1.4';
+        descEl.textContent = slide.description;
+        contentDiv.appendChild(descEl);
+      }
+    } else if (slides.length > 1) {
+      const hasAnyImage = slides.some(slide => !!slide.image);
+
+      let track = null;
+      let currentIndex = 0;
+      const totalSlides = slides.length;
+
+      const dotsContainer = document.createElement('div');
+      dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px;';
+
+      slides.forEach((_, idx) => {
+        const dot = document.createElement('div');
+        dot.className = 'carousel-dot';
+        dot.style.cssText = 'width: 6px; height: 6px; border-radius: 50%; cursor: pointer; transition: all 0.2s;';
+        dot.addEventListener('click', () => {
+          currentIndex = idx;
+          updateCarousel();
+        });
+        dotsContainer.appendChild(dot);
+      });
+
+      const prevBtn = document.createElement('button');
+      prevBtn.innerHTML = '&#10094;';
+
+      const nextBtn = document.createElement('button');
+      nextBtn.innerHTML = '&#10095;';
+
+      const setArrowStyleCarousel = (btn, isRight) => {
+        btn.style.cssText = `position: absolute; ${isRight ? 'right' : 'left'}: 8px; z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;`;
+        btn.onmouseover = () => btn.style.background = 'rgba(0,0,0,0.8)';
+        btn.onmouseout = () => btn.style.background = 'rgba(0,0,0,0.5)';
+      };
+
+      const setArrowStyleText = (btn) => {
+        btn.style.cssText = 'background: none; color: rgb(var(--mdui-color-primary)); border: none; cursor: pointer; font-size: 16px; font-weight: bold; padding: 4px 12px; display: flex; align-items: center; justify-content: center; position: static; width: auto; height: auto;';
+        btn.onmouseover = null;
+        btn.onmouseout = null;
+      };
+
+      let carouselContainer = null;
+      if (hasAnyImage) {
+        carouselContainer = document.createElement('div');
+        carouselContainer.style.position = 'relative';
+        carouselContainer.style.width = '100%';
+        carouselContainer.style.overflow = 'hidden';
+        carouselContainer.style.borderRadius = '8px';
+        carouselContainer.style.display = 'flex';
+        carouselContainer.style.alignItems = 'center';
+        carouselContainer.style.marginBottom = '8px';
+
+        track = document.createElement('div');
+        track.style.display = 'flex';
+        track.style.width = '100%';
+        track.style.transition = 'transform 0.3s ease';
+
+        slides.forEach(slide => {
+          const slideContainer = document.createElement('div');
+          slideContainer.style.width = '100%';
+          slideContainer.style.flexShrink = '0';
+          slideContainer.style.maxHeight = '240px';
+          slideContainer.style.height = '240px';
+          slideContainer.style.display = 'flex';
+          slideContainer.style.alignItems = 'center';
+          slideContainer.style.justifyContent = 'center';
+          slideContainer.style.borderRadius = '8px';
+          slideContainer.style.overflow = 'hidden';
+
+          if (slide.image) {
+            const img = document.createElement('img');
+            img.src = `${rawUrl}/${slide.image}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            slideContainer.appendChild(img);
+          }
+          track.appendChild(slideContainer);
+        });
+        carouselContainer.appendChild(track);
+        contentDiv.appendChild(carouselContainer);
+      }
+
+      descEl = document.createElement('p');
+      descEl.style.margin = '0';
+      descEl.style.lineHeight = '1.4';
+      descEl.style.minHeight = '48px';
+      contentDiv.appendChild(descEl);
+
+      const navRow = document.createElement('div');
+      navRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 8px; margin-bottom: 4px; width: 100%;';
+      contentDiv.appendChild(navRow);
+
+      const updateCarousel = () => {
+        const currentSlide = slides[currentIndex];
+
+        if (currentSlide && currentSlide.image && carouselContainer) {
+          carouselContainer.style.display = 'flex';
+          navRow.style.display = 'none';
+
+          setArrowStyleCarousel(prevBtn, false);
+          setArrowStyleCarousel(nextBtn, true);
+          carouselContainer.appendChild(prevBtn);
+          carouselContainer.appendChild(nextBtn);
+
+          dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px; margin-top: -4px; margin-bottom: 4px;';
+          contentDiv.insertBefore(dotsContainer, descEl);
+
+          if (track) {
+            track.style.transform = `translateX(-${currentIndex * 100}%)`;
+          }
+        } else {
+          if (carouselContainer) {
+            carouselContainer.style.display = 'none';
+          }
+
+          navRow.style.display = 'flex';
+
+          setArrowStyleText(prevBtn);
+          setArrowStyleText(nextBtn);
+          navRow.appendChild(prevBtn);
+          navRow.appendChild(dotsContainer);
+          navRow.appendChild(nextBtn);
+
+          dotsContainer.style.cssText = 'display: flex; justify-content: center; gap: 6px;';
+        }
+
+        const dots = dotsContainer.querySelectorAll('.carousel-dot');
+        dots.forEach((dot, idx) => {
+          if (idx === currentIndex) {
+            dot.style.background = 'rgb(var(--mdui-color-primary))';
+            dot.style.transform = 'scale(1.2)';
+          } else {
+            dot.style.background = 'rgba(var(--mdui-color-on-surface), 0.3)';
+            dot.style.transform = 'scale(1)';
+          }
+        });
+
+        if (currentSlide && currentSlide.description) {
+          descEl.textContent = currentSlide.description;
+          descEl.style.display = 'block';
+        } else {
+          descEl.style.display = 'none';
+        }
+      };
+
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        updateCarousel();
+      });
+
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % totalSlides;
+        updateCarousel();
+      });
+
+      updateCarousel();
+    }
+
+    dialog.appendChild(contentDiv);
+
+    const actionWrapper = document.createElement('div');
+    actionWrapper.setAttribute('slot', 'action');
+    actionWrapper.style.display = 'flex';
+    actionWrapper.style.width = '100%';
+    actionWrapper.style.gap = '8px';
+
+    const pos = (info.button_position || 'right').toLowerCase();
+
+    const actionBtn = document.createElement('mdui-button');
+    actionBtn.variant = 'filled';
+    actionBtn.textContent = info.button_text || 'OK';
+    actionBtn.addEventListener('click', async () => {
+      await browser.storage.local.set({ [info.storage_key]: true });
+      dialog.open = false;
+      if (info.action_url) {
+        window.open(info.action_url, '_blank');
+      }
+    });
+
+    let skipBtn = null;
+    if (info.show_skip) {
+      skipBtn = document.createElement('mdui-button');
+      skipBtn.variant = 'text';
+      skipBtn.textContent = browser.i18n.getMessage("cancelButton") || 'Skip';
+      skipBtn.addEventListener('click', async () => {
+        await browser.storage.local.set({ [info.storage_key]: true });
+        dialog.open = false;
+      });
+    }
+
+    if (pos === 'center') {
+      actionWrapper.style.flexDirection = 'column';
+      actionWrapper.style.justifyContent = 'center';
+      actionWrapper.style.alignItems = 'center';
+
+      actionWrapper.appendChild(actionBtn);
+      if (skipBtn) {
+        actionWrapper.appendChild(skipBtn);
+      }
+    } else {
+      actionWrapper.style.flexDirection = 'row';
+      actionWrapper.style.alignItems = 'center';
+      if (pos === 'left') {
+        actionWrapper.style.justifyContent = 'flex-start';
+      } else {
+        actionWrapper.style.justifyContent = 'flex-end';
+      }
+
+      actionWrapper.appendChild(actionBtn);
+      if (skipBtn) {
+        actionWrapper.appendChild(skipBtn);
+      }
+    }
+
+    dialog.appendChild(actionWrapper);
+
+    document.body.appendChild(dialog);
+    dialog.open = true;
+
+    dialog.addEventListener('closed', () => {
+      dialog.remove();
+    });
+  } catch (error) {
+    console.error('Error fetching/displaying event popup:', error);
+  }
+}
+
 async function initTheme() {
   const result = await browser.storage.local.get(['theme-color', 'theme-mode']);
   const themeColor = result['theme-color'] || '#bbdefb';
@@ -393,6 +709,7 @@ async function initTheme() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   checkForUpdates();
+  checkAndShowEventPopup();
   await initTheme();
 
   const scaleResult = await browser.storage.local.get('ui-scale');
@@ -594,6 +911,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('clear-history').addEventListener('click', () => clearHistory());
+  document.getElementById('export-history').addEventListener('click', () => exportHistory());
+  document.getElementById('import-history').addEventListener('click', () => {
+    document.getElementById('import-history-input').click();
+  });
+  document.getElementById('import-history-input').addEventListener('change', handleImportHistory);
 
   document.getElementById('refresh-list').addEventListener('click', () => loadMediaList());
   document.getElementById('clear-list').addEventListener('click', () => clearMediaList());
@@ -845,6 +1167,9 @@ function updateProgressUI(id, loaded, total, isParallel = false, isPaused = fals
   }
 
   if (item) {
+    if (!activeDownloadingElements.includes(item.element)) {
+      activeDownloadingElements.push(item.element);
+    }
     const { loadingBar, statusInfo, dlBtn, cancelBtn, audioBtn } = item;
 
     if (dlBtn) {
@@ -941,6 +1266,7 @@ function finishDownloadUI(id, isSuccess = false) {
   const itemData = uiCache.get(id);
   if (itemData) {
       const { element, progressContainer } = itemData;
+      activeDownloadingElements = activeDownloadingElements.filter(el => el !== element);
 
       if (isSuccess) {
           element.remove();
@@ -980,6 +1306,7 @@ function finishDownloadUI(id, isSuccess = false) {
   const mediaItems = document.querySelectorAll('.media-item');
   mediaItems.forEach(item => {
     if (item.dataset.downloadId === id || item.dataset.url === id) {
+      activeDownloadingElements = activeDownloadingElements.filter(el => el !== item);
       if (isSuccess) {
         item.remove();
 
@@ -1417,12 +1744,7 @@ function renderInitialList() {
   const mediaControls = document.getElementById('media-controls');
   const query = document.getElementById('search-bar').value.trim();
 
-  const activeItems = [];
-  mediaContainer.querySelectorAll('.media-item').forEach(item => {
-    if (item.querySelector('mdui-linear-progress')) {
-      activeItems.push(item);
-    }
-  });
+  const activeItems = [...activeDownloadingElements];
 
   mediaContainer.innerHTML = '';
   renderedCount = 0;
@@ -1551,7 +1873,6 @@ function renderNextChunk() {
   const fragment = document.createDocumentFragment();
   const requestsToRender = getActiveRequests();
   const nextChunk = requestsToRender.slice(renderedCount, renderedCount + CHUNK_SIZE);
-  const selectAllChecked = document.getElementById('select-all-checkbox').checked;
 
   nextChunk.forEach(item => {
     const itemUrl = item.bestRequest.originalUrl;
@@ -1809,6 +2130,117 @@ function createMediaItem(item) {
   largeVideo.controls = true;
   inlinePreview.appendChild(largeVideo);
   mediaDiv.appendChild(inlinePreview);
+
+  if ((isVideo || isStream) && !ytFormats && typeof window.Mediabunny !== 'undefined') {
+     browser.storage.local.get(['embed-subtitles-nonyt']).then(res => {
+         const embedSubtitlesNonYt = res['embed-subtitles-nonyt'] === '1';
+         if (embedSubtitlesNonYt) {
+             const subtitles = allMediaRequests.filter(req => req.type === 'subtitle' || req.isSubtitle);
+             if (subtitles.length > 0) {
+                 const subRow = document.createElement('div');
+                 subRow.classList.add('yt-resolution-row');
+                 subRow.style.marginTop = '8px';
+                 subRow.style.width = '100%';
+
+                 const subButtonWrapper = document.createElement('div');
+                 subButtonWrapper.classList.add('pill-select-wrapper', 'nonyt-subtitle-select-wrapper');
+                 subButtonWrapper.style.width = '100%';
+
+                 const subButton = document.createElement('button');
+                 subButton.classList.add('pill-select');
+                 subButton.style.textAlign = 'center';
+                 subButton.style.display = 'flex';
+                 subButton.style.alignItems = 'center';
+                 subButton.style.justifyContent = 'center';
+                 subButton.style.gap = '6px';
+                 subButton.style.cursor = 'pointer';
+                 subButton.style.width = '100%';
+                 subButton.style.paddingRight = '32px';
+                 
+                 const label = browser.i18n.getMessage("selectSubtitlesToEmbed") || "Select Subtitles";
+                 subButton.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 4px; flex-shrink: 0;"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-4H6V8h12v4z"/></svg> <span class="sub-btn-text">${label} (0)</span>`;
+                 
+                 subButton.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     
+                     const dialog = document.createElement('mdui-dialog');
+                     dialog.headline = label;
+                     
+                     const container = document.createElement('div');
+                     container.style.display = 'flex';
+                     container.style.flexDirection = 'column';
+                     container.style.gap = '8px';
+                     container.style.marginTop = '16px';
+                     container.style.maxHeight = '250px';
+                     container.style.overflowY = 'auto';
+                     
+                     let currentSelected = [];
+                     if (mediaDiv.dataset.selectedSubtitles) {
+                         try {
+                             currentSelected = JSON.parse(mediaDiv.dataset.selectedSubtitles);
+                         } catch (err) {}
+                     }
+                     
+                     const checkboxes = [];
+                     subtitles.forEach((sub) => {
+                         const mduiCheckbox = document.createElement('mdui-checkbox');
+                         mduiCheckbox.value = sub.bestRequest.originalUrl;
+                         mduiCheckbox.style.fontSize = '0.85rem';
+                         const name = sub.resolvedFilename || getFileName(sub.bestRequest.originalUrl);
+                         mduiCheckbox.textContent = name;
+                         if (currentSelected.includes(sub.bestRequest.originalUrl)) {
+                             mduiCheckbox.checked = true;
+                         }
+                         container.appendChild(mduiCheckbox);
+                         checkboxes.push(mduiCheckbox);
+                     });
+                     dialog.appendChild(container);
+                     
+                     const cancelBtn = document.createElement('mdui-button');
+                     cancelBtn.slot = "action";
+                     cancelBtn.variant = "text";
+                     cancelBtn.textContent = browser.i18n.getMessage("cancelButton") || "Cancel";
+                     cancelBtn.addEventListener('click', () => {
+                         dialog.open = false;
+                     });
+                     
+                     const selectBtn = document.createElement('mdui-button');
+                     selectBtn.slot = "action";
+                     selectBtn.variant = "tonal";
+                     selectBtn.textContent = browser.i18n.getMessage("selectButton") || "Select";
+                     selectBtn.addEventListener('click', () => {
+                         const newSelected = [];
+                         checkboxes.forEach(cb => {
+                             if (cb.checked) {
+                                 newSelected.push(cb.value);
+                             }
+                         });
+                         mediaDiv.dataset.selectedSubtitles = JSON.stringify(newSelected);
+                         const btnText = subButton.querySelector('.sub-btn-text');
+                         if (btnText) {
+                             btnText.textContent = `${label} (${newSelected.length})`;
+                         }
+                         dialog.open = false;
+                     });
+                     
+                     dialog.appendChild(cancelBtn);
+                     dialog.appendChild(selectBtn);
+                     
+                     document.body.appendChild(dialog);
+                     dialog.open = true;
+                     
+                     dialog.addEventListener('closed', () => {
+                         dialog.remove();
+                     });
+                 });
+
+                 subButtonWrapper.appendChild(subButton);
+                 subRow.appendChild(subButtonWrapper);
+                 actionsWrapper.insertBefore(subRow, actions);
+             }
+         }
+     }).catch(err => console.error("Error reading embed-subtitles-nonyt setting:", err));
+  }
 
   const actionsWrapper = document.createElement('div');
   actionsWrapper.classList.add('media-actions-wrapper');
@@ -2406,7 +2838,7 @@ function checkIsSegment(url, responseHeaders, settings) {
     const size = parseInt(contentLength) || 0;
 
     const isHideSegments = settings ? isFlagEnabled(settings['hide-segments']) : true;
-    const isHidePageComponents = settings ? isFlagEnabled(settings['hide-page-components']) : true;
+    const isHidePageComponents = isHideSegments;
 
     const path = urlLower.split('?')[0].split('#')[0];
     if (isHidePageComponents && (
@@ -3206,6 +3638,41 @@ async function clearHistory() {
   loadHistoryList();
 }
 
+async function exportHistory() {
+  const historyResult = await browser.storage.local.get('download-history');
+  const history = historyResult['download-history'] || [];
+  const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.download = `wmd-history-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function handleImportHistory(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) throw new Error('Invalid format');
+    const existing = (await browser.storage.local.get('download-history'))['download-history'] || [];
+    const merged = [...imported, ...existing];
+    await browser.storage.local.set({ 'download-history': merged });
+    loadHistoryList();
+    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+      mdui.snackbar({ message: browser.i18n.getMessage('historyImportSuccess') || 'History imported successfully!', placement: 'top' });
+    }
+  } catch (err) {
+    if (typeof mdui !== 'undefined' && mdui.snackbar) {
+      mdui.snackbar({ message: browser.i18n.getMessage('historyImportError', [err.message]) || `Failed to import history: ${err.message}`, placement: 'top' });
+    }
+  }
+}
+
 async function loadAboutPage() {
   const container = document.getElementById('about-container');
   try {
@@ -3971,6 +4438,121 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
   let wakeLock = null;
   try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
 
+  let selectedSubUrls = [];
+  if (mediaDiv && mediaDiv.dataset.selectedSubtitles) {
+      try {
+          selectedSubUrls = JSON.parse(mediaDiv.dataset.selectedSubtitles);
+      } catch (err) {
+          console.error(err);
+      }
+  }
+
+  const toIso3 = (lang) => {
+      const map = { en:'eng', id:'ind', ja:'jpn', ko:'kor', zh:'zho', fr:'fra', de:'deu',
+                    es:'spa', pt:'por', ru:'rus', ar:'ara', hi:'hin', tr:'tur', it:'ita',
+                    nl:'nld', pl:'pol', th:'tha', vi:'vie', sv:'swe', fi:'fin', da:'dan',
+                    no:'nor', cs:'ces', sk:'slk', ro:'ron', hu:'hun', el:'ell', uk:'ukr' };
+      if (!lang) return 'und';
+      const base = lang.split('-')[0].toLowerCase();
+      if (base.length === 3) return base;
+      return map[base] || 'und';
+  };
+
+  const cleanVtt = (raw) => {
+      let text = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      if (!text.startsWith('WEBVTT')) text = 'WEBVTT\n\n' + text;
+      text = text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+      const tsToSec = (ts) => {
+          const p = ts.trim().split(':');
+          if (p.length === 3) return +p[0]*3600 + +p[1]*60 + parseFloat(p[2]);
+          return +p[0]*60 + parseFloat(p[1]);
+      };
+      const blocks = text.split(/\n\n+/);
+      const header = blocks[0];
+      const cueRe = /^([\d:.]+)\s+-->\s+([\d:.]+)/;
+      const cues = [];
+      for (let b = 1; b < blocks.length; b++) {
+          const block = blocks[b].trim();
+          if (!block) continue;
+          const lines = block.split('\n');
+          let ti = cueRe.test(lines[0]) ? 0 : 1;
+          if (ti >= lines.length) continue;
+          const m = lines[ti].match(/^([\d:.]+)\s+-->\s+([\d:.]+)/);
+          if (!m) continue;
+          const payload = lines.slice(ti+1).join('\n')
+              .replace(/<\d{2}:\d{2}:\d{2}\.\d.3}>/g, '').replace(/<\/?c>/g, '')
+              .replace(/<[^>]+>/g, '').trim();
+          if (!payload) continue;
+          cues.push({ s: tsToSec(m[1]), e: tsToSec(m[2]), t1: m[1], t2: m[2], p: payload });
+      }
+      const seen = new Map();
+      for (const c of cues) seen.set(c.s, c);
+      const sorted = Array.from(seen.values()).sort((a, b) => a.s - b.s);
+      let maxE = 0;
+      for (const c of sorted) {
+          if (c.s < maxE) c.s = maxE;
+          if (c.s >= c.e) c.e = c.s + 0.001;
+          maxE = c.e;
+      }
+      if (!sorted.length) return null;
+      const f2 = (n) => String(Math.floor(n)).padStart(2,'0');
+      const toTs = (s) => `${f2(s/3600)}:${f2((s%3600)/60)}:${(s%60).toFixed(3).padStart(6,'0')}`;
+      return header + '\n\n' + sorted.map((c,i) => `${i+1}\n${toTs(c.s)} --> ${toTs(c.e)}\n${c.p}`).join('\n\n');
+  };
+
+  const fetchUrlAsBlob = async (fetchUrl, statusEl, statusPrefix) => {
+      const controller = new AbortController();
+      try {
+          let probeResp = await spoofedFetch(fetchUrl, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
+          let isChunked = probeResp.status === 206;
+          let size = 0;
+          if (isChunked) {
+              const cr = probeResp.headers.get('Content-Range');
+              if (cr) {
+                  const match = cr.match(/\/(\d+)$/);
+                  if (match) size = parseInt(match[1], 10);
+              }
+          }
+          if (!isChunked || !size) {
+              const resp = await spoofedFetch(fetchUrl);
+              if (!resp.ok) throw new Error("HTTP " + resp.status);
+              return await resp.blob();
+          }
+          const CHUNK_SIZE = 1024 * 1024;
+          let chunks = [];
+          let downloaded = 0;
+          for (let start = 0; start < size; start += CHUNK_SIZE) {
+              let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
+              let retries = 3;
+              let chunkResp;
+              while (retries > 0) {
+                  try {
+                      chunkResp = await spoofedFetch(fetchUrl, { headers: { "Range": `bytes=${start}-${end}` } });
+                      if (chunkResp.ok || chunkResp.status === 206) break;
+                  } catch (e) {
+                      console.warn("Chunk fetch failed, retrying...", e);
+                  }
+                  retries--;
+                  if (retries === 0) throw new Error("Failed to fetch chunk " + start);
+                  await new Promise(r => setTimeout(r, 1000));
+              }
+              const arrayBuf = await chunkResp.arrayBuffer();
+              chunks.push(new Uint8Array(arrayBuf));
+              downloaded += arrayBuf.byteLength;
+              if (statusEl) {
+                  const pct = Math.round((downloaded / size) * 100);
+                  statusEl.textContent = `${statusPrefix} (${pct}%)`;
+              }
+          }
+          return new Blob(chunks);
+      } catch (e) {
+          console.error("fetchUrlAsBlob failed, trying fallback:", e);
+          const resp = await spoofedFetch(fetchUrl);
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          return await resp.blob();
+      }
+  };
+
   try {
    const requests = await browser.runtime.sendMessage({ action: 'getMediaRequests', url: url });
    let targetRequest = requests[url]?.find(r => r.size === specificSize) || requests[url]?.[0];
@@ -4087,59 +4669,6 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
     if (isYtZipNeeded) {
         if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("zipPreparing") || "Preparing ZIP archive...";
         try {
-            const fetchUrlAsBlob = async (fetchUrl, statusEl, statusPrefix) => {
-                const controller = new AbortController();
-                try {
-                    let probeResp = await spoofedFetch(fetchUrl, { headers: { "Range": "bytes=0-0" }, signal: controller.signal });
-                    let isChunked = probeResp.status === 206;
-                    let size = 0;
-                    if (isChunked) {
-                        const cr = probeResp.headers.get('Content-Range');
-                        if (cr) {
-                            const match = cr.match(/\/(\d+)$/);
-                            if (match) size = parseInt(match[1], 10);
-                        }
-                    }
-                    if (!isChunked || !size) {
-                        const resp = await spoofedFetch(fetchUrl);
-                        if (!resp.ok) throw new Error("HTTP " + resp.status);
-                        return await resp.blob();
-                    }
-                    const CHUNK_SIZE = 1024 * 1024;
-                    let chunks = [];
-                    let downloaded = 0;
-                    for (let start = 0; start < size; start += CHUNK_SIZE) {
-                        let end = Math.min(start + CHUNK_SIZE - 1, size - 1);
-                        let retries = 3;
-                        let chunkResp;
-                        while (retries > 0) {
-                            try {
-                                chunkResp = await spoofedFetch(fetchUrl, { headers: { "Range": `bytes=${start}-${end}` } });
-                                if (chunkResp.ok || chunkResp.status === 206) break;
-                            } catch (e) {
-                                console.warn("Chunk fetch failed, retrying...", e);
-                            }
-                            retries--;
-                            if (retries === 0) throw new Error("Failed to fetch chunk " + start);
-                            await new Promise(r => setTimeout(r, 1000));
-                        }
-                        const arrayBuf = await chunkResp.arrayBuffer();
-                        chunks.push(new Uint8Array(arrayBuf));
-                        downloaded += arrayBuf.byteLength;
-                        if (statusEl) {
-                            const pct = Math.round((downloaded / size) * 100);
-                            statusEl.textContent = `${statusPrefix} (${pct}%)`;
-                        }
-                    }
-                    return new Blob(chunks);
-                } catch (e) {
-                    console.error("fetchUrlAsBlob failed, trying fallback:", e);
-                    const resp = await spoofedFetch(fetchUrl);
-                    if (!resp.ok) throw new Error("HTTP " + resp.status);
-                    return await resp.blob();
-                }
-            };
-
             const zipEntries = [];
             let videoBlob = null;
             let videoName = newName;
@@ -4150,8 +4679,8 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
                 if (audioUrl && audioUrl !== 'all') {
                     videoBlob = await downloadAndMuxYoutube(url, audioUrl, newName, downloadMethod, loadingBar, true);
                 } else if (audioUrl === 'all') {
+                    const ytFormats = (mediaDiv && mediaDiv.ytFormats) || [];
                     if (muxAllAudios) {
-                        const ytFormats = (mediaDiv && mediaDiv.ytFormats) || [];
                         const uniqueAudios = [];
                         const seenAudioUrls = new Set();
                         ytFormats.forEach(fmt => {
@@ -4165,9 +4694,13 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
                         });
                         videoBlob = await downloadAndMuxYoutube(url, uniqueAudios, newName, downloadMethod, loadingBar, true);
                     } else {
-                        const selectedDemuxer = formatSelect.value;
-                        const selectedCodec = codecSelect.value;
-                        const selectedRes = resSelect.value;
+                        const formatSelect = mediaDiv ? mediaDiv.querySelector('.yt-format-select') : null;
+                        const codecSelect = mediaDiv ? mediaDiv.querySelector('.yt-codec-select') : null;
+                        const resSelect = mediaDiv ? mediaDiv.querySelector('.yt-resolution-select') : null;
+
+                        const selectedDemuxer = formatSelect ? formatSelect.value : (ytFormats[0]?.demuxer || '');
+                        const selectedCodec = codecSelect ? codecSelect.value : (ytFormats[0]?.codec || 'UNKNOWN');
+                        const selectedRes = resSelect ? resSelect.value : (ytFormats[0]?.label || (ytFormats[0] ? `${ytFormats[0].width}x${ytFormats[0].height}` : ''));
                         const matchingFormats = ytFormats.filter(f =>
                             f.demuxer === selectedDemuxer &&
                             (f.codec === selectedCodec || (!f.codec && selectedCodec === 'UNKNOWN')) &&
@@ -4296,6 +4829,110 @@ async function downloadFile(url, mediaDiv, specificSize, silent = false, audioUr
         } catch (e) {
             console.error("ZIP creation failed:", e);
             if (typeof showDialog === 'function') showDialog("Failed to create ZIP: " + e.message);
+            finishDownloadUI(downloadId, false);
+        }
+        return;
+    }
+
+    const nonYtSettings = await browser.storage.local.get(['embed-subtitles-nonyt']);
+    const embedSubtitlesNonYt = nonYtSettings['embed-subtitles-nonyt'] === '1';
+    const isNonYtSubtitleEmbed = embedSubtitlesNonYt && selectedSubUrls.length > 0;
+
+    if (isNonYtSubtitleEmbed) {
+        if (statusInfo) statusInfo.textContent = browser.i18n.getMessage("startingDownload") || "Starting download...";
+        try {
+            if (statusInfo) statusInfo.textContent = "Downloading video...";
+            const videoBlob = await fetchUrlAsBlob(url, statusInfo, "Downloading video");
+            if (!videoBlob) throw new Error("Failed to download video file.");
+
+            if (statusInfo) statusInfo.textContent = "Fetching subtitles...";
+            const subData = [];
+            for (let i = 0; i < selectedSubUrls.length; i++) {
+                const subUrl = selectedSubUrls[i];
+                if (statusInfo) statusInfo.textContent = `Fetching subtitle ${i+1}/${selectedSubUrls.length}...`;
+                try {
+                    const bgFetch = await browser.runtime.sendMessage({ action: 'fetchText', url: subUrl });
+                    let text = bgFetch && bgFetch.text ? bgFetch.text : null;
+                    if (!text) {
+                        const resp = await spoofedFetch(subUrl);
+                        if (resp.ok) text = await resp.text();
+                    }
+                    if (text) {
+                        const cleaned = cleanVtt(text);
+                        const matchedReq = allMediaRequests.find(r => (r.bestRequest.originalUrl === subUrl || r.bestRequest.url === subUrl));
+                        const name = matchedReq ? (matchedReq.resolvedFilename || getFileName(subUrl)) : getFileName(subUrl);
+                        let lang = 'und';
+                        const langMatch = name.match(/[\s._-]([a-z]{2})[\s._-]/i) || name.match(/^([a-z]{2})[\s._-]/i);
+                        if (langMatch) lang = langMatch[1].toLowerCase();
+                        
+                        if (cleaned) subData.push({ text: cleaned, language: lang, displayName: name.replace(/\.[a-zA-Z0-9]+$/, '') });
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch subtitle:', subUrl, err);
+                }
+            }
+
+            if (statusInfo) statusInfo.textContent = 'Embedding subtitles with Mediabunny...';
+
+            const mbInput = new window.Mediabunny.Input({
+                source: new window.Mediabunny.BlobSource(videoBlob),
+                formats: window.Mediabunny.ALL_FORMATS
+            });
+
+            let containerExt = '.mkv';
+            const mbOutputFormat = embedSubtitlesContainer === 'mp4'
+                ? (containerExt = '.mp4', new window.Mediabunny.Mp4OutputFormat())
+                : new window.Mediabunny.MkvOutputFormat();
+
+            const mbTarget = new window.Mediabunny.BufferTarget();
+            const mbOutput = new window.Mediabunny.Output({ format: mbOutputFormat, target: mbTarget });
+
+            const conversion = await window.Mediabunny.Conversion.init({ input: mbInput, output: mbOutput });
+
+            const subSources = [];
+            for (let i = 0; i < subData.length; i++) {
+                const { language, displayName } = subData[i];
+                const subSource = new window.Mediabunny.TextSubtitleSource('webvtt');
+                mbOutput.addSubtitleTrack(subSource, {
+                    languageCode: toIso3(language),
+                    name: displayName || `Subtitle ${i+1}`
+                });
+                subSources.push(subSource);
+            }
+
+            const feedSubs = async () => {
+                for (let i = 0; i < subSources.length; i++) {
+                    await subSources[i].add(subData[i].text);
+                    if (typeof subSources[i]._flushAndClose === 'function') {
+                        await subSources[i]._flushAndClose();
+                    }
+                }
+            };
+
+            await Promise.all([conversion.execute(), feedSubs()]);
+
+            const finalBlob = new Blob([mbTarget.buffer], {
+                type: embedSubtitlesContainer === 'mp4' ? 'video/mp4' : 'video/x-matroska'
+            });
+            await mbInput.dispose();
+
+            const embedNewName = newName.replace(/\.[a-zA-Z0-9]+$/, '') + containerExt;
+            if (typeof finalizeDownload === 'function') {
+                await finalizeDownload(finalBlob, embedNewName, downloadMethod, loadingBar, false, false);
+            } else {
+                const finalBlobUrl = URL.createObjectURL(finalBlob);
+                const a = document.createElement('a');
+                a.href = finalBlobUrl;
+                a.download = embedNewName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(finalBlobUrl); }, 2000);
+            }
+
+            finishDownloadUI(downloadId, true);
+        } catch (e) {
+            console.error("Non-YT subtitle embedding failed:", e);
+            if (e.message !== "Cancelled") showDialog(browser.i18n.getMessage("downloadError", [e.message]));
             finishDownloadUI(downloadId, false);
         }
         return;

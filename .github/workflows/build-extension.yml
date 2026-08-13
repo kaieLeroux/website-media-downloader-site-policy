@@ -26,27 +26,32 @@ jobs:
         run: |
           node src/build.js all
 
+      - name: Minify Builds
+        run: |
+          npm install terser html-minifier-terser clean-css
+          node src/minify.js
+
       - name: Create Extension Archives
         run: |
           # Chrome Extension Build
           cd build/chrome
-          zip -r ../../website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip ./*
+          zip -9 -r ../../website-media-downloader-chrome-${{ steps.get_version.outputs.version }}.zip ./*
           cd ../..
 
           # Chrome-YT Extension Build
           cd build/chrome-yt
-          zip -r ../../website-media-downloader-chrome-yt-${{ steps.get_version.outputs.version }}.zip ./*
+          zip -9 -r ../../website-media-downloader-chrome-yt-${{ steps.get_version.outputs.version }}.zip ./*
           cd ../..
 
           # Firefox Extension Build (XPI)
           cd build/firefox
-          zip -r ../../website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi ./*
+          zip -9 -r ../../website-media-downloader-firefox-${{ steps.get_version.outputs.version }}.xpi ./*
           cd ../..
 
       - name: Create Source Code Archives
         run: |
           # Firefox clean source code (mirrors root: src/ folder, metadata in root)
-          zip -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js"
+          zip -9 -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js" "src/minify.js"
 
           # Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
           mkdir -p chrome-source-temp/src
@@ -54,7 +59,7 @@ jobs:
           cp README.md LICENSE.md CONTRIBUTING.md chrome-source-temp/
           cp -r licenses chrome-source-temp/
           cd chrome-source-temp
-          zip -r ../website-media-downloader-chrome-source-${{ steps.get_version.outputs.version }}.zip ./*
+          zip -9 -r ../website-media-downloader-chrome-source-${{ steps.get_version.outputs.version }}.zip ./*
           cd ..
           rm -rf chrome-source-temp
 
@@ -64,7 +69,7 @@ jobs:
           cp README.md LICENSE.md CONTRIBUTING.md chrome-yt-source-temp/
           cp -r licenses chrome-yt-source-temp/
           cd chrome-yt-source-temp
-          zip -r ../website-media-downloader-chrome-yt-source-${{ steps.get_version.outputs.version }}.zip ./*
+          zip -9 -r ../website-media-downloader-chrome-yt-source-${{ steps.get_version.outputs.version }}.zip ./*
           cd ..
           rm -rf chrome-yt-source-temp
 

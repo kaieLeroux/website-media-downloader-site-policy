@@ -693,6 +693,28 @@
         "message": "Очистить историю",
         "description": "The label of the button to clear the download history."
     },
+    "exportHistoryButton": {
+        "message": "Экспорт",
+        "description": "The label of the button to export the download history."
+    },
+    "importHistoryButton": {
+        "message": "Импорт",
+        "description": "The label of the button to import the download history."
+    },
+    "historyImportSuccess": {
+        "message": "История успешно импортирована!",
+        "description": "The success message shown when history is successfully imported."
+    },
+    "historyImportError": {
+        "message": "Не удалось импортировать историю: $1",
+        "description": "The error message shown when history import fails.",
+        "placeholders": {
+            "1": {
+                "content": "$1",
+                "example": "Invalid file format"
+            }
+        }
+    },
     "noHistory": {
         "message": "История загрузок не найдена.",
         "description": "The message shown when the download history is empty."
@@ -2022,5 +2044,14 @@
     "youtubeDialogDownloaderAndroidTitle": null,
     "youtubeDialogDownloaderAndroidMessage": null,
     "youtubeDetectionCheckbox": null,
-    "youtubeDetectionExplain": null
+    "youtubeDetectionExplain": null,
+    "muxAllAudiosCheckbox": null,
+    "muxAllAudiosExplain": null,
+    "embedSubtitlesMkvTitle": null,
+    "embedSubtitlesMkvExplain": null,
+    "embedSubtitlesContainerTitle": null,
+    "allLanguagesZip": null,
+    "allLanguagesMux": null,
+    "allSubtitlesZip": null,
+    "allSubtitlesMux": null
 }

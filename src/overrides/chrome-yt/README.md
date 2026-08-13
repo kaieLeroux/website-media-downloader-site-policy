@@ -1,6 +1,6 @@
 # Website Media Downloader (Chrome-YT)
 
-[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.2.8-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Chromium-orange.svg)](#installation)
 
@@ -50,7 +50,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## What's New in v2.2.1
+## What's New in v2.2.8
 
 - **Media Card Theme Adaptation**: Adapted media cards to active theme colors and resolved custom hex color rendering issues; ensured theme color presets wrap and scroll cleanly.
 - **UI Scale DPI Settings**: Added UI Scale DPI settings with customizable display scaling options.
@@ -62,7 +62,7 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## Technical Features (v2.2.1)
+## Technical Features (v2.2.8)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

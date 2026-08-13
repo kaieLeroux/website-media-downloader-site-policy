@@ -444,14 +444,6 @@
     "message": "音声言語",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "ページコンポーネントを非表示にする",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "一部のウェブサイトでは、HTML、CSS、JS、またはTXTファイルをビデオ/オーディオとして扱う場合があります。これらを非表示にするには、この設定を有効にします。",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "ダウンロード",
     "description": "The action label to download media from the notification."
@@ -804,6 +796,28 @@
   "clearHistoryButton": {
     "message": "履歴を消去",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "エクスポート",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "インポート",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "履歴のインポートに成功しました！",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "履歴のインポートに失敗しました: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "ダウンロード履歴が見つかりません。",
@@ -2133,6 +2147,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "有効にすると、すべての字幕をダウンロードしたときにMediabunnyを使用してビデオファイル (MKV/MP4) に埋め込みます。無効にすると、字幕はZIPアーカイブでダウンロードされます。",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "字幕を埋め込む (標準ビデオ)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "有効にすると、標準ビデオアイテムに字幕選択カードが表示され、選択した字幕が埋め込まれます。",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "埋め込む字幕を選択:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "字幕埋め込みコンテナ形式",

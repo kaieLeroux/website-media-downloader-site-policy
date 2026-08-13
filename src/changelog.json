@@ -1,190 +1,93 @@
 {
-  "require_uninstall": true,
+  "require_uninstall": false,
   "en": {
-    "headline": "What's New (v2.2.6)",
+    "headline": "What's New (v2.2.8)",
     "changes": [
-      "Added support for downloading audio tracks on YouTube.",
-      "Added support for downloading YouTube subtitles.",
-      "Added support to merge video, audio, and subtitles directly when downloading from YouTube.",
-      "Fixed an issue where entering manual download URLs would fail.",
-      "Updated default settings so the extension is ready to use right out of the box.",
-      "Updated the extension icon to a fresh new design.",
-      "Fixed display settings descriptions showing wrong translations in several languages.",
-      "Updated internal libraries to keep everything running fast and stable.",
-      "Fixed extension popup size getting cut off on desktop and mobile screens.",
-      "Polished and reorganized the settings page so it's easier to navigate.",
-      "Added settings to customize your theme colors.",
-      "Added a welcome popup to guide new users through key features.",
-      "Fixed a bug where notifications would sometimes show up incorrectly.",
-      "Fixed an issue where some websites failed to load or experienced access errors when the extension was enabled.",
-      "Added button layout for trusted update sources on the About page.",
-      "Improved update detection system accuracy by matching it against GitHub repository releases."
+      "Added support for importing and exporting download history.",
+      "Fixed YouTube format selection not working correctly when creating ZIP downloads.",
+      "Added support for embedding subtitles in standard video downloads.",
+      "Fixed download progress not showing correctly in group mode.",
+      "Cleaned up unused code and slightly reduced extension size."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.2.6)",
+    "headline": "Yang Baru (v2.2.8)",
     "changes": [
-      "Menambahkan tombol unduh audio saja di kartu YouTube.",
-      "Menambahkan dukungan untuk mengunduh subtitle YouTube.",
-      "Sekarang bisa langsung menggabungkan video, audio, dan subtitle untuk unduhan YouTube.",
-      "Memperbaiki masalah saat memasukkan tautan unduhan manual (Add URL) yang sempat error.",
-      "Mengatur konfigurasi bawaan biar ekstensi langsung siap pakai setelah dipasang.",
-      "Memperbarui ikon ekstensi dengan desain baru.",
-      "Memperbaiki teks deskripsi di menu pengaturan tampilan yang kurang pas di beberapa bahasa.",
-      "Memperbarui beberapa pustaka (libraries) agar performa tetap lancar.",
-      "Memperbaiki ukuran tampilan ekstensi agar pas dan tidak terpotong di layar HP maupun laptop.",
-      "Merapikan tata letak halaman pengaturan biar lebih mudah dibaca.",
-      "Menambahkan pengaturan untuk mengganti warna tema sesuai keinginan.",
-      "Menambahkan popup selamat datang (onboarding) bagi pengguna baru untuk mengenalkan fitur.",
-      "Memperbaiki bug pada notifikasi yang kadang tidak muncul dengan benar.",
-      "Memperbaiki masalah di mana beberapa situs web tidak dapat diakses atau mengalami error saat ekstensi aktif.",
-      "Menambahkan tata letak tombol sumber pembaruan tepercaya (Trusted Update Sources) di halaman About.",
-      "Memperbaiki sistem pendeteksian pembaruan agar lebih akurat dengan mencocokkannya ke rilis repositori GitHub."
+      "Menambahkan dukungan impor dan ekspor riwayat unduhan.",
+      "Memperbaiki pemilihan format YouTube yang tidak berfungsi dengan benar saat membuat ZIP.",
+      "Menambahkan dukungan penyematan subtitle untuk video biasa.",
+      "Memperbaiki progres unduhan yang tidak tampil dengan benar di mode grup.",
+      "Membersihkan kode yang tidak terpakai dan sedikit mengurangi ukuran ekstensi."
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.2.6)",
+    "headline": "Was gibt's Neues (v2.2.8)",
     "changes": [
-      "Unterstützung für das Herunterladen von reinen Audiospuren bei YouTube hinzugefügt.",
-      "Unterstützung für das Herunterladen von YouTube-Untertiteln hinzugefügt.",
-      "Video, Audio und Untertitel können jetzt bei YouTube-Downloads direkt zusammengeführt werden.",
-      "Fehler behoben, bei dem die manuelle URL-Eingabe fehlschlug.",
-      "Standardeinstellungen angepasst, damit die Erweiterung sofort einsatzbereit ist.",
-      "Neues, frisches Design für das Erweiterungssymbol.",
-      "Falsche Übersetzungen in den Anzeigeeinstellungen für einige Sprachen korrigiert.",
-      "Interne Bibliotheken aktualisiert, um Stabilität und Geschwindigkeit zu verbessern.",
-      "Popup-Größe angepasst, damit auf Desktop und Mobilgeräten nichts mehr abgeschnitten wird.",
-      "Einstellungsseite aufgeräumt und übersichtlicher gestaltet.",
-      "Option zur Anpassung der Theme-Farben hinzugefügt.",
-      "Willkommens-Popup für neue Benutzer zur Einführung der Funktionen hinzugefügt.",
-      "Fehler behoben, bei dem Benachrichtigungen fehlerhaft angezeigt wurden.",
-      "Fehler behoben, bei dem einige Websites nicht geladen werden konnten oder Zugriffsfehler auftraten, wenn die Erweiterung aktiviert war.",
-      "Tastenlayout für vertrauenswürdige Update-Quellen auf der About-Seite hinzugefügt.",
-      "Genauigkeit des Update-Erkennungssystems verbessert, indem es mit den GitHub-Repository-Releases abgeglichen wird."
+      "Import und Export des Download-Verlaufs hinzugefügt.",
+      "Fehler bei der YouTube-Formatauswahl beim Erstellen von ZIP-Downloads behoben.",
+      "Unterstützung für das Einbetten von Untertiteln in Standard-Videodownloads hinzugefügt.",
+      "Download-Fortschritt wird im Gruppenmodus jetzt korrekt angezeigt.",
+      "Nicht verwendeten Code bereinigt und Erweiterungsgröße leicht reduziert."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.2.6)",
+    "headline": "Nouveautés (v2.2.8)",
     "changes": [
-      "Ajout du téléchargement des pistes audio uniquement sur YouTube.",
-      "Ajout du téléchargement des sous-titres YouTube.",
-      "Fusion directe de la vidéo, de l'audio et des sous-titres disponible pour les téléchargements YouTube.",
-      "Correction d'un bug lors de la saisie manuelle d'une URL de téléchargement.",
-      "Paramètres par défaut ajustés pour que l'extension soit prête à l'emploi dès l'installation.",
-      "Icône de l'extension mise à jour avec un nouveau design.",
-      "Correction des descriptions incorrectes dans les paramètres d'affichage pour certaines langues.",
-      "Mise à jour des bibliothèques internes pour assurer rapidité et stabilité.",
-      "Correction de la taille du popup pour éviter qu'il ne soit coupé sur PC et mobile.",
-      "Page des paramètres réorganisée et simplifiée.",
-      "Ajout d'une option pour personnaliser les couleurs du thème.",
-      "Ajout d'un popup de bienvenue pour guider les nouveaux utilisateurs.",
-      "Correction d'un bug d'affichage des notifications.",
-      "Correction d'un problème où certains sites Web ne se chargeaient pas ou rencontraient des erreurs d'accès lorsque l'extension était activée.",
-      "Ajout de la disposition des boutons pour les sources de mise à jour fiables sur la page À propos.",
-      "Amélioration de la précision du système de détection des mises à jour en le comparant aux versions du dépôt GitHub."
+      "Ajout du support pour importer et exporter l'historique des téléchargements.",
+      "Correction de la sélection du format YouTube qui ne fonctionnait pas correctement lors de la création d'archives ZIP.",
+      "Ajout du support pour intégrer les sous-titres dans les téléchargements de vidéos standard.",
+      "Correction de la progression du téléchargement qui ne s'affichait pas correctement en mode groupe.",
+      "Nettoyage du code inutilisé et légère réduction de la taille de l'extension."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.2.6)",
+    "headline": "新機能 (v2.2.8)",
     "changes": [
-      "YouTubeでのオーディオのみのダウンロード機能を追加しました。",
-      "YouTube字幕のダウンロード機能を追加しました。",
-      "YouTubeダウンロード時に動画、音声、字幕を直接結合できるようになりました。",
-      "手動URL入力でのダウンロード時にエラーが発生する問題を修正しました。",
-      "インストール後に設定なしですぐ使えるよう、デフォルト設定を調整しました。",
-      "拡張機能のアイコンを新しくクリーンなデザインに更新しました。",
-      "一部の言語でディスプレイ設定の説明文が正しく翻訳されていなかった問題を修正しました。",
-      "パフォーマンス向上のため、内蔵ライブラリを最新版に更新しました。",
-      "PCやスマホ画面でポップアップのサイズが途切れてしまう問題を修正しました。",
-      "設定画面のレイアウトを整理し、使いやすくしました。",
-      "テーマカラーを自由にカスタマイズできる設定を追加しました。",
-      "初めて使う方向けのウェルカムポップアップを追加しました。",
-      "通知メッセージが正しく表示されないバグを修正しました。",
-      "拡張機能が有効なときに一部のウェブサイトが読み込めない、またはアクセスエラーが発生する問題を修正しました。",
-      "「About」ページに信頼できるアップデートソースのボタンレイアウトを追加しました。",
-      "GitHubリポジトリのリリースと照合することで、アップデート検出システムの精度を向上させました。"
+      "ダウンロード履歴のインポート・エクスポートに対応しました。",
+      "ZIP作成時にYouTubeフォーマットの選択が正しく機能しない問題を修正しました。",
+      "通常動画のダウンロードで字幕の埋め込みに対応しました。",
+      "グループモードでダウンロードの進捗が正しく表示されない問題を修正しました。",
+      "不要なコードを削除し、拡張機能のサイズをわずかに削減しました。"
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.2.6)",
+    "headline": "새로운 기능 (v2.2.8)",
     "changes": [
-      "YouTube에서 오디오 트랙만 다운로드하는 기능을 추가했습니다.",
-      "YouTube 자막 다운로드 지원을 추가했습니다.",
-      "YouTube 다운로드 시 비디오, 오디오, 자막을 바로 합칠 수 있는 기능을 추가했습니다.",
-      "수동 URL 입력 시 다운로드 오류가 발생하던 문제를 수정했습니다.",
-      "설치하자마자 바로 사용할 수 있도록 기본 설정을 최적화했습니다.",
-      "확장 프로그램 아이콘을 새로운 디자인으로 변경했습니다.",
-      "일부 언어에서 화면 설정 설명의 번역 오류를 수정했습니다.",
-      "더 안정적이고 빠르게 작동하도록 내부 라이브러리를 업데이트했습니다.",
-      "PC와 모바일 화면에서 팝업 크기가 잘리던 현상을 수정했습니다.",
-      "설정 페이지 레이아웃을 보기 편하게 정리했습니다.",
-      "테마 색상을 직접 설정할 수 있는 옵션을 추가했습니다.",
-      "처음 시작할 때 기능을 알려주는 환영 팝업을 추가했습니다.",
-      "알림이 정상적으로 뜨지 않던 버그를 수정했습니다.",
-      "확장 프로그램이 활성화되어 있을 때 일부 웹사이트가 로드되지 않거나 액세스 오류가 발생하던 문제를 수정했습니다.",
-      "정보(About) 페이지에 신뢰할 수 있는 업데이트 소스 버튼 레이아웃을 추가했습니다.",
-      "GitHub 리포지토리 릴리스와 대조하여 업데이트 감지 시스템의 정확도를 높였습니다."
+      "다운로드 기록 가져오기 및 내보내기 기능을 추가했습니다.",
+      "ZIP 다운로드 생성 시 YouTube 포맷 선택이 올바르게 작동하지 않던 문제를 수정했습니다.",
+      "일반 비디오 다운로드에서 자막 임베딩을 지원합니다.",
+      "그룹 모드에서 다운로드 진행 상태가 올바르게 표시되지 않던 문제를 수정했습니다.",
+      "사용하지 않는 코드를 정리하고 확장 프로그램 크기를 약간 줄였습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.2.6)",
+    "headline": "Novidades (v2.2.8)",
     "changes": [
-      "Adicionada opção para baixar apenas o áudio no YouTube.",
-      "Adicionado suporte para baixar legendas do YouTube.",
-      "Agora é possível mesclar vídeo, áudio e legendas diretamente nos downloads do YouTube.",
-      "Corrigido um problema onde o download por URL manual falhava.",
-      "Ajustadas as configurações padrão para a extensão vir pronta para uso após instalar.",
-      "Ícone da extensão atualizado com um novo visual.",
-      "Corrigidas descrições de idioma incorretas nas configurações de tela para alguns idiomas.",
-      "Atualizadas as bibliotecas internas para maior estabilidade e rapidez.",
-      "Corrigido o tamanho do popup para não ficar cortado em telas de PC e celular.",
-      "Painel de configurações reorganizado para facilitar o uso.",
-      "Adicionadas configurações para personalizar as cores do tema.",
-      "Adicionado um popup de boas-vindas para apresentar os recursos aos novos usuários.",
-      "Corrigido um bug que fazia as notificações falharem.",
-      "Corrigido um problema onde alguns sites não carregavam ou apresentavam erros de acesso quando a extensão estava ativada.",
-      "Adicionado layout de botões para fontes de atualização confiáveis na página Sobre.",
-      "Melhorada a precisão do sistema de detecção de atualizações correspondendo-o com as releases do repositório GitHub."
+      "Adicionado suporte para importar e exportar o histórico de downloads.",
+      "Corrigida a seleção de formato do YouTube que não funcionava corretamente ao criar ZIPs.",
+      "Adicionado suporte para incorporar legendas em downloads de vídeos padrão.",
+      "Corrigido o progresso do download que não era exibido corretamente no modo de grupo.",
+      "Código não utilizado removido e tamanho da extensão ligeiramente reduzido."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.2.6)",
+    "headline": "Что нового (v2.2.8)",
     "changes": [
-      "Добавлена возможность скачивать только аудиодорожки с YouTube.",
-      "Добавлена поддержка скачивания субтитров с YouTube.",
-      "Теперь можно напрямую объединять видео, аудио и субтитры при скачивании с YouTube.",
-      "Исправлена ошибка, из-за которой не работало ручное скачивание по ссылке (Add URL).",
-      "Настройки по умолчанию изменены так, чтобы расширение было готово к работе сразу после установки.",
-      "Обновлена иконка расширения.",
-      "Исправлен некорректный перевод описаний в настройках экрана для некоторых языков.",
-      "Обновлены внутренние библиотеки для более стабильной и быстрой работы.",
-      "Исправлен размер всплывающего окна (popup), чтобы он не обрезался на экранах ПК и телефонов.",
-      "Настройки стали более аккуратными и удобными для поиска.",
-      "Добавлена возможность выбора собственных цветов для оформления темы.",
-      "Добавлено приветственное окно (onboarding) при первом запуске расширения.",
-      "Исправлен баг с неправильным показом уведомлений.",
-      "Исправлена проблема, из-за которой некоторые веб-сайты не загружались или выдавали ошибки доступа при включенном расширении.",
-      "Добавлено расположение кнопок для надежных источников обновлений на странице «О программе».",
-      "Повышена точность системы обнаружения обновлений путем сопоставления с релизами репозитория GitHub."
+      "Добавлена поддержка импорта и экспорта истории загрузок.",
+      "Исправлен выбор формата YouTube при создании ZIP-архивов.",
+      "Добавлена поддержка встраивания субтитров в стандартные видеозагрузки.",
+      "Исправлено отображение прогресса загрузки в групповом режиме.",
+      "Удалён неиспользуемый код, немного уменьшен размер расширения."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.2.6)",
+    "headline": "ما الجديد (v2.2.8)",
     "changes": [
-      "إضافة خيار لتنزيل الصوت فقط من يوتيوب.",
-      "إضافة دعم لتنزيل ترجمات يوتيوب.",
-      "إمكانية دمج الفيديو والصوت والترجمة مباشرة عند التنزيل من يوتيوب.",
-      "إصلاح مشكلة فشل التنزيل اليدوي عند إدخال رابط مباشر.",
-      "تعديل الإعدادات الافتراضية ليكون الامتداد جاهزًا للاستخدام فورًا بعد التثبيت.",
-      "تحديث أيقونة الامتداد بتصميم جديد.",
-      "إصلاح الأوصاف غير الصحيحة في إعدادات الشاشة لبعض اللغات.",
-      "تحديث المكتبات الداخلية لضمان السرعة والاستقرار.",
-      "إصلاح حجم النافذة المنبثقة لمنع اقتطاعها على شاشات الكمبيوتر والهاتف.",
-      "ترتيب وتسهيل تصفح صفحة الإعدادات.",
-      "إضافة خيارات لتخصيص ألوان المظهر (الثيم).",
-      "إضافة نافذة ترحيبية للمستخدمين الجدد لشرح الميزات الأساسية.",
-      "إصلاح خطأ كان يمنع ظهور الإشعارات بشكل صحيح.",
-      "إصلاح مشكلة عدم تحميل بعض مواقع الويب أو حدوث أخطاء في الوصول عند تفعيل الامتداد."
+      "إضافة دعم استيراد وتصدير سجل التنزيلات.",
+      "إصلاح اختيار تنسيق YouTube الذي لم يكن يعمل بشكل صحيح عند إنشاء ملفات ZIP.",
+      "إضافة دعم تضمين الترجمات في تنزيلات الفيديو العادية.",
+      "إصلاح عدم ظهور تقدم التنزيل بشكل صحيح في وضع المجموعة.",
+      "تنظيف الكود غير المستخدم وتقليل حجم الامتداد قليلاً."
     ]
   }
 }

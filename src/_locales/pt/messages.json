@@ -444,14 +444,6 @@
     "message": "Idioma do áudio",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "Ocultar componentes da página",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "Alguns sites podem tratar arquivos HTML, CSS, JS ou TXT como vídeo/áudio. Ative isso para ocultá-los.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "Baixar",
     "description": "The action label to download media from the notification."
@@ -804,6 +796,28 @@
   "clearHistoryButton": {
     "message": "Limpar histórico",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "Exportar",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "Importar",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "Histórico importado com sucesso!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "Falha ao importar histórico: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "Nenhum histórico de download encontrado.",
@@ -2133,6 +2147,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "Quando ativado, o download de todas as legendas as incorpora ao arquivo de vídeo (MKV/MP4) usando o Mediabunny. Quando desativado, as legendas são baixadas em um arquivo ZIP.",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Embutir legendas (Vídeo padrão)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Quando ativado, exibe um cartão de seleção de legendas em itens de vídeo padrão para embutir as legendas selecionadas.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Selecionar legendas para embutir:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "Formato de contêiner de incorporação de legenda",
