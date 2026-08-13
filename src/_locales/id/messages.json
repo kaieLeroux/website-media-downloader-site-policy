@@ -468,14 +468,6 @@
     "message": "Bahasa Audio",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "Sembunyikan komponen halaman",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "Menyembunyikan file sistem situs web seperti HTML dan CSS agar daftar media Anda tidak penuh dengan file yang tidak penting.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "Unduh",
     "description": "The action label to download media from the notification."
@@ -823,6 +815,28 @@
   "clearHistoryButton": {
     "message": "Hapus riwayat",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "Ekspor",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "Impor",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "Riwayat berhasil diimpor!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "Gagal mengimpor riwayat: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Format file tidak valid"
+      }
+    }
   },
   "noHistory": {
     "message": "Riwayat unduhan tidak ditemukan.",
@@ -2137,6 +2151,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "Jika diaktifkan, mengunduh semua subtitle akan menggabungkannya ke dalam satu file video (MKV/MP4) menggunakan Mediabunny. Jika dinonaktifkan, subtitle akan diunduh sebagai file ZIP terpisah.",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Gabungkan subtitle (Video Biasa)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Jika diaktifkan, menampilkan pemilih subtitle pada kartu video biasa untuk digabungkan ke dalam video.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Pilih Subtitle untuk Digabungkan:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "Format kontainer gabungan subtitle",

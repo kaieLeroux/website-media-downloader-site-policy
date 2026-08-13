@@ -26,6 +26,11 @@ jobs:
         run: |
           node src/build.js all
 
+      - name: Minify Builds
+        run: |
+          npm install terser html-minifier-terser clean-css
+          node src/minify.js
+
       - name: Create Extension Archives
         run: |
           # Chrome Extension Build
@@ -46,7 +51,7 @@ jobs:
       - name: Create Source Code Archives
         run: |
           # Firefox clean source code (mirrors root: src/ folder, metadata in root)
-          zip -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js"
+          zip -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js" "src/minify.js"
 
           # Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
           mkdir -p chrome-source-temp/src

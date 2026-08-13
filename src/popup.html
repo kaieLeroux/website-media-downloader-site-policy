@@ -28,8 +28,7 @@
   <script src="libraries/client-zip.js"></script>
   <script src="libraries/qrcode.min.js"></script>
   <script src="libraries/mux.js"></script>
-  <script src="libraries/libav-6.8.8.0.js"></script>
-  <script src="libraries/libav-6.5.7.1.js"></script>
+  <script src="libraries/libav.js"></script>
   <script src="offlineStreamConvert.js"></script>
   <script src="libraries/mediabunny.js"></script>
   <link rel="stylesheet" href="styles/style.css">
@@ -115,11 +114,14 @@
       </mdui-tab-panel>
 
       <mdui-tab-panel slot="panel" value="history">
+        <input type="file" id="import-history-input" accept=".json" style="display: none;">
         <div id="history-list">
 
         </div>
         <mdui-bottom-app-bar>
-          <div style="flex-grow: 1; display: flex; justify-content: center;">
+          <div style="flex-grow: 1; display: flex; justify-content: center; gap: 8px;">
+            <mdui-button variant="tonal" id="export-history" data-translate="exportHistoryButton">Export</mdui-button>
+            <mdui-button variant="tonal" id="import-history" data-translate="importHistoryButton">Import</mdui-button>
             <mdui-button variant="tonal" id="clear-history" data-translate="clearHistoryButton">Clear history</mdui-button>
           </div>
         </mdui-bottom-app-bar>
@@ -190,13 +192,7 @@
                 <mdui-switch id="hide-segments"></mdui-switch>
               </div>
               
-              <div class="setting-item">
-                <div class="setting-text">
-                  <h3 data-translate="hidePageComponentsTitle">Hide page components</h3>
-                  <p data-translate="hidePageComponentsExplain">Hide HTML, CSS, JS, and TXT files.</p>
-                </div>
-                <mdui-switch id="hide-page-components"></mdui-switch>
-              </div>
+              
               
               <div class="setting-item">
                 <div class="setting-text">
@@ -603,6 +599,13 @@
                   </div>
                   <mdui-switch id="embed-subtitles-mkv"></mdui-switch>
                 </div>
+              <div class="setting-item">
+                   <div class="setting-text">
+                     <h3 data-translate="embedSubtitlesNonYtTitle">Embed subtitles into video (Standard video)</h3>
+                     <p data-translate="embedSubtitlesNonYtExplain">When enabled, shows subtitle selector card for standard video downloads to embed selected subtitles.</p>
+                   </div>
+                   <mdui-switch id="embed-subtitles-nonyt"></mdui-switch>
+                 </div>
               <div class="setting-item" id="setting-embed-subtitles-container" style="display: none;">
                   <h3 data-translate="embedSubtitlesContainerTitle">Subtitle embed container</h3>
                   <div class="pill-select-wrapper">

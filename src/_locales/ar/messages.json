@@ -444,14 +444,6 @@
     "message": "لغة الصوت",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "إخفاء مكونات الصفحة",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "قد تعامل بعض المواقع ملفات HTML أو CSS أو JS أو TXT كفيديو/صوت. قم بتمكين هذا لإخفائها.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "تنزيل",
     "description": "The action label to download media from the notification."
@@ -799,6 +791,28 @@
   "clearHistoryButton": {
     "message": "مسح السجل",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "تصدير",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "استيراد",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "تم استيراد السجل بنجاح!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "فشل استيراد السجل: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "لم يتم العثور على سجل تنزيلات.",
@@ -2133,6 +2147,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "عند التفعيل، سيتم دمج جميع الترجمات التي تم تنزيلها في ملف الفيديو (MKV/MP4) باستخدام Mediabunny. عند التعطيل، يتم تنزيل الترجمات كأرشيف ZIP.",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "دمج الترجمة (فيديو قياسي)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "عند التفعيل، يتم عرض بطاقة اختيار الترجمة على عناصر الفيديو القياسي لدمج الترجمات المحددة.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "اختر الترجمة للدمج:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "تنسيق حاوية دمج الترجمة",

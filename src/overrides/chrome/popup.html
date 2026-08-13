@@ -28,8 +28,7 @@
   <script src="libraries/client-zip.js"></script>
   <script src="libraries/qrcode.min.js"></script>
   <script src="libraries/mux.js"></script>
-  <script src="libraries/libav-6.8.8.0.js"></script>
-  <script src="libraries/libav-6.5.7.1.js"></script>
+  <script src="libraries/libav.js"></script>
   <script src="offlineStreamConvert.js"></script>
   <link rel="stylesheet" href="styles/style.css">
 </head>
@@ -114,11 +113,14 @@
       </mdui-tab-panel>
 
       <mdui-tab-panel slot="panel" value="history">
+        <input type="file" id="import-history-input" accept=".json" style="display: none;">
         <div id="history-list">
 
         </div>
         <mdui-bottom-app-bar>
-          <div style="flex-grow: 1; display: flex; justify-content: center;">
+          <div style="flex-grow: 1; display: flex; justify-content: center; gap: 8px;">
+            <mdui-button variant="tonal" id="export-history" data-translate="exportHistoryButton">Export</mdui-button>
+            <mdui-button variant="tonal" id="import-history" data-translate="importHistoryButton">Import</mdui-button>
             <mdui-button variant="tonal" id="clear-history" data-translate="clearHistoryButton">Clear history</mdui-button>
           </div>
         </mdui-bottom-app-bar>
@@ -184,13 +186,7 @@
                 <mdui-switch id="hide-segments"></mdui-switch>
               </div>
               
-              <div class="setting-item">
-                <div class="setting-text">
-                  <h3 data-translate="hidePageComponentsTitle">Hide page components</h3>
-                  <p data-translate="hidePageComponentsExplain">Hide HTML, CSS, JS, and TXT files.</p>
-                </div>
-                <mdui-switch id="hide-page-components"></mdui-switch>
-              </div>
+              
               
               <div class="setting-item">
                 <div class="setting-text">
@@ -251,6 +247,13 @@
                   <p data-translate="stackNotificationsExplain">Show multiple notifications instead of closing previous ones.</p>
                 </div>
                 <mdui-switch id="stack-notifications"></mdui-switch>
+              </div>
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="fetchNotificationTitle">Download notifications</h3>
+                  <p data-translate="fetchNotificationExplain">Show notifications in system tray when download starts and finishes.</p>
+                </div>
+                <mdui-switch id="fetch-notification"></mdui-switch>
               </div>
               </div>
           </div>
@@ -384,14 +387,7 @@
                 </div>
               </div>
 
-              <div class="setting-item">
-                <div class="setting-text">
-                  <h3 data-translate="fetchNotificationTitle">Download notifications</h3>
-                  <p data-translate="fetchNotificationExplain">Show notifications in system tray when download starts and finishes.</p>
-                </div>
-                <mdui-switch id="fetch-notification"></mdui-switch>
-              </div>
-              
+
               <div class="setting-item">
                 <div class="setting-text">
                   <h3 data-translate="mediaCacheTitle">Media cache</h3>
@@ -577,13 +573,15 @@
                 </div>
                 <mdui-switch id="mpd-fix"></mdui-switch>
               </div>
+
               <div class="setting-item">
-                <div class="setting-text">
-                  <h3 data-translate="muxAllAudiosCheckbox">Mux all audio tracks (YouTube)</h3>
-                  <p data-translate="muxAllAudiosExplain">Combines all audio tracks into the final video file as multiple selectable audio tracks instead of zipping them separately.</p>
+                  <div class="setting-text">
+                    <h3 data-translate="embedSubtitlesNonYtTitle">Embed subtitles into video (Standard video)</h3>
+                    <p data-translate="embedSubtitlesNonYtExplain">When enabled, shows subtitle selector card for standard video downloads to embed selected subtitles.</p>
+                  </div>
+                  <mdui-switch id="embed-subtitles-nonyt"></mdui-switch>
                 </div>
-                <mdui-switch id="mux-all-audios"></mdui-switch>
-              </div>
+
 
               <div class="setting-item">
                 <div class="setting-text">

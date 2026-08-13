@@ -693,6 +693,28 @@
         "message": "مسح السجل",
         "description": "The label of the button to clear the download history."
     },
+    "exportHistoryButton": {
+        "message": "تصدير",
+        "description": "The label of the button to export the download history."
+    },
+    "importHistoryButton": {
+        "message": "استيراد",
+        "description": "The label of the button to import the download history."
+    },
+    "historyImportSuccess": {
+        "message": "تم استيراد السجل بنجاح!",
+        "description": "The success message shown when history is successfully imported."
+    },
+    "historyImportError": {
+        "message": "فشل استيراد السجل: $1",
+        "description": "The error message shown when history import fails.",
+        "placeholders": {
+            "1": {
+                "content": "$1",
+                "example": "Invalid file format"
+            }
+        }
+    },
     "noHistory": {
         "message": "لم يتم العثور على سجل تنزيلات.",
         "description": "The message shown when the download history is empty."
@@ -2022,5 +2044,14 @@
     "youtubeDialogDownloaderAndroidTitle": null,
     "youtubeDialogDownloaderAndroidMessage": null,
     "youtubeDetectionCheckbox": null,
-    "youtubeDetectionExplain": null
+    "youtubeDetectionExplain": null,
+    "muxAllAudiosCheckbox": null,
+    "muxAllAudiosExplain": null,
+    "embedSubtitlesMkvTitle": null,
+    "embedSubtitlesMkvExplain": null,
+    "embedSubtitlesContainerTitle": null,
+    "allLanguagesZip": null,
+    "allLanguagesMux": null,
+    "allSubtitlesZip": null,
+    "allSubtitlesMux": null
 }

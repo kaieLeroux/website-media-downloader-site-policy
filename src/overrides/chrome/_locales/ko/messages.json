@@ -693,6 +693,28 @@
         "message": "기록 지우기",
         "description": "The label of the button to clear the download history."
     },
+    "exportHistoryButton": {
+        "message": "내보내기",
+        "description": "The label of the button to export the download history."
+    },
+    "importHistoryButton": {
+        "message": "가져오기",
+        "description": "The label of the button to import the download history."
+    },
+    "historyImportSuccess": {
+        "message": "기록을 성공적으로 가져왔습니다!",
+        "description": "The success message shown when history is successfully imported."
+    },
+    "historyImportError": {
+        "message": "기록 가져오기 실패: $1",
+        "description": "The error message shown when history import fails.",
+        "placeholders": {
+            "1": {
+                "content": "$1",
+                "example": "Invalid file format"
+            }
+        }
+    },
     "noHistory": {
         "message": "다운로드 기록을 찾을 수 없습니다.",
         "description": "The message shown when the download history is empty."
@@ -2022,5 +2044,14 @@
     "youtubeDialogDownloaderAndroidTitle": null,
     "youtubeDialogDownloaderAndroidMessage": null,
     "youtubeDetectionCheckbox": null,
-    "youtubeDetectionExplain": null
+    "youtubeDetectionExplain": null,
+    "muxAllAudiosCheckbox": null,
+    "muxAllAudiosExplain": null,
+    "embedSubtitlesMkvTitle": null,
+    "embedSubtitlesMkvExplain": null,
+    "embedSubtitlesContainerTitle": null,
+    "allLanguagesZip": null,
+    "allLanguagesMux": null,
+    "allSubtitlesZip": null,
+    "allSubtitlesMux": null
 }

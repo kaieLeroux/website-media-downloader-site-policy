@@ -444,14 +444,6 @@
     "message": "Audiosprache",
     "description": "Label for the audio language track dropdown inside youtube download modal"
   },
-  "hidePageComponentsTitle": {
-    "message": "Seitenkomponenten ausblenden",
-    "description": "Title for the setting to hide html, css, js, and txt files."
-  },
-  "hidePageComponentsExplain": {
-    "message": "Einige Websites behandeln HTML-, CSS-, JS- oder TXT-Dateien möglicherweise als Video/Audio. Aktivieren Sie dies, um sie auszublenden.",
-    "description": "Explanation for the hide page components setting."
-  },
   "mediaNotificationDownloadAction": {
     "message": "Herunterladen",
     "description": "The action label to download media from the notification."
@@ -804,6 +796,28 @@
   "clearHistoryButton": {
     "message": "Verlauf löschen",
     "description": "The label of the button to clear the download history."
+  },
+  "exportHistoryButton": {
+    "message": "Exportieren",
+    "description": "The label of the button to export the download history."
+  },
+  "importHistoryButton": {
+    "message": "Importieren",
+    "description": "The label of the button to import the download history."
+  },
+  "historyImportSuccess": {
+    "message": "Verlauf erfolgreich importiert!",
+    "description": "The success message shown when history is successfully imported."
+  },
+  "historyImportError": {
+    "message": "Fehler beim Importieren des Verlaufs: $1",
+    "description": "The error message shown when history import fails.",
+    "placeholders": {
+      "1": {
+        "content": "$1",
+        "example": "Invalid file format"
+      }
+    }
   },
   "noHistory": {
     "message": "Kein Download-Verlauf gefunden.",
@@ -2133,6 +2147,18 @@
   "embedSubtitlesMkvExplain": {
     "message": "Wenn aktiviert, werden beim Herunterladen aller Untertitel diese mithilfe von Mediabunny in die Videodatei (MKV/MP4) eingebettet. Wenn deaktiviert, werden die Untertitel in einem ZIP-Archiv heruntergeladen.",
     "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Untertitel einbetten (Standardvideo)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Wenn aktiviert, wird bei Standardvideo-Elementen eine Untertitel-Auswahlkarte angezeigt, um ausgewählte Untertitel einzubetten.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Untertitel zum Einbetten auswählen:",
+    "description": "Label for checklist to select subtitles to embed"
   },
   "embedSubtitlesContainerTitle": {
     "message": "Untertitel-Einbettungs-Containerformat",

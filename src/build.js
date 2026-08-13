@@ -37,7 +37,7 @@ const SRC_DIR = __dirname;
 const OVERRIDES_DIR = path.join(SRC_DIR, 'overrides');
 const BUILD_DIR = path.join(ROOT, 'build');
 
-const EXCLUDE_FROM_BUILD = new Set(['build.js', 'overrides']);
+const EXCLUDE_FROM_BUILD = new Set(['build.js', 'overrides', 'minify.js']);
 
 const EXCLUDE_PER_TARGET = {
     chrome: new Set(['yt_core.js', 'wymd.js']),

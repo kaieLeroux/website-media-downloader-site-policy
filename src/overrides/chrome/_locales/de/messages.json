@@ -699,6 +699,28 @@
         "message": "Verlauf löschen",
         "description": "The label of the button to clear the download history."
     },
+    "exportHistoryButton": {
+        "message": "Exportieren",
+        "description": "The label of the button to export the download history."
+    },
+    "importHistoryButton": {
+        "message": "Importieren",
+        "description": "The label of the button to import the download history."
+    },
+    "historyImportSuccess": {
+        "message": "Verlauf erfolgreich importiert!",
+        "description": "The success message shown when history is successfully imported."
+    },
+    "historyImportError": {
+        "message": "Fehler beim Importieren des Verlaufs: $1",
+        "description": "The error message shown when history import fails.",
+        "placeholders": {
+            "1": {
+                "content": "$1",
+                "example": "Invalid file format"
+            }
+        }
+    },
     "noHistory": {
         "message": "Kein Download-Verlauf gefunden.",
         "description": "The message shown when the download history is empty."
@@ -2028,5 +2050,14 @@
     "youtubeDialogDownloaderAndroidTitle": null,
     "youtubeDialogDownloaderAndroidMessage": null,
     "youtubeDetectionCheckbox": null,
-    "youtubeDetectionExplain": null
+    "youtubeDetectionExplain": null,
+    "muxAllAudiosCheckbox": null,
+    "muxAllAudiosExplain": null,
+    "embedSubtitlesMkvTitle": null,
+    "embedSubtitlesMkvExplain": null,
+    "embedSubtitlesContainerTitle": null,
+    "allLanguagesZip": null,
+    "allLanguagesMux": null,
+    "allSubtitlesZip": null,
+    "allSubtitlesMux": null
 }

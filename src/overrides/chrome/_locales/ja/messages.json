@@ -699,6 +699,28 @@
         "message": "履歴を消去",
         "description": "The label of the button to clear the download history."
     },
+    "exportHistoryButton": {
+        "message": "エクスポート",
+        "description": "The label of the button to export the download history."
+    },
+    "importHistoryButton": {
+        "message": "インポート",
+        "description": "The label of the button to import the download history."
+    },
+    "historyImportSuccess": {
+        "message": "履歴のインポートに成功しました！",
+        "description": "The success message shown when history is successfully imported."
+    },
+    "historyImportError": {
+        "message": "履歴のインポートに失敗しました: $1",
+        "description": "The error message shown when history import fails.",
+        "placeholders": {
+            "1": {
+                "content": "$1",
+                "example": "Invalid file format"
+            }
+        }
+    },
     "noHistory": {
         "message": "ダウンロード履歴が見つかりません。",
         "description": "The message shown when the download history is empty."
@@ -2028,5 +2050,14 @@
     "youtubeDialogDownloaderAndroidTitle": null,
     "youtubeDialogDownloaderAndroidMessage": null,
     "youtubeDetectionCheckbox": null,
-    "youtubeDetectionExplain": null
+    "youtubeDetectionExplain": null,
+    "muxAllAudiosCheckbox": null,
+    "muxAllAudiosExplain": null,
+    "embedSubtitlesMkvTitle": null,
+    "embedSubtitlesMkvExplain": null,
+    "embedSubtitlesContainerTitle": null,
+    "allLanguagesZip": null,
+    "allLanguagesMux": null,
+    "allSubtitlesZip": null,
+    "allSubtitlesMux": null
 }

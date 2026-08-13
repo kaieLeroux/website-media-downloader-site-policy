@@ -81,6 +81,11 @@ jobs:
             node src/build.js firefox
           fi
 
+      - name: Minify Builds
+        run: |
+          npm install terser html-minifier-terser clean-css
+          node src/minify.js
+
       - name: Create Release Archives
         run: |
           # Package chrome and chrome-yt builds if selected
@@ -134,7 +139,7 @@ jobs:
             cd ../..
 
             # Package Firefox clean source code (mirrors root: src/ folder, metadata in root)
-            zip -r website-media-downloader-firefox-source-${{ github.event.inputs.tag_name }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js"
+            zip -r website-media-downloader-firefox-source-${{ github.event.inputs.tag_name }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js" "src/minify.js"
           fi
 
       - name: Create GitHub Release

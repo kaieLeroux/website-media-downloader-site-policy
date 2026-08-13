@@ -203,7 +203,7 @@ async function initializeSettings() {
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
         'media-notification', 'media-system-notification', 'stack-notifications', 'download-method', 'fetch-notification', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
         'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'mux-all-audios',
-        'embed-subtitles-mkv', 'embed-subtitles-container',
+        'embed-subtitles-mkv', 'embed-subtitles-container', 'embed-subtitles-nonyt',
         'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'theme-mode', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
     ];
@@ -222,7 +222,7 @@ async function initializeSettings() {
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'mux-all-audios', 'embed-subtitles-mkv'].includes(setting)) {
+            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'mux-all-audios', 'embed-subtitles-mkv', 'embed-subtitles-nonyt'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -412,10 +412,13 @@ async function initializeSettings() {
                     }
                 }
 
-                if (setting === 'embed-subtitles-mkv') {
+                if (setting === 'embed-subtitles-mkv' || setting === 'embed-subtitles-nonyt') {
                     const containerItem = document.getElementById('setting-embed-subtitles-container');
                     if (containerItem) {
-                        containerItem.style.display = element.checked ? 'flex' : 'none';
+                        const mkvSw = document.getElementById('embed-subtitles-mkv');
+                        const nonytSw = document.getElementById('embed-subtitles-nonyt');
+                        const show = (mkvSw && mkvSw.checked) || (nonytSw && nonytSw.checked);
+                        containerItem.style.display = show ? 'flex' : 'none';
                     }
                 }
 
@@ -561,6 +564,9 @@ async function initializeSettings() {
 
             const handleChange = () => {
                 pendingChanges[setting] = element.checked ? '1' : '0';
+                if (setting === 'hide-segments') {
+                    pendingChanges['hide-page-components'] = element.checked ? '1' : '0';
+                }
 
                 updateConstraints();
                 showApplyBar();
@@ -717,9 +723,11 @@ async function initializeSettings() {
 
 
     const embedSubMkvInitial = document.getElementById('embed-subtitles-mkv');
+    const embedSubNonYtInitial = document.getElementById('embed-subtitles-nonyt');
     const embedSubContainerInitial = document.getElementById('setting-embed-subtitles-container');
-    if (embedSubMkvInitial && embedSubContainerInitial) {
-        embedSubContainerInitial.style.display = embedSubMkvInitial.checked ? 'flex' : 'none';
+    if (embedSubContainerInitial) {
+        const show = (embedSubMkvInitial && embedSubMkvInitial.checked) || (embedSubNonYtInitial && embedSubNonYtInitial.checked);
+        embedSubContainerInitial.style.display = show ? 'flex' : 'none';
     }
 
 
@@ -742,7 +750,6 @@ async function initializeSettings() {
 
     async function checkDropboxLogin() {
         const res = await browser.storage.local.get('dropbox_token');
-        const dropboxSwitch = document.getElementById('save-to-dropbox');
 
         const dropboxSaveContainer = document.getElementById('dropbox-save-container');
         const dropboxStreamContainer = document.getElementById('dropbox-stream-container');
@@ -784,7 +791,6 @@ async function initializeSettings() {
 
     async function checkGDriveLogin() {
         const res = await browser.storage.local.get('gdrive_token');
-        const gdriveSwitch = document.getElementById('save-to-gdrive');
 
         const gdriveSaveContainer = document.getElementById('gdrive-save-container');
         const gdriveStreamContainer = document.getElementById('gdrive-stream-container');
