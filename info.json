@@ -4,10 +4,10 @@
   "title_position": "left",
   "slides": [
     {
-      "description": "Slide 2 (Tanpa Gambar): Dapatkan performa maksimal tanpa hambatan dengan update termutakhir yang lebih ringan."
+      "description": "test."
     }
   ],
-  "button_position": "left",
+  "button_position": "right",
   "show_skip": false,
   "storage_key": "wmd_new_2.2.8"
 }
