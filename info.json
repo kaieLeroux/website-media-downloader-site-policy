@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "title": "New WMD Features & Enhancements!",
+  "title_position": "center",
+  "slides": [
+    {
+      "image": "gambar.jpg",
+      "description": "Slide 1: Pembaruan Engine Pendeteksi Media Baru telah diluncurkan secara sukses!"
+    },
+    {
+      "description": "Slide 2 (Tanpa Gambar): Dapatkan performa maksimal tanpa hambatan dengan update termutakhir yang lebih ringan."
+    },
+    {
+      "image": "gambar2.jpg",
+      "description": "Slide 3: Peningkatan fungsionalitas dan perbaikan bug progress bar pada mode group list."
+    }
+  ],
+  "button_text": "Check Repository",
+  "action_url": "https://github.com/anpa26/website-media-downloader",
+  "button_position": "center",
+  "show_skip": true,
+  "storage_key": "wmd_update_announcement_v2_5"
+}
