@@ -3,10 +3,6 @@
     "message": "Reinstalação Recomendada",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "Você atualizou de uma versão anterior. É altamente recomendável reinstalar esta extensão se você tiver problemas de detecção de mídia ou erros 403 (Acesso Negado) devido a alterações significativas nos métodos de detecção de mídia. Se acabou de instalar ou já reinstalou, sinta-se à vontade para ignorar.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Abrir Loja",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "Origem:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Armazenamento de cache" },
+  "cacheStorageCalculating": { "message": "Calculando o uso do cache..." },
+  "cacheStorageClear": { "message": "Limpar cache" },
+  "cacheStorageEntries": { "message": "$1 entradas em cache" },
+  "cacheStorageReadError": { "message": "Não foi possível ler o cache: $1" },
+  "cacheStorageActiveDownloadError": { "message": "O cache não pode ser limpo enquanto houver downloads ativos." },
+  "cacheStorageCleared": { "message": "Cache limpo" }
 }

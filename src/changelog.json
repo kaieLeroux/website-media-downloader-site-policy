@@ -1,93 +1,84 @@
 {
-  "require_uninstall": false,
+  "require_uninstall": true,
   "en": {
-    "headline": "What's New (v2.2.8)",
+    "headline": "What's New (v2.3.2)",
+    "reinstall_description": "This version significantly changes background download and DASH stream processing. If background downloads, DASH previews or downloads, or media detection do not work correctly after updating, reinstall the extension to refresh all components. If you just installed or have already reinstalled it, you can skip this.",
     "changes": [
-      "Added support for importing and exporting download history.",
-      "Fixed YouTube format selection not working correctly when creating ZIP downloads.",
-      "Added support for embedding subtitles in standard video downloads.",
-      "Fixed download progress not showing correctly in group mode.",
-      "Cleaned up unused code and slightly reduced extension size."
+      "Added wider support for background downloads.",
+      "Optimized the UI to make it slightly more lightweight.",
+      "Fixed DASH stream preview and downloading issues so they work normally."
     ]
   },
   "id": {
-    "headline": "Yang Baru (v2.2.8)",
+    "headline": "Yang Baru (v2.3.2)",
+    "reinstall_description": "Versi ini membawa perubahan besar pada unduhan latar belakang dan pemrosesan aliran DASH. Jika unduhan latar belakang, pratinjau atau unduhan DASH, maupun deteksi media tidak bekerja dengan benar setelah update, instal ulang ekstensi agar seluruh komponennya diperbarui. Jika baru memasang atau sudah reinstall, lewati saja.",
     "changes": [
-      "Menambahkan dukungan impor dan ekspor riwayat unduhan.",
-      "Memperbaiki pemilihan format YouTube yang tidak berfungsi dengan benar saat membuat ZIP.",
-      "Menambahkan dukungan penyematan subtitle untuk video biasa.",
-      "Memperbaiki progres unduhan yang tidak tampil dengan benar di mode grup.",
-      "Membersihkan kode yang tidak terpakai dan sedikit mengurangi ukuran ekstensi."
+      "Menambahkan dukungan unduhan latar belakang yang lebih luas.",
+      "Mengoptimalkan UI agar sedikit lebih ringan.",
+      "Memperbaiki aliran DASH agar dapat dipratinjau dan diunduh secara normal."
     ]
   },
   "de": {
-    "headline": "Was gibt's Neues (v2.2.8)",
+    "headline": "Was gibt's Neues (v2.3.2)",
+    "reinstall_description": "Diese Version enthält umfangreiche Änderungen an Hintergrunddownloads und der Verarbeitung von DASH-Streams. Falls Hintergrunddownloads, DASH-Vorschauen oder -Downloads beziehungsweise die Medienerkennung nach dem Update nicht richtig funktionieren, installieren Sie die Erweiterung neu, um alle Komponenten zu aktualisieren. Nach einer Neuinstallation können Sie diesen Hinweis überspringen.",
     "changes": [
-      "Import und Export des Download-Verlaufs hinzugefügt.",
-      "Fehler bei der YouTube-Formatauswahl beim Erstellen von ZIP-Downloads behoben.",
-      "Unterstützung für das Einbetten von Untertiteln in Standard-Videodownloads hinzugefügt.",
-      "Download-Fortschritt wird im Gruppenmodus jetzt korrekt angezeigt.",
-      "Nicht verwendeten Code bereinigt und Erweiterungsgröße leicht reduziert."
+      "Erweiterte Unterstützung für Downloads im Hintergrund hinzugefügt.",
+      "Benutzeroberfläche (UI) optimiert, um sie etwas leichtgängiger zu machen.",
+      "DASH-Stream-Vorschau und -Download korrigiert, sodass sie normal funktionieren."
     ]
   },
   "fr": {
-    "headline": "Nouveautés (v2.2.8)",
+    "headline": "Nouveautés (v2.3.2)",
+    "reinstall_description": "Cette version apporte des modifications importantes aux téléchargements en arrière-plan et au traitement des flux DASH. Si les téléchargements en arrière-plan, l'aperçu ou le téléchargement DASH, ou encore la détection des médias ne fonctionnent pas correctement après la mise à jour, réinstallez l'extension afin d'actualiser tous ses composants. Si elle vient d'être installée ou réinstallée, ignorez ce message.",
     "changes": [
-      "Ajout du support pour importer et exporter l'historique des téléchargements.",
-      "Correction de la sélection du format YouTube qui ne fonctionnait pas correctement lors de la création d'archives ZIP.",
-      "Ajout du support pour intégrer les sous-titres dans les téléchargements de vidéos standard.",
-      "Correction de la progression du téléchargement qui ne s'affichait pas correctement en mode groupe.",
-      "Nettoyage du code inutilisé et légère réduction de la taille de l'extension."
+      "Ajout d'un support plus large pour les téléchargements en arrière-plan.",
+      "Optimisation de l'interface utilisateur pour la rendre un peu plus légère.",
+      "Correction des problèmes de prévisualisation et de téléchargement des flux DASH pour qu'ils fonctionnent normalement."
     ]
   },
   "ja": {
-    "headline": "新機能 (v2.2.8)",
+    "headline": "新機能 (v2.3.2)",
+    "reinstall_description": "このバージョンでは、バックグラウンドダウンロードとDASHストリーム処理に大幅な変更が加えられています。更新後にバックグラウンドダウンロード、DASHのプレビューやダウンロード、またはメディア検出が正常に動作しない場合は、すべてのコンポーネントを更新するため拡張機能を再インストールしてください。新規インストールまたは再インストール済みの場合は、この案内をスキップできます。",
     "changes": [
-      "ダウンロード履歴のインポート・エクスポートに対応しました。",
-      "ZIP作成時にYouTubeフォーマットの選択が正しく機能しない問題を修正しました。",
-      "通常動画のダウンロードで字幕の埋め込みに対応しました。",
-      "グループモードでダウンロードの進捗が正しく表示されない問題を修正しました。",
-      "不要なコードを削除し、拡張機能のサイズをわずかに削減しました。"
+      "バックグラウンドダウンロードのサポート範囲を拡大しました。",
+      "UIを最適化し、動作をわずかに軽量化しました。",
+      "DASHストリームのプレビューおよびダウンロード機能が正常に動作するように修正しました。"
     ]
   },
   "ko": {
-    "headline": "새로운 기능 (v2.2.8)",
+    "headline": "새로운 기능 (v2.3.2)",
+    "reinstall_description": "이 버전에서는 백그라운드 다운로드 및 DASH 스트림 처리 방식이 크게 변경되었습니다. 업데이트 후 백그라운드 다운로드, DASH 미리보기 또는 다운로드, 미디어 감지가 정상적으로 작동하지 않는 경우 모든 구성 요소를 새로 고치기 위해 확장 프로그램을 재설치하세요. 새로 설치했거나 이미 재설치한 경우 이 안내를 건너뛸 수 있습니다.",
     "changes": [
-      "다운로드 기록 가져오기 및 내보내기 기능을 추가했습니다.",
-      "ZIP 다운로드 생성 시 YouTube 포맷 선택이 올바르게 작동하지 않던 문제를 수정했습니다.",
-      "일반 비디오 다운로드에서 자막 임베딩을 지원합니다.",
-      "그룹 모드에서 다운로드 진행 상태가 올바르게 표시되지 않던 문제를 수정했습니다.",
-      "사용하지 않는 코드를 정리하고 확장 프로그램 크기를 약간 줄였습니다."
+      "백그라운드 다운로드 지원 범위를 확장했습니다.",
+      "UI를 최적화하여 작동 속도를 약간 개선했습니다.",
+      "DASH 스트림 미리보기 및 다운로드 문제를 수정하여 정상적으로 작동하도록 했습니다."
     ]
   },
   "pt": {
-    "headline": "Novidades (v2.2.8)",
+    "headline": "Novidades (v2.3.2)",
+    "reinstall_description": "Esta versão traz alterações significativas nos downloads em segundo plano e no processamento de fluxos DASH. Se os downloads em segundo plano, a visualização ou o download de DASH, ou a detecção de mídia não funcionarem corretamente após a atualização, reinstale a extensão para atualizar todos os componentes. Se acabou de instalar ou já reinstalou, pode ignorar este aviso.",
     "changes": [
-      "Adicionado suporte para importar e exportar o histórico de downloads.",
-      "Corrigida a seleção de formato do YouTube que não funcionava corretamente ao criar ZIPs.",
-      "Adicionado suporte para incorporar legendas em downloads de vídeos padrão.",
-      "Corrigido o progresso do download que não era exibido corretamente no modo de grupo.",
-      "Código não utilizado removido e tamanho da extensão ligeiramente reduzido."
+      "Adicionado suporte mais amplo para downloads em segundo plano.",
+      "Interface do usuário otimizada para torná-la um pouco mais leve.",
+      "Corrigida a visualização e o download de fluxos DASH para funcionarem normalmente."
     ]
   },
   "ru": {
-    "headline": "Что нового (v2.2.8)",
+    "headline": "Что нового (v2.3.2)",
+    "reinstall_description": "В этой версии значительно изменены фоновые загрузки и обработка потоков DASH. Если после обновления фоновые загрузки, предпросмотр или загрузка DASH либо обнаружение медиа работают неправильно, переустановите расширение, чтобы обновить все компоненты. Если расширение только что установлено или уже переустановлено, это сообщение можно пропустить.",
     "changes": [
-      "Добавлена поддержка импорта и экспорта истории загрузок.",
-      "Исправлен выбор формата YouTube при создании ZIP-архивов.",
-      "Добавлена поддержка встраивания субтитров в стандартные видеозагрузки.",
-      "Исправлено отображение прогресса загрузки в групповом режиме.",
-      "Удалён неиспользуемый код, немного уменьшен размер расширения."
+      "Добавлена более широкая поддержка фоновой загрузки.",
+      "Оптимизирован пользовательский интерфейс для снижения нагрузки.",
+      "Исправлен предпросмотр и загрузка DASH-потоков для нормальной работы."
     ]
   },
   "ar": {
-    "headline": "ما الجديد (v2.2.8)",
+    "headline": "ما الجديد (v2.3.2)",
+    "reinstall_description": "يتضمن هذا الإصدار تغييرات كبيرة في التنزيلات في الخلفية ومعالجة بث DASH. إذا لم تعمل التنزيلات في الخلفية أو معاينة DASH أو تنزيله أو اكتشاف الوسائط بشكل صحيح بعد التحديث، فأعد تثبيت الامتداد لتحديث جميع المكونات. إذا ثبّت الامتداد للتو أو أعدت تثبيته بالفعل، فيمكنك تخطي هذه الرسالة.",
     "changes": [
-      "إضافة دعم استيراد وتصدير سجل التنزيلات.",
-      "إصلاح اختيار تنسيق YouTube الذي لم يكن يعمل بشكل صحيح عند إنشاء ملفات ZIP.",
-      "إضافة دعم تضمين الترجمات في تنزيلات الفيديو العادية.",
-      "إصلاح عدم ظهور تقدم التنزيل بشكل صحيح في وضع المجموعة.",
-      "تنظيف الكود غير المستخدم وتقليل حجم الامتداد قليلاً."
+      "إضافة دعم أوسع للتنزيلات في الخلفية.",
+      "تحسين واجهة المستخدم لتصبح أخف قليلاً.",
+      "إصلاح معاينة وتنزيل بث DASH ليعمل بشكل طبيعي."
     ]
   }
 }

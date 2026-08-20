@@ -3,10 +3,6 @@
     "message": "Disarankan Instal Ulang",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "Sebelumnya Anda menggunakan versi lama. Sangat disarankan untuk menginstal ulang ekstensi ini jika beberapa media tidak terdeteksi atau mengalami error 403 (akses ditolak) karena adanya perubahan besar pada cara deteksi media di versi ini. Jika baru memasang atau sudah reinstall, lewati saja.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Buka Toko",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "Sumber:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Penyimpanan cache" },
+  "cacheStorageCalculating": { "message": "Menghitung penggunaan cache..." },
+  "cacheStorageClear": { "message": "Bersihkan cache" },
+  "cacheStorageEntries": { "message": "$1 entri cache" },
+  "cacheStorageReadError": { "message": "Tidak dapat membaca cache: $1" },
+  "cacheStorageActiveDownloadError": { "message": "Cache tidak dapat dibersihkan saat unduhan masih aktif." },
+  "cacheStorageCleared": { "message": "Cache dibersihkan" }
 }

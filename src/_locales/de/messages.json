@@ -3,10 +3,6 @@
     "message": "Neuinstallation empfohlen",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "Sie haben von einer älteren Version aktualisiert. Es wird dringend empfohlen, diese Erweiterung neu zu installieren, wenn Probleme bei der Medienerkennung oder 403-Fehler (Zugriff verweigert) aufgrund wesentlicher Änderungen der Erkennungsmethoden auftreten. Wenn Sie sie gerade erst installiert oder bereits neu installiert haben, können Sie dies überspringen.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Store öffnen",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "Quelle:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Cache-Speicher" },
+  "cacheStorageCalculating": { "message": "Cache-Nutzung wird berechnet..." },
+  "cacheStorageClear": { "message": "Cache leeren" },
+  "cacheStorageEntries": { "message": "$1 Cache-Einträge" },
+  "cacheStorageReadError": { "message": "Cache kann nicht gelesen werden: $1" },
+  "cacheStorageActiveDownloadError": { "message": "Der Cache kann während aktiver Downloads nicht geleert werden." },
+  "cacheStorageCleared": { "message": "Cache geleert" }
 }

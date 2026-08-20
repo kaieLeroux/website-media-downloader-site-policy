@@ -23,6 +23,14 @@
 
   const _browser = (typeof browser !== 'undefined') ? browser : chrome;
 
+  function applyReinstallDescription(changelog) {
+    const description = document.getElementById('reinstall-description');
+    if (!description) return;
+    const lang = _browser.i18n.getUILanguage().split('-')[0];
+    const content = changelog[lang] || changelog.en;
+    description.textContent = content?.reinstall_description || '';
+  }
+
   function showWelcomePopup() {
     const overlay = document.getElementById('welcome-overlay');
     if (!overlay) return;
@@ -54,6 +62,7 @@
       const data = await _browser.storage.local.get([REINSTALL_WARNING_KEY, 'wmd_previous_version']);
       const res = await fetch(_browser.runtime.getURL('changelog.json'));
       const changelog = await res.json();
+      applyReinstallDescription(changelog);
       
       if (changelog.require_uninstall && data['wmd_previous_version'] && !data[REINSTALL_WARNING_KEY]) {
         setTimeout(showReinstallPopup, 300);
@@ -144,6 +153,7 @@
         try {
           const res = await fetch(_browser.runtime.getURL('changelog.json'));
           const changelog = await res.json();
+          applyReinstallDescription(changelog);
           
           if (changelog.require_uninstall && data['wmd_previous_version'] && !data[REINSTALL_WARNING_KEY]) {
             setTimeout(showReinstallPopup, 500);

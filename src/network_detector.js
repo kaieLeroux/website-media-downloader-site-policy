@@ -1686,7 +1686,7 @@ browser.notifications.onButtonClicked.addListener((notificationId, buttonIndex) 
                     } else {
                         browser.downloads.download({
                             url: data.url,
-                            filename: finalName,
+                            filename: sanitizeFilename(finalName),
                             saveAs: false
                         });
                     }
@@ -2293,11 +2293,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const blob = new Blob([message.arrayBuffer], { type: message.mime || 'application/octet-stream' });
         const downloadId = 'tab_' + Date.now();
         storeInCache(downloadId, blob, message.mime).then(() => {
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            browser.tabs.create({
-                url: browser.runtime.getURL(`download.html?id=${downloadId}&url=${encodeURIComponent(downloadId)}&filename=${encodeURIComponent(message.filename)}`),
-                active: isAndroid
+            pendingSaveQueue.push({
+                id: downloadId,
+                url: downloadId,
+                filename: message.filename
             });
+            processSaveQueue();
             sendResponse({ success: true });
         }).catch(err => {
             sendResponse({ success: false, error: err.message });
@@ -2511,7 +2512,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 } else {
                     browser.downloads.download({
                         url: url,
-                        filename: finalName,
+                        filename: sanitizeFilename(finalName),
                         saveAs: false
                     });
                 }
@@ -3497,14 +3498,24 @@ async function handleDownloadAllAsZip(items, downloadId) {
     }
 }
 
+function sanitizeFilename(name) {
+    if (!name) return name;
+    return name.split('/').map(segment => {
+        return segment.replace(/[\\:*?"<>|\x00-\x1F]/g, '_').trim();
+    }).filter(segment => segment !== '' && segment !== '..').join('/');
+}
+
 function getFileName(url, maxLength = 30) {
     try {
         let parsedUrl = new URL(url);
         let fileName = parsedUrl.pathname.substring(parsedUrl.pathname.lastIndexOf('/') + 1).split('?')[0];
+        try {
+            fileName = decodeURIComponent(fileName);
+        } catch (e) {}
         fileName = fileName.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
         if (!fileName) fileName = parsedUrl.hostname;
         if (fileName.length > maxLength) fileName = fileName.substring(0, maxLength) + '…';
-        return decodeURIComponent(fileName);
+        return fileName;
     } catch (e) { return browser.i18n.getMessage("defaultMediaName") || "Media File"; }
 }
 
@@ -3573,7 +3584,7 @@ async function triggerHiddenDownload(id, filename) {
             try {
                 await browser.downloads.download({
                     url: blobUrl,
-                    filename: finalDownloadFilename,
+                    filename: sanitizeFilename(finalDownloadFilename),
                     saveAs: false
                 });
 
@@ -3801,7 +3812,12 @@ async function assembleBlobFromCache(downloadId) {
 async function processSaveQueue() {
     if (pendingSaveQueue.length === 0) return;
 
-    if (activeBridgeTabId !== null) {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    // The bridge page is the primary save mechanism on Android. Desktop must
+    // try the browser download manager for every file before using the page as
+    // a fallback, even when an older fallback tab is still open.
+    if (activeBridgeTabId !== null && isAndroid) {
         const nextDownload = pendingSaveQueue.shift();
         try {
             await browser.tabs.sendMessage(activeBridgeTabId, {
@@ -3887,7 +3903,6 @@ async function processSaveQueue() {
         return;
     }
 
-    const isAndroid = /Android/i.test(navigator.userAgent);
     const tab = await browser.tabs.create({
         url: browser.runtime.getURL(`download.html?id=${id}&url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`),
         active: isAndroid

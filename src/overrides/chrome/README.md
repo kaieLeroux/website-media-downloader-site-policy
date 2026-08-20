@@ -1,6 +1,6 @@
 # Website Media Downloader
 
-[![Version](https://img.shields.io/badge/version-2.2.8-blue.svg)](src/manifest.json)
+[![Version](https://img.shields.io/badge/version-2.3.2-blue.svg)](src/manifest.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Firefox%20%7C%20Android-orange.svg)](#installation)
 
@@ -48,19 +48,15 @@ Designed with a strict focus on privacy and technical transparency, all operatio
 
 ---
 
-## What's New in v2.2.8
+## What's New in v2.3.2
 
-- **Media Card Theme Adaptation**: Adapted media cards to active theme colors and resolved custom hex color rendering issues; ensured theme color presets wrap and scroll cleanly.
-- **UI Scale DPI Settings**: Added UI Scale DPI settings with customizable display scaling options.
-- **Media Detection & Filtering Controls**: Implemented root-level skipping and hiding for disabled media types across network listeners, storage, and popup history.
-- **Minimum File Size Filter**: Introduced minimum file size filter to exclude small unwanted files automatically.
-- **Optimization & DRM Detection**: Optimized DRM detection reliability and automatic root non-detection during low-end optimization mode.
-- **MP3 Conversion & Audio Enhancements**: Improved MP3 conversion performance with seamless progress updates, custom bitrate settings, and active download badge count.
-- **Startup Settings**: Added setting to disable automatic update checking upon extension startup.
+- **Expanded Background Downloading**: Added wider support for background downloads to ensure seamless transfers when the popup is closed.
+- **UI Optimization**: Optimized the user interface to make it slightly more lightweight and improve responsiveness.
+- **DASH Stream Fixes**: Resolved preview and download issues with DASH streams so they function normally.
 
 ---
 
-## Technical Features (v2.2.8)
+## Technical Features (v2.3.2)
 
 ### Core Detection Engine
 The detection engine has been optimized to handle complex web environments more efficiently. This version introduces:

@@ -29,7 +29,8 @@
     const contentStorageKeys = [
         'detect-download-links', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
-        'ignore-disabled-types', 'optimize-low-end', 'audio-process-notification'
+        'ignore-disabled-types', 'optimize-low-end', 'audio-process-notification', 'theme-color',
+        'ui-scale'
     ];
 
     let cachedContentSettings = {};
@@ -50,6 +51,7 @@
         browser.storage.onChanged.addListener((changes, area) => {
             if (area === 'local') {
                 updateSettingsCache().then(() => {
+                    if (changes['theme-color'] || changes['ui-scale']) applyToastTheme();
                     if (changes['audio-process-notification'] && !processNotificationsEnabled()) {
                         hideToast(true);
                         _toastCurrentTaskId = null;
@@ -623,7 +625,7 @@
         }
         .wmd-toast-thumb-placeholder {
             flex-shrink: 0 !important;
-            color: #8ab4f8 !important;
+            color: var(--wmd-toast-theme, #8ab4f8) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -639,7 +641,7 @@
         .wmd-toast-title {
             font-size: 13px !important;
             font-weight: 600 !important;
-            color: #8ab4f8 !important;
+            color: var(--wmd-toast-theme, #8ab4f8) !important;
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
@@ -683,7 +685,7 @@
             bottom: 0 !important;
             left: 0 !important;
             height: 3px !important;
-            background: #8ab4f8 !important;
+            background: var(--wmd-toast-theme, #8ab4f8) !important;
             width: 0% !important;
             transition: width 0.3s ease !important;
             opacity: 0.8 !important;
@@ -713,8 +715,29 @@
     let _activeCancellations = new Set();
     const _activeDownloads = new Map();
 
+    function getToastThemeColor() {
+        const color = String(cachedContentSettings['theme-color'] || '').trim();
+        return /^(?:#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))$/i.test(color)
+            ? color
+            : '#8ab4f8';
+    }
+
+    function getToastScale() {
+        return cachedContentSettings['ui-scale'] || '85%';
+    }
+
+    function applyToastTheme() {
+        if (_toastEl) {
+            _toastEl.style.setProperty('--wmd-toast-theme', getToastThemeColor());
+            _toastEl.style.zoom = getToastScale();
+        }
+    }
+
     function getOrCreateToast() {
-        if (_toastEl && document.body.contains(_toastEl)) return _toastEl;
+        if (_toastEl && document.body.contains(_toastEl)) {
+            applyToastTheme();
+            return _toastEl;
+        }
         _toastEl = document.createElement('div');
         _toastEl.className = 'wmd-toast mdu-toast-surface';
         _toastEl.innerHTML = `
@@ -735,6 +758,7 @@
             </div>
             <div class="wmd-toast-progress-bar" id="wmd-bar" style="width:0%"></div>
         `;
+        applyToastTheme();
         document.body.appendChild(_toastEl);
         _toastBarEl = _toastEl.querySelector('#wmd-bar');
         _toastStatusEl = _toastEl.querySelector('#wmd-status');

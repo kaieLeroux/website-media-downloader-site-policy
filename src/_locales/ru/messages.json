@@ -3,10 +3,6 @@
     "message": "Рекомендуется переустановка",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "Вы обновились с более старой версии. Настоятельно рекомендуется переустановить расширение, если вы столкнулись с проблемами обнаружения медиафайлов или ошибками 403 (Доступ запрещен) из-за значительных изменений в методах обнаружения. Если вы только что установили или уже переустановили его, можете пропустить это сообщение.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Открыть магазин",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "Источник:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Хранилище кэша" },
+  "cacheStorageCalculating": { "message": "Подсчёт размера кэша..." },
+  "cacheStorageClear": { "message": "Очистить кэш" },
+  "cacheStorageEntries": { "message": "Записей в кэше: $1" },
+  "cacheStorageReadError": { "message": "Не удалось прочитать кэш: $1" },
+  "cacheStorageActiveDownloadError": { "message": "Нельзя очистить кэш во время активных загрузок." },
+  "cacheStorageCleared": { "message": "Кэш очищен" }
 }

@@ -122,6 +122,101 @@ async function clearConversionChunks(sessionId) {
   }
 }
 
+async function cleanupStaleConversionChunks(maxAgeMs = 6 * 60 * 60 * 1000) {
+  try {
+    const db = await openCacheDB();
+    const cutoff = Date.now() - maxAgeMs;
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction([CHUNK_STORE_NAME], "readwrite");
+      const request = tx.objectStore(CHUNK_STORE_NAME).openCursor();
+      request.onsuccess = event => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        const value = cursor.value;
+        if (/^(?:m3u8|mpd)_conv_/.test(String(value.downloadId)) && Number(value.timestamp || 0) < cutoff) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      request.onerror = () => reject(request.error);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("Cache cleanup aborted"));
+    });
+    db.close();
+  } catch (error) {
+    console.warn("Failed to clean stale conversion chunks:", error);
+  }
+}
+
+function waitForSegmentRetry(delay, checkCancel) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, delay);
+    if (!checkCancel) return;
+    const interval = setInterval(() => {
+      if (!checkCancel()) return;
+      clearTimeout(timer);
+      clearInterval(interval);
+      reject(new Error("Cancelled"));
+    }, Math.min(250, delay));
+    setTimeout(() => clearInterval(interval), delay + 10);
+  });
+}
+
+async function fetchSegmentWithRetry(url, options, checkCancel, maxAttempts = 4) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (checkCancel?.()) throw new Error("Cancelled");
+    try {
+      const response = await fetchWithCache(url, options);
+      if (response.ok) return response;
+      const error = new Error(`HTTP ${response.status} while downloading segment`);
+      error.status = response.status;
+      throw error;
+    } catch (error) {
+      if (error?.message === "Cancelled" || error?.name === "AbortError" || checkCancel?.()) {
+        throw new Error("Cancelled");
+      }
+      lastError = error;
+      const status = Number(error?.status || 0);
+      const retryable = status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
+      if (!retryable || attempt === maxAttempts) break;
+      const delay = Math.min(4000, 500 * (2 ** (attempt - 1))) + Math.floor(Math.random() * 250);
+      console.warn(`Segment retry ${attempt}/${maxAttempts - 1} in ${delay}ms: ${url}`, error);
+      await waitForSegmentRetry(delay, checkCancel);
+    }
+  }
+  throw lastError || new Error(`Failed to download segment: ${url}`);
+}
+
+async function fetchSegmentBufferWithRetry(url, options, checkCancel, maxAttempts = 4) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (checkCancel?.()) throw new Error("Cancelled");
+    try {
+      const response = await fetchWithCache(url, options);
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status} while downloading segment`);
+        error.status = response.status;
+        throw error;
+      }
+      return await response.arrayBuffer();
+    } catch (error) {
+      if (error?.message === "Cancelled" || error?.name === "AbortError" || checkCancel?.()) throw new Error("Cancelled");
+      lastError = error;
+      const status = Number(error?.status || 0);
+      const retryable = status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
+      if (!retryable || attempt === maxAttempts) break;
+      const delay = Math.min(4000, 500 * (2 ** (attempt - 1))) + Math.floor(Math.random() * 250);
+      console.warn(`Segment body retry ${attempt}/${maxAttempts - 1} in ${delay}ms: ${url}`, error);
+      await waitForSegmentRetry(delay, checkCancel);
+    }
+  }
+  throw lastError || new Error(`Failed to download segment: ${url}`);
+}
+
+cleanupStaleConversionChunks();
+
 async function transmuxToMp4(tsBlobs) {
   console.log("Starting transmuxing with mux.js. Segments count:", tsBlobs.length);
   
@@ -1024,10 +1119,18 @@ function ensureFileExtension(filename, mimeType) {
     return filename;
 }
 
+function sanitizeFilename(name) {
+    if (!name) return name;
+    return name.split('/').map(segment => {
+        return segment.replace(/[\\:*?"<>|\x00-\x1F]/g, '_').trim();
+    }).filter(segment => segment !== '' && segment !== '..').join('/');
+}
+
 async function finalizeDownload(blob, filename, downloadMethod, loadingBar = null, streamedToGDrive = false, streamedToDropbox = false) {
     if (blob) {
         filename = ensureFileExtension(filename, blob.type);
     }
+    filename = sanitizeFilename(filename);
     if (!blob) {
         if (streamedToGDrive) {
             if (loadingBar) {
@@ -1049,6 +1152,26 @@ async function finalizeDownload(blob, filename, downloadMethod, loadingBar = nul
     // Trigger local download first or early to preserve user gesture
     const objectUrl = URL.createObjectURL(blob);
     const triggerLocalDownload = async () => {
+        const isFirefoxDesktop = !/Android/i.test(navigator.userAgent) &&
+            typeof browser !== 'undefined' &&
+            browser.runtime?.getURL?.('').startsWith('moz-extension://');
+
+        // Worker-produced files in Firefox desktop must use the background
+        // save queue too. It tries the native download manager first and only
+        // opens download.html if that native save fails.
+        if (isFirefoxDesktop) {
+            const saved = await browser.runtime.sendMessage({
+                action: 'download_arraybuffer',
+                arrayBuffer: await blob.arrayBuffer(),
+                filename,
+                mime: blob.type
+            });
+            if (!saved?.success) {
+                throw new Error(saved?.error || 'Unable to save file');
+            }
+            return true;
+        }
+
         return new Promise((resolve) => {
             const fallbackDownload = () => {
                 const a = document.createElement("a");
@@ -1260,8 +1383,7 @@ async function offlineAudioBufferToWav(buffer, onProgress, checkCancel = null) {
   `;
 
   return new Promise((resolve, reject) => {
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const worker = new Worker(URL.createObjectURL(blob));
+    const worker = new Worker(browser.runtime.getURL('wav_worker.js'));
     let cancelInterval = null;
 
     if (checkCancel) {
@@ -1287,7 +1409,7 @@ async function offlineAudioBufferToWav(buffer, onProgress, checkCancel = null) {
     worker.onerror = (err) => {
       if (cancelInterval) clearInterval(cancelInterval);
       worker.terminate();
-      reject(err);
+      reject(new Error(err.message || `WAV worker failed (${err.filename || 'wav_worker.js'})`));
     };
 
     const buffers = channels.map(c => c.buffer);
@@ -1603,8 +1725,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
     }
 
     async function fetchAndDecodeKey(keyHref, fetchOpts) {
-      const res = await fetchWithCache(keyHref, fetchOpts);
-      const ab = await res.arrayBuffer();
+      const ab = await fetchSegmentBufferWithRetry(keyHref, fetchOpts, checkCancel);
 
       if (ab.byteLength === 16) return ab;
 
@@ -1841,8 +1962,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
         const mapUriMatch = it.raw.match(/URI="([^"]+)"/);
         if (mapUriMatch) {
           const mapHref = new URL(mapUriMatch[1], playlistUrl).href;
-          const mapRes = await fetchWithCache(mapHref, fetchOpts);
-          let mapData = new Uint8Array(await mapRes.arrayBuffer());
+          let mapData = new Uint8Array(await fetchSegmentBufferWithRetry(mapHref, fetchOpts, checkCancel));
 
           if (currentKeyBuffer) {
             const iv = currentKeyIV ? currentKeyIV : makeSequenceIV(0);
@@ -1871,8 +1991,7 @@ async function downloadM3U8Offline(m3u8Url, headers, downloadMethod, loadingBar,
         throw new Error("Cancelled");
       }
       try {
-        const res = await fetchWithCache(seg.uri, fetchOpts);
-        let arr = new Uint8Array(await res.arrayBuffer());
+        let arr = new Uint8Array(await fetchSegmentBufferWithRetry(seg.uri, fetchOpts, checkCancel));
 
         if (seg.key) {
           const seq = mediaSeq + seg.index + 1;
@@ -2470,7 +2589,16 @@ async function downloadMPDOffline(mpdUrl, headers, downloadMethod, loadingBar, r
       }
     }
 
-    const r = await fetchWithCache(url, fetchOptions);
+    const checkCancel = () => {
+      try { throwIfCancelled(); return false; } catch (_) { return true; }
+    };
+    if (!onStart && !onChunk) {
+      const buffer = await fetchSegmentBufferWithRetry(url, fetchOptions, checkCancel);
+      throwIfCancelled();
+      return new Blob([buffer]);
+    }
+
+    const r = await fetchSegmentWithRetry(url, fetchOptions, checkCancel);
     throwIfCancelled();
     if (!r.ok) throw new Error(`Fetch failed: ${url} (${r.status})`);
 

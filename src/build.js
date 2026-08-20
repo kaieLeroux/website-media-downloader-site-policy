@@ -42,7 +42,11 @@ const EXCLUDE_FROM_BUILD = new Set(['build.js', 'overrides', 'minify.js']);
 const EXCLUDE_PER_TARGET = {
     chrome: new Set(['yt_core.js', 'wymd.js']),
     'chrome-yt': new Set(),
-    firefox: new Set()
+    firefox: new Set(['chrome_audio_jobs.js', 'offscreen.html', 'offscreen.js'])
+};
+
+const FORBIDDEN_PER_TARGET = {
+    firefox: ['chrome_audio_jobs.js', 'offscreen.html', 'offscreen.js']
 };
 
 function cleanDir(dir) {
@@ -133,6 +137,39 @@ function countOverrideFiles(target) {
     return count;
 }
 
+function finalizeManifest(target, outDir) {
+    const manifestPath = path.join(outDir, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+    if (target === 'firefox') {
+        manifest.permissions = (manifest.permissions || []).filter(permission => permission !== 'offscreen');
+        if (manifest.background) delete manifest.background.service_worker;
+    }
+
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + '\n', 'utf8');
+}
+
+function validateTarget(target, outDir) {
+    for (const relativePath of FORBIDDEN_PER_TARGET[target] || []) {
+        if (fs.existsSync(path.join(outDir, relativePath))) {
+            throw new Error(`[${target}] Browser-specific file leaked into build: ${relativePath}`);
+        }
+    }
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'manifest.json'), 'utf8'));
+    if (target === 'firefox') {
+        if (manifest.permissions?.includes('offscreen')) {
+            throw new Error('[firefox] Chrome-only "offscreen" permission leaked into manifest');
+        }
+        if (manifest.background?.service_worker) {
+            throw new Error('[firefox] Chrome-only background service worker leaked into manifest');
+        }
+        if (!manifest.background?.scripts?.length) {
+            throw new Error('[firefox] Missing background scripts');
+        }
+    }
+}
+
 function buildTarget(target) {
     const outDir = path.join(BUILD_DIR, target);
     cleanDir(outDir);
@@ -145,6 +182,8 @@ function buildTarget(target) {
     }
 
     applyOverrides(target, outDir);
+    finalizeManifest(target, outDir);
+    validateTarget(target, outDir);
 
     const overrideCount = countOverrideFiles(target);
     console.log(`[OK] ${target} build -> build/${target}/  (${overrideCount} override${overrideCount !== 1 ? 's' : ''} applied)`);

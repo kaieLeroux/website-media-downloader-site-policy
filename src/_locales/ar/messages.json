@@ -3,10 +3,6 @@
     "message": "يُوصى بإعادة التثبيت",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "لقد قمت بالتحديث من إصدار أقدم. نوصي بشدة بإعادة تثبيت هذا الامتداد إذا كنت تواجه مشكلات في اكتشاف الوسائط أو أخطاء 403 (تم رفض الوصول) بسبب تغييرات كبيرة في طرق اكتشاف الوسائط. إذا قمت بتثبيته للتو أو قمت بالفعل بإعادة تثبيته، فلا تتردد في تخطي هذا.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "افتح المتجر",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "المصدر:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "تخزين ذاكرة التخزين المؤقت" },
+  "cacheStorageCalculating": { "message": "جارٍ حساب استخدام ذاكرة التخزين المؤقت..." },
+  "cacheStorageClear": { "message": "مسح ذاكرة التخزين المؤقت" },
+  "cacheStorageEntries": { "message": "$1 عناصر مخزنة مؤقتًا" },
+  "cacheStorageReadError": { "message": "تعذرت قراءة ذاكرة التخزين المؤقت: $1" },
+  "cacheStorageActiveDownloadError": { "message": "لا يمكن مسح ذاكرة التخزين المؤقت أثناء وجود تنزيلات نشطة." },
+  "cacheStorageCleared": { "message": "تم مسح ذاكرة التخزين المؤقت" }
 }

@@ -3,10 +3,6 @@
     "message": "Reinstallation Recommended",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "You upgraded from an older version. It is highly recommended to reinstall this extension if you experience media detection issues or 403 errors (Access Denied) due to significant changes in media detection methods. If you just installed or have already reinstalled it, feel free to skip this.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Open Store",
     "description": "Reinstall warning action button"
@@ -2209,5 +2205,12 @@
   "updateSourceLabel": {
     "message": "Source:",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Cache storage" },
+  "cacheStorageCalculating": { "message": "Calculating cache usage..." },
+  "cacheStorageClear": { "message": "Clear cache" },
+  "cacheStorageEntries": { "message": "$1 cached entries" },
+  "cacheStorageReadError": { "message": "Unable to read cache: $1" },
+  "cacheStorageActiveDownloadError": { "message": "Cache cannot be cleared while downloads are active." },
+  "cacheStorageCleared": { "message": "Cache cleared" }
 }

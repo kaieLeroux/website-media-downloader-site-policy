@@ -403,6 +403,14 @@
                 </div>
                 <mdui-switch id="media-cache"></mdui-switch>
               </div>
+
+              <div class="setting-item">
+                <div class="setting-text">
+                  <h3 data-translate="cacheStorageTitle">Cache storage</h3>
+                  <p id="indexeddb-cache-status" data-translate="cacheStorageCalculating">Calculating cache usage...</p>
+                </div>
+                <mdui-button id="clear-indexeddb-cache" variant="tonal" data-translate="cacheStorageClear">Clear cache</mdui-button>
+              </div>
               
               <div class="setting-item">
                 <div class="setting-text">
@@ -1077,7 +1085,7 @@
 
       <div style="height:1px; background:rgb(var(--mdui-color-outline-variant)); margin: 14px 0;"></div>
 
-      <p data-translate="reinstallDescription" style="
+      <p id="reinstall-description" style="
         font-size:13px;
         color:rgb(var(--mdui-color-on-surface-variant));
         line-height:1.65;

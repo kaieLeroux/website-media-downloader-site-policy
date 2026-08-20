@@ -3,10 +3,6 @@
     "message": "Réinstallation recommandée",
     "description": "Reinstall warning title"
   },
-  "reinstallDescription": {
-    "message": "Vous avez effectué une mise à jour depuis une ancienne version. Il est fortement recommandé de réinstaller cette extension si vous rencontrez des problèmes de détection des médias ou des erreurs 403 (Accès refusé) en raison de modifications importantes apportées aux méthodes de détection. Si vous venez de l'installer ou si vous l'avez déjà réinstallée, vous pouvez ignorer ce message.",
-    "description": "Reinstall warning description"
-  },
   "reinstallActionBtn": {
     "message": "Ouvrir le Store",
     "description": "Reinstall warning action button"
@@ -2204,5 +2200,12 @@
   "updateSourceLabel": {
     "message": "Source :",
     "description": "Label for the update source in the update popup"
-  }
+  },
+  "cacheStorageTitle": { "message": "Stockage du cache" },
+  "cacheStorageCalculating": { "message": "Calcul de l’utilisation du cache..." },
+  "cacheStorageClear": { "message": "Vider le cache" },
+  "cacheStorageEntries": { "message": "$1 entrées en cache" },
+  "cacheStorageReadError": { "message": "Impossible de lire le cache : $1" },
+  "cacheStorageActiveDownloadError": { "message": "Le cache ne peut pas être vidé pendant des téléchargements actifs." },
+  "cacheStorageCleared": { "message": "Cache vidé" }
 }

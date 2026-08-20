@@ -187,6 +187,15 @@ let allFilteredRequests = [];
 let renderedCount = 0;
 const CHUNK_SIZE = 20;
 let intersectionObserver = null;
+let isRenderingChunk = false;
+const renderedMediaUrls = new Set();
+const mediaPreviewLoadObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.loadMediaPreview?.();
+    mediaPreviewLoadObserver.unobserve(entry.target);
+  });
+}, { rootMargin: '400px 0px' });
 const uiCache = new Map();
 let isGroupingEnabled = false;
 let activeGroup = null;
@@ -247,11 +256,14 @@ async function checkForUpdates() {
 
   let nativeUpdateFound = false;
   let requireUninstall = false;
+  let reinstallDescription = '';
   try {
     const changelogRes = await fetch(CHANGELOG_URL + '?t=' + Date.now());
     if (changelogRes.ok) {
       const changelogData = await changelogRes.json();
       requireUninstall = !!changelogData.require_uninstall;
+      const lang = browser.i18n.getUILanguage().split('-')[0];
+      reinstallDescription = (changelogData[lang] || changelogData.en)?.reinstall_description || '';
     }
   } catch (e) {
     console.warn('Failed to fetch remote changelog:', e);
@@ -261,7 +273,7 @@ async function checkForUpdates() {
     try {
       const result = await browser.runtime.requestUpdateCheck();
       if (result && result.status === 'update_available') {
-        showUpdateNotification(AMO_URL, result.version || 'new', requireUninstall);
+        showUpdateNotification(AMO_URL, result.version || 'new', requireUninstall, reinstallDescription);
         nativeUpdateFound = true;
       }
     } catch (err) {
@@ -273,7 +285,7 @@ async function checkForUpdates() {
     try {
       const result = await performUpdateCheck();
       if (result.updateAvailable) {
-        showUpdateNotification(result.updateUrl, result.latestVersion, requireUninstall || result.requireUninstall);
+        showUpdateNotification(result.updateUrl, result.latestVersion, requireUninstall || result.requireUninstall, reinstallDescription);
       }
     } catch (error) {
       console.error('Update check failed:', error);
@@ -448,7 +460,7 @@ function showTopBarUpdateNotification(url, latestVersion) {
   }
 }
 
-function showUpdateDialog(url, latestVersion, requireUninstall = false) {
+function showUpdateDialog(url, latestVersion, requireUninstall = false, reinstallDescription = '') {
   const dialog = document.createElement('mdui-dialog');
   dialog.headline = browser.i18n.getMessage("updateAvailable", [latestVersion]) || `New version available! (v${latestVersion})`;
 
@@ -458,10 +470,7 @@ function showUpdateDialog(url, latestVersion, requireUninstall = false) {
   
   let msg = (browser.i18n.getMessage("updateDialogMessage", [latestVersion]) || `Version ${latestVersion} is available. Would you like to update now?`);
   if (requireUninstall) {
-    const isId = browser.i18n.getUILanguage() === 'id';
-    const warningText = isId 
-      ? '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>PENTING:</strong> Versi update terbaru ini mengharuskan instal ulang ekstensi. Atau Anda bisa mencobanya terlebih dahulu tanpa instal ulang; jika seumpama media tidak terbaca (error 403), Anda harus melakukan instal ulang.</div>'
-      : '<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;"><strong>IMPORTANT:</strong> The latest update requires a clean reinstallation. Alternatively, you can test it first without reinstalling; if media cannot be detected or returns a 403 error, you must perform a clean reinstallation.</div>';
+    const warningText = `<div style="margin-top: 10px; padding: 10px; background: rgba(var(--mdui-color-error), 0.1); border-left: 4px solid rgb(var(--mdui-color-error)); border-radius: 4px; font-size: 0.8rem; color: rgb(var(--mdui-color-error)); line-height: 1.45;">${reinstallDescription}</div>`;
     msg += warningText;
   }
 
@@ -501,7 +510,7 @@ function showUpdateDialog(url, latestVersion, requireUninstall = false) {
   });
 }
 
-function showUpdateNotification(url, latestVersion, requireUninstall = false) {
+function showUpdateNotification(url, latestVersion, requireUninstall = false, reinstallDescription = '') {
   if (sessionStorage.getItem('update-topbar-closed') === 'true') return;
 
   if (sessionStorage.getItem('update-dismissed') === 'true') {
@@ -509,7 +518,7 @@ function showUpdateNotification(url, latestVersion, requireUninstall = false) {
     return;
   }
 
-  showUpdateDialog(url, latestVersion, requireUninstall);
+  showUpdateDialog(url, latestVersion, requireUninstall, reinstallDescription);
 }
 
 async function checkAndShowEventPopup() {
@@ -2095,7 +2104,16 @@ function renderInitialList() {
 
   mediaContainer.innerHTML = '';
   uiCache.clear();
+  renderedMediaUrls.clear();
+  activeItems.forEach(item => {
+    const url = item.dataset.url;
+    if (url) {
+      renderedMediaUrls.add(url);
+      renderedMediaUrls.add(url.split('?')[0]);
+    }
+  });
   renderedCount = 0;
+  if (intersectionObserver) intersectionObserver.disconnect();
 
   const selectedInfoBar = document.getElementById('selected-info-bar');
   const isSearching = !!query;
@@ -2218,6 +2236,8 @@ function renderInitialList() {
 }
 
 function renderNextChunk() {
+  if (isRenderingChunk) return;
+  isRenderingChunk = true;
   const mediaContainer = document.getElementById('media-list');
   const fragment = document.createDocumentFragment();
   const requestsToRender = getActiveRequests();
@@ -2226,12 +2246,9 @@ function renderNextChunk() {
   nextChunk.forEach(item => {
     const itemUrl = item.bestRequest.originalUrl;
     const itemUrlBase = itemUrl.split('?')[0];
-    const exists = Array.from(mediaContainer.querySelectorAll('.media-item')).some(el => {
-       const elUrl = el.dataset.url;
-       return elUrl === itemUrl || elUrl?.split('?')[0] === itemUrlBase;
-    });
-
-    if (exists) return;
+    if (renderedMediaUrls.has(itemUrl) || renderedMediaUrls.has(itemUrlBase)) return;
+    renderedMediaUrls.add(itemUrl);
+    renderedMediaUrls.add(itemUrlBase);
 
     const mediaDiv = createMediaItem(item);
     fragment.appendChild(mediaDiv);
@@ -2280,6 +2297,7 @@ function renderNextChunk() {
 
   restoreActiveDownloadsUI();
   updateSelectedCount();
+  isRenderingChunk = false;
 }
 
 const m3u8VariantsCache = new Map();
@@ -2557,14 +2575,23 @@ function createMediaItem(item) {
   const previewContainer = document.createElement('div');
   previewContainer.classList.add('media-preview-container');
 
+  let video = null;
+
   if (isVideo || isStream) {
     previewContainer.classList.add('video');
-    const video = document.createElement('video');
-    video.src = isStream ? "" : bestRequest.originalUrl;
+    video = document.createElement('video');
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
-    if (!isStream) video.currentTime = 0.1;
+    mediaDiv.loadMediaPreview = () => {
+      if (isStream || video.dataset.previewLoaded === '1') return;
+      video.dataset.previewLoaded = '1';
+      video.src = bestRequest.originalUrl;
+      video.addEventListener('loadedmetadata', () => {
+        if (video.duration > 0) video.currentTime = Math.min(0.1, video.duration);
+      }, { once: true });
+    };
+    if (!isStream) mediaPreviewLoadObserver.observe(mediaDiv);
     previewContainer.appendChild(video);
 
     video.addEventListener('play', () => {
@@ -2588,6 +2615,7 @@ function createMediaItem(item) {
 
     previewContainer.addEventListener('click', async (e) => {
       e.stopPropagation();
+      mediaDiv.loadMediaPreview?.();
       if (video.paused) {
         document.querySelectorAll('.media-preview-container.playing video').forEach(v => {
           v.pause();
@@ -2697,6 +2725,7 @@ function createMediaItem(item) {
   mediaDiv.appendChild(inlinePreview);
 
   mediaDiv.cleanupMediaPreview = () => {
+    mediaPreviewLoadObserver.unobserve(mediaDiv);
     if (hls) {
       hls.destroy();
       hls = null;
@@ -2715,15 +2744,18 @@ function createMediaItem(item) {
   };
 
   largeVideo.addEventListener('play', () => {
+    if (!video) return;
     const isExpanded = mediaDiv.classList.contains('expanded');
     largeVideo.muted = !isExpanded;
     video.muted = isExpanded;
     syncPlayback(largeVideo, video, false);
   });
   largeVideo.addEventListener('pause', () => {
+    if (!video) return;
     syncPlayback(largeVideo, video, false);
   });
   largeVideo.addEventListener('timeupdate', () => {
+    if (!video) return;
     syncPlayback(largeVideo, video, false);
   });
 
@@ -4154,7 +4186,11 @@ async function loadHistoryList(reset = true) {
   const history = historyResult['download-history'] || [];
   const settings = await browser.storage.local.get(['only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file']);
 
-  historyContainer.innerHTML = '';
+  if (reset) {
+    historyContainer.innerHTML = '';
+  } else {
+    historyContainer.querySelector('.history-scroll-sentinel')?.remove();
+  }
 
   if (history.length === 0) {
     historyContainer.innerHTML = `<div style="padding: 60px 20px; text-align: center; opacity: 0.8; line-height: 1.6;">${browser.i18n.getMessage("noHistory") || "No download history found."}</div>`;
@@ -4181,9 +4217,10 @@ async function loadHistoryList(reset = true) {
     if (type === 'file' && !showFile) return;
 
     visibleCount++;
-    if (visibleCount > historyRenderLimit) return;
+    const chunkStart = reset ? 0 : Math.max(0, historyRenderLimit - HISTORY_CHUNK_SIZE);
+    if (visibleCount <= chunkStart || visibleCount > historyRenderLimit) return;
     const historyItem = document.createElement('div');
-    historyItem.classList.add('media-item');
+    historyItem.classList.add('media-item', 'history-item');
 
     const header = document.createElement('div');
     header.classList.add('media-item-header');
@@ -4374,6 +4411,7 @@ async function loadAboutPage() {
 
     let requireUninstall = false;
     let hasDismissedWarning = false;
+    let reinstallDescription = '';
     try {
       const [changelogRes, storageData] = await Promise.all([
         fetch(browser.runtime.getURL('changelog.json')),
@@ -4381,6 +4419,9 @@ async function loadAboutPage() {
       ]);
       const changelogData = await changelogRes.json();
       requireUninstall = !!changelogData.require_uninstall;
+      const changelogLang = browser.i18n.getUILanguage().split('-')[0];
+      const changelogContent = changelogData[changelogLang] || changelogData.en;
+      reinstallDescription = changelogContent?.reinstall_description || '';
       hasDismissedWarning = storageData.wmd_reinstall_about_dismissed === '1';
     } catch (e) {
       console.warn("Failed to read settings in About:", e);
@@ -4395,7 +4436,7 @@ async function loadAboutPage() {
             ${browser.i18n.getMessage("reinstallTitle") || "Reinstallation Recommended"}
           </div>
           <p style="font-size: 0.78rem; line-height: 1.5; margin: 4px 0 8px; color: var(--on-surface-variant);">
-            ${browser.i18n.getMessage("reinstallDescription")}
+            ${reinstallDescription}
           </p>
           <div style="display: flex; justify-content: flex-end; gap: 8px;">
             <mdui-button id="about-confirm-reinstalled" style="--mdui-shape-corner-extra-small: 16px; height: 32px; font-size: 12px; background: rgba(var(--mdui-color-primary), 0.1); color: var(--primary);">
@@ -4438,7 +4479,7 @@ async function loadAboutPage() {
     }
 
     let html = `
-      <div style="padding: 16px; display: flex; flex-direction: column; gap: 24px;">
+      <div class="about-content" style="padding: 16px; display: flex; flex-direction: column; gap: 24px;">
         <div style="text-align: center; padding: 24px 16px; background: var(--surface-low); border-radius: var(--app-border-radius); border: 1px solid rgb(var(--mdui-color-outline-variant));">
           <div style="width: 48px; height: 48px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
             <img src="${browser.runtime.getURL('icons/icon.png')}" style="width: 48px; height: 48px; object-fit: contain;">
@@ -4497,7 +4538,7 @@ async function loadAboutPage() {
 
     if (data.authors.length > 1) {
       html += `
-        <h2 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--on-surface-variant); margin: 12px 8px 0;">${browser.i18n.getMessage("legacyContributionsTitle") || "Legacy Contributions"}</h2>
+        <h2 style="font-size: 0.75rem; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--on-surface-variant); margin: 12px 8px 0;">${browser.i18n.getMessage("legacyContributionsTitle") || "Legacy Contributions"}</h2>
         <mdui-list style="background: transparent;">
       `;
 
@@ -4521,7 +4562,7 @@ async function loadAboutPage() {
     html += `
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <h2 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin: 8px 8px 0;">${browser.i18n.getMessage("usefulLinksTitle") || "Useful Links"}</h2>
+          <h2 style="font-size: 0.75rem; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--primary); margin: 8px 8px 0;">${browser.i18n.getMessage("usefulLinksTitle") || "Useful Links"}</h2>
     `;
 
     const linkTranslationMap = {
