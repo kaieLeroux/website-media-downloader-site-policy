@@ -414,6 +414,12 @@
   "mediaNotificationExplain": {
     "message": "Menampilkan popup kecil langsung di halaman yang sedang Anda buka saat media baru ditemukan."
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "Tampilkan notifikasi proses unduhan audio, stream, dan zip"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "Menampilkan progres unduhan audio, stream, dan berkas zip di halaman. Proses latar belakang tetap berjalan jika dinonaktifkan."
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "Tampilkan notifikasi perangkat saat media terdeteksi"
   },
@@ -531,6 +537,14 @@
   "mpdFixCheckbox": {
     "message": "Perbaiki file MPD (disarankan)",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "Gabungkan audio dan video MPD ke MP4",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "Menggabungkan track video dan audio yang dipilih ke dalam satu file MP4 alih-alih mengompresinya menjadi ZIP.",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "Preferensi pembukaan add-on",
@@ -1141,6 +1155,10 @@
   "mpdDownloadExplainSnackbar": {
     "message": "Media yang dipilih adalah stream MPEG-DASH. Ini akan mengunduh aliran video dan audio secara terpisah dalam file ZIP, sehingga Anda dapat memutar file .mpd dalam ZIP dengan VLC.",
     "description": "Explanation shown in a snackbar when starting an MPD download."
+  },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "Media yang dipilih adalah stream MPEG-DASH. Aliran video dan audio akan diunduh dan digabungkan menjadi file MP4 tunggal.",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
   },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "Berhasil mengunduh file audio dan video terpisah untuk \"$BASENAME$\".",
@@ -2149,7 +2167,7 @@
     "description": "Setting title for embedding all subtitle tracks"
   },
   "embedSubtitlesMkvExplain": {
-    "message": "Jika diaktifkan, mengunduh semua subtitle akan menggabungkannya ke dalam satu file video (MKV/MP4) menggunakan Mediabunny. Jika dinonaktifkan, subtitle akan diunduh sebagai file ZIP terpisah.",
+    "message": "Jika diaktifkan, mengunduh semua subtitle akan menggabungkannya ke dalam satu file video (MP4). Jika dinonaktifkan, subtitle akan diunduh sebagai file ZIP terpisah.",
     "description": "Explanation for subtitle embedding setting"
   },
   "embedSubtitlesNonYtTitle": {

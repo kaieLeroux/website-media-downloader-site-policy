@@ -29,10 +29,15 @@
     const contentStorageKeys = [
         'detect-download-links', 'hide-segments', 'hide-page-components',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file',
-        'ignore-disabled-types', 'optimize-low-end'
+        'ignore-disabled-types', 'optimize-low-end', 'audio-process-notification'
     ];
 
     let cachedContentSettings = {};
+    function processNotificationsEnabled() {
+        return cachedContentSettings['audio-process-notification'] !== '0' &&
+            cachedContentSettings['audio-process-notification'] !== false;
+    }
+
     async function updateSettingsCache() {
         try {
             if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
@@ -43,7 +48,14 @@
     updateSettingsCache();
     if (typeof browser !== 'undefined' && browser.storage && browser.storage.onChanged) {
         browser.storage.onChanged.addListener((changes, area) => {
-            if (area === 'local') updateSettingsCache();
+            if (area === 'local') {
+                updateSettingsCache().then(() => {
+                    if (changes['audio-process-notification'] && !processNotificationsEnabled()) {
+                        hideToast(true);
+                        _toastCurrentTaskId = null;
+                    }
+                });
+            }
         });
     }
 
@@ -570,6 +582,479 @@
             }
         }
     });
+
+    // Floating progress toast logic for background downloading
+    const toastStyles = `
+        .wmd-toast {
+            position: fixed !important;
+            bottom: 24px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 2147483647 !important;
+            width: auto !important;
+            min-width: 320px !important;
+            max-width: 480px !important;
+            background: rgba(25, 25, 25, 0.45) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            border-radius: 9999px !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
+            font-family: 'Segoe UI', Roboto, sans-serif !important;
+            color: #fff !important;
+            overflow: hidden !important;
+            display: none !important;
+            pointer-events: auto !important;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            animation: wmd-toast-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            touch-action: pan-y !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+        .wmd-toast.wmd-toast--show {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .wmd-toast-inner {
+            display: flex !important;
+            align-items: center !important;
+            padding: 14px 20px !important;
+            gap: 14px !important;
+        }
+        .wmd-toast-thumb-placeholder {
+            flex-shrink: 0 !important;
+            color: #8ab4f8 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .wmd-toast-content {
+            flex-grow: 1 !important;
+            min-width: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            margin-right: 4px !important;
+        }
+        .wmd-toast-title {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #8ab4f8 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 300px !important;
+        }
+        .wmd-toast-status-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            font-size: 12px !important;
+        }
+        .wmd-toast-status {
+            color: rgba(255,255,255,0.9) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 240px !important;
+        }
+        .wmd-toast-pct {
+            color: rgba(255,255,255,0.5) !important;
+            font-size: 11px !important;
+        }
+        .wmd-toast-close {
+            background: none !important;
+            border: none !important;
+            color: rgba(255,255,255,0.4) !important;
+            cursor: pointer !important;
+            padding: 6px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+        }
+        .wmd-toast-close:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,0.1) !important;
+        }
+        .wmd-toast-progress-bar {
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            height: 3px !important;
+            background: #8ab4f8 !important;
+            width: 0% !important;
+            transition: width 0.3s ease !important;
+            opacity: 0.8 !important;
+        }
+        .wmd-toast--success .wmd-toast-progress-bar {
+            background: #4CAF50 !important;
+        }
+        .wmd-toast--error .wmd-toast-progress-bar {
+            background: #F44336 !important;
+        }
+        @keyframes wmd-toast-in {
+            from { bottom: -80px; opacity: 0; transform: translateX(-50%) scale(0.9); }
+            to { bottom: 24px; opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+    `;
+
+    const styleEl = document.createElement('style');
+    styleEl.textContent = toastStyles;
+    (document.head || document.documentElement).appendChild(styleEl);
+
+    let _toastEl = null;
+    let _toastBarEl = null;
+    let _toastStatusEl = null;
+    let _toastPctEl = null;
+    let _toastHideTimer = null;
+    let _toastCurrentTaskId = null;
+    let _activeCancellations = new Set();
+    const _activeDownloads = new Map();
+
+    function getOrCreateToast() {
+        if (_toastEl && document.body.contains(_toastEl)) return _toastEl;
+        _toastEl = document.createElement('div');
+        _toastEl.className = 'wmd-toast mdu-toast-surface';
+        _toastEl.innerHTML = `
+            <div class="wmd-toast-inner">
+                <div class="wmd-toast-thumb-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                </div>
+                <div class="wmd-toast-content">
+                    <div class="wmd-toast-title" id="wmd-title">Audio Only</div>
+                    <div class="wmd-toast-status-row">
+                        <span class="wmd-toast-status" id="wmd-status">Starting...</span>
+                        <span class="wmd-toast-pct" id="wmd-pct">0%</span>
+                    </div>
+                </div>
+                <button class="wmd-toast-close" id="wmd-close" title="Cancel">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="wmd-toast-progress-bar" id="wmd-bar" style="width:0%"></div>
+        `;
+        document.body.appendChild(_toastEl);
+        _toastBarEl = _toastEl.querySelector('#wmd-bar');
+        _toastStatusEl = _toastEl.querySelector('#wmd-status');
+        _toastPctEl = _toastEl.querySelector('#wmd-pct');
+        _toastEl.querySelector('#wmd-close').addEventListener('click', () => {
+            if (_toastCurrentTaskId) {
+                if (_toastCurrentTaskId.startsWith('audio_') || _toastCurrentTaskId.startsWith('stream_') || _toastCurrentTaskId.startsWith('zip_')) {
+                    browser.runtime.sendMessage({ action: 'cancelDownload', id: _toastCurrentTaskId }).catch(() => {});
+                }
+                _activeCancellations.add(_toastCurrentTaskId);
+                _activeDownloads.delete(_toastCurrentTaskId);
+            }
+            hideToast(true);
+        });
+        return _toastEl;
+    }
+
+    function showToast(taskId, filename, audioOnly = false) {
+        if (_toastHideTimer) {
+            clearTimeout(_toastHideTimer);
+            _toastHideTimer = null;
+        }
+        _toastCurrentTaskId = taskId;
+        _activeDownloads.set(taskId, {
+            id: taskId,
+            url: taskId,
+            filename: filename || 'Downloading...',
+            loaded: 0,
+            total: 100,
+            percent: 0,
+            status: 'Starting...',
+            isParallel: false,
+            isPaused: false,
+            mediaType: audioOnly ? 'audio' : 'video'
+        });
+        const toast = getOrCreateToast();
+        toast.classList.remove('wmd-toast--success', 'wmd-toast--error');
+        toast.classList.add('wmd-toast--show');
+        toast.querySelector('#wmd-title').textContent = filename || (audioOnly ? 'Audio Only' : 'Downloading...');
+        if (_toastBarEl) _toastBarEl.style.width = '0%';
+        if (_toastPctEl) _toastPctEl.textContent = '0%';
+        if (_toastStatusEl) _toastStatusEl.textContent = filename || 'Starting...';
+    }
+
+    function updateToastProgress(progress) {
+        if (!_toastEl) return;
+        const percent = Math.min(100, Math.round(progress));
+        if (_toastBarEl) _toastBarEl.style.width = `${percent}%`;
+        if (_toastPctEl) _toastPctEl.textContent = `${percent}%`;
+        if (_toastCurrentTaskId) {
+            const item = _activeDownloads.get(_toastCurrentTaskId);
+            if (item) {
+                item.percent = percent;
+                item.loaded = percent;
+            }
+            browser.runtime.sendMessage({
+                action: 'customStatus',
+                id: _toastCurrentTaskId,
+                percent: percent
+            }).catch(() => {});
+        }
+    }
+
+    function updateToastStatus(statusText) {
+        statusText = String(statusText || '');
+        const percentMatches = [...statusText.matchAll(/\b(\d{1,3}(?:\.\d+)?)\s*%/g)];
+        if (percentMatches.length > 0) {
+            const percent = Math.min(100, Math.round(Number(percentMatches[percentMatches.length - 1][1])));
+            if (_toastBarEl) _toastBarEl.style.width = `${percent}%`;
+            if (_toastPctEl) _toastPctEl.textContent = `${percent}%`;
+            const item = _toastCurrentTaskId ? _activeDownloads.get(_toastCurrentTaskId) : null;
+            if (item) {
+                item.percent = percent;
+                item.loaded = percent;
+            }
+        }
+        statusText = statusText
+            .replace(/\s*\(\s*\d{1,3}(?:\.\d+)?\s*%\s*\)/g, '')
+            .replace(/\s*\d{1,3}(?:\.\d+)?\s*%/g, '')
+            .replace(/:\s*$/, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        if (!statusText) statusText = 'Processing...';
+        if (_toastStatusEl) _toastStatusEl.textContent = statusText;
+        if (_toastCurrentTaskId) {
+            const item = _activeDownloads.get(_toastCurrentTaskId);
+            if (item) {
+                item.status = statusText;
+            }
+            browser.runtime.sendMessage({
+                action: 'customStatus',
+                id: _toastCurrentTaskId,
+                text: statusText
+            }).catch(() => {});
+        }
+    }
+
+    function finishToast(success, message) {
+        if (!_toastEl) return;
+        _toastEl.classList.remove('wmd-toast--success', 'wmd-toast--error');
+        _toastEl.classList.add(success ? 'wmd-toast--success' : 'wmd-toast--error');
+        if (_toastBarEl) _toastBarEl.style.width = success ? '100%' : _toastBarEl.style.width;
+        if (_toastPctEl) _toastPctEl.textContent = success ? '100%' : _toastPctEl.textContent;
+        if (_toastStatusEl) _toastStatusEl.textContent = message || (success ? 'Done!' : 'Failed');
+        
+        if (_toastCurrentTaskId) {
+            _activeDownloads.delete(_toastCurrentTaskId);
+            browser.runtime.sendMessage({
+                action: 'customStatus',
+                id: _toastCurrentTaskId,
+                text: message || (success ? 'Done!' : 'Failed'),
+                percent: success ? 100 : undefined
+            }).catch(() => {});
+
+            if (success) {
+                browser.runtime.sendMessage({
+                    action: 'downloadComplete',
+                    id: _toastCurrentTaskId,
+                    url: _toastCurrentTaskId
+                }).catch(() => {});
+            } else {
+                browser.runtime.sendMessage({
+                    action: 'downloadError',
+                    id: _toastCurrentTaskId,
+                    url: _toastCurrentTaskId,
+                    error: message === 'Cancelled' ? 'USER_CANCELED' : message
+                }).catch(() => {});
+            }
+        }
+
+        _toastCurrentTaskId = null;
+        _toastHideTimer = setTimeout(() => hideToast(false), 4000);
+    }
+
+    function hideToast(immediate) {
+        if (!_toastEl) return;
+        _toastEl.classList.remove('wmd-toast--show');
+    }
+
+    function applyAudioJobUpdate(message) {
+        if (!processNotificationsEnabled()) {
+            if (_toastCurrentTaskId === message.jobId) hideToast(true);
+            return;
+        }
+        if (!_toastEl || _toastCurrentTaskId !== message.jobId) {
+            showToast(message.jobId, message.filename || 'Audio Only', true);
+        }
+        const title = _toastEl.querySelector('#wmd-title');
+        if (title && message.filename) {
+            title.textContent = message.total > 0
+                ? `${message.filename} • ${(message.total / 1048576).toFixed(1)} MB`
+                : message.filename;
+        }
+        let detail = message.text || '';
+        if (/^Downloading/i.test(detail) && message.total > 0) detail += ` ${(message.loaded / 1048576).toFixed(1)} MB / ${(message.total / 1048576).toFixed(1)} MB`;
+        else if (/^Downloading/i.test(detail) && message.loaded > 0) detail += ` ${(message.loaded / 1048576).toFixed(1)} MB`;
+        if (detail && _toastStatusEl) _toastStatusEl.textContent = detail;
+        if (message.percent !== undefined && message.percent !== null) {
+            const percent = Math.min(100, Math.round(message.percent));
+            if (_toastBarEl) _toastBarEl.style.width = `${percent}%`;
+            if (_toastPctEl) _toastPctEl.textContent = `${percent}%`;
+            const localItem = _activeDownloads.get(message.jobId);
+            if (localItem) {
+                localItem.percent = percent;
+                localItem.loaded = message.loaded || 0;
+                localItem.total = message.total || 0;
+                localItem.status = message.text || localItem.status;
+            }
+        }
+        if (message.indeterminate && _toastPctEl) _toastPctEl.textContent = '…';
+        if (message.complete) {
+            _toastEl.classList.remove('wmd-toast--success', 'wmd-toast--error');
+            _toastEl.classList.add(message.success ? 'wmd-toast--success' : 'wmd-toast--error');
+            _activeDownloads.delete(message.jobId);
+            _toastHideTimer = setTimeout(() => hideToast(false), 4000);
+        }
+    }
+
+    browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'ping') {
+            sendResponse({ pong: true });
+            return true;
+        }
+        if (message.action === 'get_active_downloads') {
+            sendResponse(Object.fromEntries(_activeDownloads));
+            return true;
+        }
+        if (message.action === 'audioJobUpdate' || message.action === 'streamJobUpdate' || message.action === 'zipJobUpdate') {
+            applyAudioJobUpdate(message);
+            sendResponse({ success: true });
+            return;
+        }
+        if (message.action === 'audioFetchProgress') {
+            if (message.url === _toastCurrentTaskId) {
+                if (message.total > 0) {
+                    const percent = (message.loaded / message.total) * 100;
+                    updateToastProgress(percent);
+                    updateToastStatus(`Downloading: ${Math.round(percent)}%`);
+                } else {
+                    updateToastStatus(`Downloaded ${(message.loaded / 1048576).toFixed(1)}MB`);
+                }
+            }
+            return;
+        }
+        if (message.action === 'cancelDownload') {
+            const url = message.url;
+            if (url) {
+                _activeCancellations.add(url);
+                _activeDownloads.delete(url);
+                hideToast(true);
+            }
+            sendResponse({ success: true });
+            return true;
+        }
+        if (message.action === 'start_tab_download') {
+            const { url, filename, isYouTube, audioOnly, directAudioSource, encodeM4aToMp3, request } = message;
+            _activeCancellations.delete(url);
+            if (processNotificationsEnabled()) showToast(url, filename, audioOnly);
+
+            const mockLoadingBar = {
+                parentNode: {
+                    querySelector: (selector) => {
+                        if (selector === '.download-status-info') {
+                            return {
+                                set textContent(val) { updateToastStatus(val); },
+                                get textContent() { return ""; }
+                            };
+                        }
+                        return null;
+                    }
+                },
+                setAttribute: () => {},
+                removeAttribute: () => {},
+                set value(val) { updateToastProgress(val); },
+                get value() { return 0; },
+                set max(val) {}
+            };
+
+            const checkCancel = () => _activeCancellations.has(url);
+
+            (async () => {
+                try {
+                    let finalBlob;
+                    let finalFilename = filename;
+
+                    if (isYouTube) {
+                        updateToastStatus('Fetching metadata...');
+                        const uint8Array = await window.fetchAsUint8ArrayChunked(url, mockLoadingBar, { set textContent(val) { updateToastStatus(val); } }, checkCancel);
+                        finalBlob = new Blob([uint8Array.buffer]);
+                    } else {
+                        updateToastStatus('Connecting...');
+                        const result = await browser.runtime.sendMessage({
+                            action: 'fetchMediaForAudio',
+                            url,
+                            request
+                        });
+                        if (!result || !result.success) throw new Error(result?.error || 'Media download failed');
+                        if (checkCancel()) throw new Error('Cancelled');
+                        finalBlob = new Blob([result.arrayBuffer], { type: result.mime || 'application/octet-stream' });
+                    }
+
+                    if (encodeM4aToMp3) {
+                        updateToastStatus('Converting M4A to MP3...');
+                        const result = await convertM4aToMp3Direct(finalBlob, filename, mockLoadingBar, checkCancel);
+                        finalBlob = result.blob;
+                        finalFilename = result.filename;
+                    } else if (audioOnly && !directAudioSource) {
+                        updateToastStatus('Extracting Audio...');
+                        const wavBlob = await offlineExtractAudioToWav(finalBlob, mockLoadingBar, checkCancel);
+                        let finalResult = { blob: wavBlob, filename: filename };
+                        if (typeof convertAudioToMp3IfEnabled !== 'undefined') {
+                            finalResult = await convertAudioToMp3IfEnabled(wavBlob, filename, mockLoadingBar, checkCancel);
+                        }
+                        finalBlob = finalResult.blob;
+                        finalFilename = finalResult.filename;
+                    }
+
+                    const arrayBuffer = await finalBlob.arrayBuffer();
+                    browser.runtime.sendMessage({
+                        action: 'download_arraybuffer',
+                        arrayBuffer,
+                        filename: finalFilename,
+                        mime: finalBlob.type
+                    }).then((res) => {
+                        if (res && res.success) {
+                            finishToast(true, 'Complete!');
+                        } else {
+                            finishToast(false, res ? res.error : 'Save failed');
+                        }
+                    }).catch(err => {
+                        finishToast(false, err.message);
+                    });
+
+                } catch (e) {
+                    if (e.message === 'Cancelled') {
+                        finishToast(false, 'Cancelled');
+                    } else {
+                        console.error('Background download error:', e);
+                        finishToast(false, e.message);
+                    }
+                }
+            })();
+
+            sendResponse({ success: true });
+            return true;
+        }
+    });
+
+    browser.runtime.sendMessage({ action: 'getActiveDownloads' }).then(items => {
+        const jobs = Object.values(items || {}).filter(item => item.isAudioJob || item.isStreamJob || item.isPersistentZipJob);
+        if (jobs.length) {
+            const job = jobs[jobs.length - 1];
+            applyAudioJobUpdate({
+                action: job.isPersistentZipJob ? 'zipJobUpdate' : (job.isStreamJob ? 'streamJobUpdate' : 'audioJobUpdate'),
+                jobId: job.id, filename: job.filename,
+                text: job.statusText || job.status, percent: job.percent, indeterminate: !job.total
+                , loaded: job.loaded, total: job.total
+            });
+        }
+    }).catch(() => {});
 
     window.mdu_detector_injected = true;
 })();

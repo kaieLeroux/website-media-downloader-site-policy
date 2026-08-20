@@ -55,7 +55,10 @@ async function initTheme() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+let settingsPageInitPromise = null;
+window.initializeSettingsPage = function initializeSettingsPage() {
+  if (settingsPageInitPromise) return settingsPageInitPromise;
+  settingsPageInitPromise = (async () => {
     await initTheme();
 
     const cloudLocationSelect = document.getElementById('cloud-save-location');
@@ -151,7 +154,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (gdriveBtn) gdriveBtn.click();
         }
     }
-});
+  })();
+  return settingsPageInitPromise;
+};
 
 let pendingChanges = {};
 let isInitializing = false;
@@ -165,16 +170,24 @@ function setupConfirmationBar() {
 
     applyBtn.addEventListener('click', async () => {
         if (Object.keys(pendingChanges).length === 0) return;
-
-        const navbar = document.getElementById('navbar');
-        if (navbar && typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('activeTab', navbar.value);
-            sessionStorage.setItem('scrollPos', window.scrollY);
+        applyBtn.loading = true;
+        applyBtn.disabled = true;
+        try {
+            await browser.storage.local.set({ ...pendingChanges });
+            pendingChanges = {};
+            bar.style.display = 'none';
+            if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({
+                    message: browser.i18n.getMessage('settingsSaved') || 'Settings saved',
+                    placement: 'top'
+                });
+            }
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+        } finally {
+            applyBtn.loading = false;
+            applyBtn.disabled = false;
         }
-
-        await browser.storage.local.set(pendingChanges);
-
-        location.reload();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -201,8 +214,8 @@ async function initializeSettings() {
     const settings = [
         'url-detection', 'youtube-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
-        'media-notification', 'media-system-notification', 'stack-notifications', 'download-method', 'fetch-notification', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
-        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'mux-all-audios',
+        'media-notification', 'audio-process-notification', 'media-system-notification', 'stack-notifications', 'download-method', 'fetch-notification', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
+        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'mux-all-audios', 'mpd-to-mp4',
         'embed-subtitles-mkv', 'embed-subtitles-container', 'embed-subtitles-nonyt',
         'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'theme-mode', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
@@ -215,14 +228,14 @@ async function initializeSettings() {
         if (value === undefined) {
             const defaultsEnabled = [
                 'url-detection', 'youtube-detection', 'mime-detection', 'hide-page-components', 'hide-segments',
-                'media-notification', 'media-system-notification', 'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
+                'media-notification', 'audio-process-notification', 'media-system-notification', 'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle',
                 'background-download', 'auto-resume', 'only-file', 'stream-to-mp4', 'audio-to-mp3', 'auto-check-update', 'badge-counter',
                 'detect-download-links', 'disable-deduplication', 'fetch-notification', 'group-by-type'
             ];
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'mux-all-audios', 'embed-subtitles-mkv', 'embed-subtitles-nonyt'].includes(setting)) {
+            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'mux-all-audios', 'embed-subtitles-mkv', 'embed-subtitles-nonyt', 'mpd-to-mp4'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -253,6 +266,16 @@ async function initializeSettings() {
                 const autoResume = document.getElementById('auto-resume');
                 const gdriveStream = document.getElementById('gdrive-stream');
                 const onlyFile = document.getElementById('only-file');
+
+                if (setting === 'audio-to-mp3') {
+                    const mp3Bitrate = document.getElementById('mp3-bitrate');
+                    if (mp3Bitrate) {
+                        const item = mp3Bitrate.closest('.setting-item');
+                        if (item) {
+                            item.style.display = element.checked ? 'flex' : 'none';
+                        }
+                    }
+                }
 
                 if (setting === 'gdrive-stream' || setting === 'dropbox-stream') {
                     if (speedBoost) {
@@ -415,10 +438,7 @@ async function initializeSettings() {
                 if (setting === 'embed-subtitles-mkv' || setting === 'embed-subtitles-nonyt') {
                     const containerItem = document.getElementById('setting-embed-subtitles-container');
                     if (containerItem) {
-                        const mkvSw = document.getElementById('embed-subtitles-mkv');
-                        const nonytSw = document.getElementById('embed-subtitles-nonyt');
-                        const show = (mkvSw && mkvSw.checked) || (nonytSw && nonytSw.checked);
-                        containerItem.style.display = show ? 'flex' : 'none';
+                        containerItem.style.display = 'none';
                     }
                 }
 
@@ -469,7 +489,7 @@ async function initializeSettings() {
                 }
             };
 
-            if (setting === 'gdrive-stream' || setting === 'speed-boost' || setting === 'background-download' || setting === 'save-to-gdrive' || setting === 'detect-download-links' || setting === 'optimize-low-end' || setting === 'embed-subtitles-mkv') {
+            if (setting === 'gdrive-stream' || setting === 'speed-boost' || setting === 'background-download' || setting === 'save-to-gdrive' || setting === 'detect-download-links' || setting === 'optimize-low-end' || setting === 'embed-subtitles-mkv' || setting === 'audio-to-mp3') {
                 const checkInitial = () => {
                     const speedBoost = document.getElementById('speed-boost');
                     const speedBoostResume = document.getElementById('speed-boost-resume');
@@ -483,6 +503,15 @@ async function initializeSettings() {
                     const optimizeLowEnd = document.getElementById('optimize-low-end');
                     const limitSelect = document.getElementById('limit-media-list');
                     const limitCustom = document.getElementById('limit-media-list-custom');
+                    const audioToMp3 = document.getElementById('audio-to-mp3');
+                    const mp3Bitrate = document.getElementById('mp3-bitrate');
+
+                    if (audioToMp3 && mp3Bitrate) {
+                        const item = mp3Bitrate.closest('.setting-item');
+                        if (item) {
+                            item.style.display = audioToMp3.checked ? 'flex' : 'none';
+                        }
+                    }
 
                     if (speedBoost && speedBoostResume && connections && gdriveStream && backgroundDownload && autoResume && cloudSaveLocation && detectDownloadLinks && onlyFile) {
                         const dropboxStream = document.getElementById('dropbox-stream');
@@ -618,18 +647,18 @@ async function initializeSettings() {
 
         if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
             const defaultValue = setting === 'limit-media-list' ? 'custom' :
-                                (setting === 'settings-layout' ? 'default' :
+                                (setting === 'settings-layout' ? 'tabs-icons' :
                                 (setting === 'theme-mode' ? 'auto' :
                                 (setting === 'open-preference' ? 'popup' :
                                 (setting === 'download-method' ? 'fetch' :
                                 (setting === 'stream-quality' ? 'highest' :
                                 (setting === 'subtitle-conversion' ? 'none' :
-                                (setting === 'embed-subtitles-container' ? 'mkv' :
+                                (setting === 'embed-subtitles-container' ? 'mp4' :
                                 (setting === 'connections' ? '4' :
                                 (setting === 'media-sort-order' ? 'newest' :
                                 (setting === 'mp3-bitrate' ? '320' :
                                 (setting === 'min-file-size' ? '0' :
-                                (setting === 'ui-scale' ? '100%' :
+                                (setting === 'ui-scale' ? '85%' :
                                 (setting === 'stream-download' ? 'offline' : 'stream'))))))))))))) ;
 
             element.value = value || defaultValue;
@@ -726,8 +755,7 @@ async function initializeSettings() {
     const embedSubNonYtInitial = document.getElementById('embed-subtitles-nonyt');
     const embedSubContainerInitial = document.getElementById('setting-embed-subtitles-container');
     if (embedSubContainerInitial) {
-        const show = (embedSubMkvInitial && embedSubMkvInitial.checked) || (embedSubNonYtInitial && embedSubNonYtInitial.checked);
-        embedSubContainerInitial.style.display = show ? 'flex' : 'none';
+        embedSubContainerInitial.style.display = 'none';
     }
 
 
@@ -1090,7 +1118,7 @@ async function initializeSettings() {
     }
 
     const layoutResult = await browser.storage.local.get('settings-layout');
-    let layoutVal = layoutResult['settings-layout'] || 'default';
+    let layoutVal = layoutResult['settings-layout'] || 'tabs-icons';
     if (!layoutResult['settings-layout']) {
         const cleanViewResult = await browser.storage.local.get('clean-view');
         if (cleanViewResult['clean-view'] === '1') {
@@ -1219,14 +1247,6 @@ function syncNotificationSetting(isBgEnabled) {
     } else {
 
         notificationSwitch.disabled = false;
-    }
-}
-
-function updatePopupState(value) {
-    if (value === 'popup') {
-        browser.action.setPopup({ popup: 'popup.html' });
-    } else {
-        browser.action.setPopup({ popup: '' });
     }
 }
 
@@ -1375,7 +1395,7 @@ function setupCollapsibleLogic() {
 
         header.addEventListener('click', async () => {
             const layoutResult = await browser.storage.local.get('settings-layout');
-            let layoutVal = layoutResult['settings-layout'] || 'default';
+            let layoutVal = layoutResult['settings-layout'] || 'tabs-icons';
             if (!layoutResult['settings-layout']) {
                 const cleanViewResult = await browser.storage.local.get('clean-view');
                 if (cleanViewResult['clean-view'] === '1') {
@@ -1735,11 +1755,3 @@ async function runParallelUploadTest(concurrency, onProgress) {
     const finalElapsed = (performance.now() - startTime) / 1000;
     return (totalUploaded * 8) / finalElapsed;
 }
-
-window.addEventListener('scroll', () => {
-    const tabsHeader = document.querySelector('.settings-tabs-header');
-    if (!tabsHeader) return;
-    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    const newTop = Math.max(0, 48 - scrollY);
-    tabsHeader.style.top = newTop + 'px';
-});

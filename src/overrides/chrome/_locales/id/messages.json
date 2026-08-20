@@ -457,6 +457,14 @@
         "message": "Perbaiki file MPD (disarankan)",
         "description": "The label of the checkbox to enable the MPD fix option."
     },
+    "mpdToMp4Checkbox": {
+        "message": "Gabungkan audio dan video MPD ke MP4",
+        "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+    },
+    "mpdToMp4Explain": {
+        "message": "Menggabungkan track video dan audio yang dipilih ke dalam satu file MP4 alih-alih mengompresinya menjadi ZIP.",
+        "description": "The explanation of the merge MPD option."
+    },
     "openPreference": {
         "message": "Preferensi pembukaan add-on",
         "description": "The title of the add-on opening preference section in the settings tab."
@@ -1014,6 +1022,10 @@
     "mpdDownloadExplainSnackbar": {
         "message": "Media yang dipilih adalah stream MPEG-DASH. Ini akan mengunduh aliran video dan audio secara terpisah dalam file ZIP, sehingga Anda dapat memutar file .mpd dalam ZIP dengan VLC.",
         "description": "Explanation shown in a snackbar when starting an MPD download."
+    },
+    "mpdDownloadMergeExplainSnackbar": {
+        "message": "Media yang dipilih adalah stream MPEG-DASH. Aliran video dan audio akan diunduh dan digabungkan menjadi file MP4 tunggal.",
+        "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
     },
     "splitAudioVideoDownloadCompleteSuccess": {
         "message": "Berhasil mengunduh file audio dan video terpisah untuk \"$BASENAME$\".",

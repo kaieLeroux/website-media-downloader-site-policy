@@ -2059,5 +2059,17 @@
     "allLanguagesZip": null,
     "allLanguagesMux": null,
     "allSubtitlesZip": null,
-    "allSubtitlesMux": null
+    "allSubtitlesMux": null,
+    "mpdToMp4Checkbox": {
+        "message": "Mesclar áudio e vídeo MPD em MP4",
+        "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+    },
+    "mpdToMp4Explain": {
+        "message": "Mescla as transmissões de vídeo e áudio selecionadas em um único arquivo MP4 em vez de compactá-las em um arquivo ZIP.",
+        "description": "The explanation of the merge MPD option."
+    },
+    "mpdDownloadMergeExplainSnackbar": {
+        "message": "A mídia selecionada é uma transmissão MPEG-DASH. As faixas de vídeo e áudio serão baixadas e mescladas em um único arquivo MP4.",
+        "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+    }
 }

@@ -67,12 +67,19 @@ async function getM3U8VariantsBg(url) {
     }
 }
 
-if (typeof downloadZip === 'undefined') {
-    try {
-        importScripts('libraries/client-zip.js');
-    } catch (e) {
-        console.error("Failed to import client-zip.js:", e);
+let clientZipLoadPromise = null;
+async function ensureClientZipLoaded() {
+    if (typeof downloadZip !== 'undefined') return;
+    if (!clientZipLoadPromise) {
+        clientZipLoadPromise = Promise.resolve().then(() => {
+            importScripts('libraries/client-zip.js');
+            if (typeof downloadZip === 'undefined') throw new Error('client-zip.js did not expose downloadZip');
+        }).catch(error => {
+            clientZipLoadPromise = null;
+            throw error;
+        });
     }
+    return clientZipLoadPromise;
 }
 
 if (typeof YoutubeMultiTrack === 'undefined' && typeof importScripts !== 'undefined') {
@@ -531,7 +538,7 @@ function getSettings(callback) {
             optimizeLowEnd: isFlagEnabled(result['optimize-low-end'], false),
             filenameTemplate: (result['filename-template'] && result['filename-template'] !== '0') ? result['filename-template'] : '',
             themeColor: result['theme-color'] ? (result['theme-color'].startsWith('#') || result['theme-color'].startsWith('rgb') ? result['theme-color'] : '#' + result['theme-color']) : '#bbdefb',
-            uiScale: result['ui-scale'] || '100%'
+            uiScale: result['ui-scale'] || '85%'
         };
         cachedSettings = s;
         if (callback) callback(s);
@@ -605,21 +612,70 @@ const _origActiveDownloadsSet = activeDownloads.set.bind(activeDownloads);
 const _origActiveDownloadsDelete = activeDownloads.delete.bind(activeDownloads);
 const _origActiveDownloadsClear = activeDownloads.clear.bind(activeDownloads);
 
+function saveActiveDownloadsToSession() {
+    const storageSession = (typeof browser !== 'undefined' && browser.storage && browser.storage.session) ? browser.storage.session : (typeof browser !== 'undefined' && browser.storage ? browser.storage.local : null);
+    if (!storageSession) return;
+
+    const list = [];
+    for (let [id, val] of activeDownloads) {
+        list.push({
+            id: id,
+            url: val.url,
+            filename: val.filename,
+            loaded: val.loaded || 0,
+            total: val.total || 0,
+            isParallel: !!val.isParallel,
+            isPaused: !!val.isPaused,
+            isNative: !!val.isNative,
+            mediaType: val.mediaType,
+            percent: val.percent,
+            status: val.status,
+            statusText: val.statusText,
+            currentFile: val.currentFile,
+            isAudioJob: !!val.isAudioJob,
+            isStreamJob: !!val.isStreamJob,
+            isZip: !!val.isZip,
+            isPersistentZipJob: !!val.isPersistentZipJob
+        });
+    }
+    storageSession.set({ wmd_active_downloads: list }).catch(() => {});
+}
+
+function restoreActiveDownloadsFromSession() {
+    const storageSession = (typeof browser !== 'undefined' && browser.storage && browser.storage.session) ? browser.storage.session : (typeof browser !== 'undefined' && browser.storage ? browser.storage.local : null);
+    if (!storageSession) return;
+
+    storageSession.get('wmd_active_downloads').then(res => {
+        const list = res.wmd_active_downloads;
+        if (list && Array.isArray(list)) {
+            list.forEach(val => {
+                if (!activeDownloads.has(val.id)) {
+                    _origActiveDownloadsSet(val.id, val);
+                }
+            });
+            updateActiveDownloadsBadge();
+        }
+    }).catch(() => {});
+}
+
 activeDownloads.set = function(key, value) {
     const res = _origActiveDownloadsSet(key, value);
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
 activeDownloads.delete = function(key) {
     const res = _origActiveDownloadsDelete(key);
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
 activeDownloads.clear = function() {
     const res = _origActiveDownloadsClear();
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
@@ -631,7 +687,7 @@ if (browser.storage && browser.storage.onChanged) {
     });
 }
 
-function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false, uiScale = '100%') {
+function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, ytFormats = null, stackNotifications = false, uiScale = '85%') {
     if (!browser.scripting) return;
 
     const modalTranslations = {
@@ -694,7 +750,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
              }
 
              const toast = document.createElement('div');
-             toast.className = 'mdu-toast';
+             toast.className = 'mdu-toast mdu-toast-surface';
             
             const icons = {
                 video: '<svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>',
@@ -729,7 +785,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 animation: mdu-toast-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 touch-action: pan-y; user-select: none; -webkit-user-select: none;
-                zoom: ${uiScale || '100%'};
+                zoom: ${uiScale || '85%'};
             `;
             if (uiScale) toast.style.zoom = uiScale;
 
@@ -766,7 +822,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 `;
 
                 modalBackdrop.innerHTML = `
-                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '100%'};">
+                    <div class="mdu-yt-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '85%'};">
                         <div style="font-size: 18px; font-weight: 600; color: ${safeColor};">${t.ytModalTitle}</div>
                         <div style="font-size: 14px; color: rgba(255,255,255,0.7); max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
                         
@@ -1566,7 +1622,7 @@ async function showMediaNotification(details, settings) {
     const finalDisplayFilename = isDrm ? drmMsg : displayFilename;
     const notificationTitle = isDrm ? (browser.i18n.getMessage("drmWarningTitle") || "DRM Detected") : (browser.i18n.getMessage("mediaNotificationTitle") || "Media detected!");
 
-    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '100%');
+    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, ytFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '85%');
 
     const notificationButtons = isDrm ? [] : [
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
@@ -1575,7 +1631,7 @@ async function showMediaNotification(details, settings) {
     const isFirefox = typeof browser.runtime.getBrowserInfo === 'function' || !browser.offscreen;
     const notificationOptions = {
         type: "basic",
-        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+        iconUrl: browser.runtime.getURL("icons/icon.png"),
         title: notificationTitle,
         message: finalDisplayFilename
     };
@@ -2038,7 +2094,216 @@ browser.downloads.onChanged.addListener((delta) => {
     }
 });
 
+function broadcastAudioJob(message) {
+    browser.tabs.query({}).then(tabs => {
+        for (const tab of tabs) {
+            if (tab.id !== undefined && /^https?:/i.test(tab.url || '')) {
+                browser.tabs.sendMessage(tab.id, message).catch(() => {});
+            }
+        }
+    }).catch(() => {});
+}
+
+function formatAudioJobStatus(item) {
+    const phase = item.status || 'Processing...';
+    if (/^Downloading/i.test(phase) && item.total > 0 && item.loaded >= 0) {
+        return `${phase} ${(item.loaded / 1048576).toFixed(1)} MB / ${(item.total / 1048576).toFixed(1)} MB`;
+    }
+    if (/^Downloading/i.test(phase) && item.loaded > 0) return `${phase} ${(item.loaded / 1048576).toFixed(1)} MB`;
+    return phase;
+}
+
+function normalizeAudioJobStatus(text, percent) {
+    if (text === undefined || text === null) return { text: undefined, percent };
+    text = String(text || '');
+    const matches = [...text.matchAll(/\b(\d{1,3}(?:\.\d+)?)\s*%/g)];
+    if ((percent === undefined || percent === null) && matches.length) {
+        percent = Number(matches[matches.length - 1][1]);
+    }
+    text = text
+        .replace(/\s*\(\s*\d{1,3}(?:\.\d+)?\s*%\s*\)/g, '')
+        .replace(/\s*\d{1,3}(?:\.\d+)?\s*%/g, '')
+        .replace(/:\s*$/, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    return { text: text || 'Processing...', percent };
+}
+
+let audioOffscreenCreating = null;
+async function ensureAudioOffscreenDocument() {
+    if (!browser.offscreen || !browser.offscreen.createDocument) return false;
+    const offscreenUrl = browser.runtime.getURL('offscreen.html');
+    if (browser.runtime.getContexts) {
+        const contexts = await browser.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [offscreenUrl] });
+        if (contexts.length) return true;
+    } else if (browser.offscreen.hasDocument && await browser.offscreen.hasDocument().catch(() => false)) {
+        return true;
+    }
+    if (!audioOffscreenCreating) {
+        audioOffscreenCreating = browser.offscreen.createDocument({
+            url: 'offscreen.html',
+            reasons: ['BLOBS', 'WORKERS'],
+            justification: 'Download and convert audio without opening a visible tab'
+        }).finally(() => { audioOffscreenCreating = null; });
+    }
+    await audioOffscreenCreating;
+    return true;
+}
+
+const cancelledZipDownloads = new Set();
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'startPersistentAudioJob') {
+        const jobId = 'audio_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const job = { ...message, action: undefined, jobId, percent: 0, text: 'Starting...', status: 'running' };
+        activeDownloads.set(jobId, { id: jobId, url: message.url, audioUrl: message.audioUrl, filename: message.filename, loaded: 0, total: 100, percent: 0, status: 'Starting...', mediaType: message.audioOnly ? 'audio' : 'video', isAudioJob: true });
+        sendResponse({ success: true, jobId });
+        browser.storage.local.set({ [`audioJob_${jobId}`]: job }).then(async () => {
+            if (await ensureAudioOffscreenDocument()) {
+                await browser.runtime.sendMessage({ action: 'startOffscreenAudioJob', jobId });
+                return { id: undefined, offscreen: true };
+            }
+            return browser.tabs.create({ url: browser.runtime.getURL(`audio_processor.html?job=${encodeURIComponent(jobId)}`), active: false });
+        }).then(tab => {
+            const item = activeDownloads.get(jobId);
+            if (item) {
+                item.processorTabId = tab.id;
+                item.isOffscreen = !!tab.offscreen;
+            }
+        }).catch(error => {
+            const item = activeDownloads.get(jobId);
+            if (item) item.status = error.message;
+            broadcastAudioJob({ action: 'audioJobUpdate', jobId, filename: message.filename, text: error.message, complete: true, success: false });
+            activeDownloads.delete(jobId);
+            browser.storage.local.remove(`audioJob_${jobId}`).catch(() => {});
+        });
+        return;
+    }
+    if (message.action === 'audioJobProgress') {
+        const normalized = normalizeAudioJobStatus(message.text, message.percent);
+        message.text = normalized.text;
+        message.percent = normalized.percent;
+        let item = activeDownloads.get(message.jobId);
+        if (!item) {
+            item = { id: message.jobId, url: message.url, filename: message.filename, loaded: 0, total: 100, percent: 0, status: 'Starting...', mediaType: 'audio', isAudioJob: true };
+            activeDownloads.set(message.jobId, item);
+        }
+        if (item) {
+            if (message.text !== undefined) item.status = message.text;
+            if (message.percent !== undefined) item.percent = message.percent;
+            broadcastAudioJob({ action: 'audioJobUpdate', jobId: message.jobId, filename: item.filename, text: item.status, percent: item.percent, loaded: item.loaded, total: item.total, indeterminate: message.indeterminate });
+            browser.runtime.sendMessage({ action: 'audioPopupStatus', id: item.url, text: formatAudioJobStatus(item), percent: item.percent, indeterminate: message.indeterminate }).catch(() => {});
+        }
+        return;
+    }
+    if (message.action === 'audioJobComplete') {
+        const item = activeDownloads.get(message.jobId);
+        broadcastAudioJob({ action: 'audioJobUpdate', jobId: message.jobId, filename: item?.filename, text: message.success ? 'Complete!' : (message.error || 'Failed'), percent: message.success ? 100 : item?.percent, complete: true, success: message.success });
+        if (item) browser.runtime.sendMessage({ action: message.success ? 'downloadComplete' : 'downloadError', id: item.url, url: item.url, error: message.error }).catch(() => {});
+        setTimeout(() => activeDownloads.delete(message.jobId), 5000);
+        return;
+    }
+    if (message.action === 'customStatus') {
+        const id = message.id;
+        if (id) {
+            let item = activeDownloads.get(id);
+            if (!item) {
+                item = {
+                    id: id,
+                    url: id,
+                    loaded: 0,
+                    total: 100,
+                    percent: 0,
+                    status: 'downloading',
+                    isParallel: false,
+                    isPaused: false,
+                    mediaType: getMediaType(id) || 'audio'
+                };
+                activeDownloads.set(id, item);
+            }
+            if (message.percent !== undefined) {
+                item.percent = message.percent;
+                item.loaded = message.percent;
+                item.total = 100;
+            }
+            if (message.text) {
+                item.status = message.text;
+            }
+            if (message.indeterminate) {
+                item.loaded = 0;
+                item.total = 0;
+            }
+        }
+        return;
+    }
+    if (message.action === 'fetchMediaForAudio') {
+        const tabId = sender.tab && sender.tab.id;
+        const controller = new AbortController();
+        if (message.jobId) {
+            const jobItem = activeDownloads.get(message.jobId);
+            if (jobItem) jobItem.abortController = controller;
+        }
+        (async () => {
+            try {
+                const response = await fetch(message.url, createMediaFetchOptions(message.url, message.request, controller.signal));
+                if (!response.ok && response.status !== 206) {
+                    throw new Error(browser.i18n.getMessage("serverErrorStatus", [response.status.toString()]) || (`Server error: ${response.status}`));
+                }
+
+                const total = Number(response.headers.get('content-length')) || 0;
+                const mime = response.headers.get('content-type') || 'application/octet-stream';
+                const reader = response.body.getReader();
+                const chunks = [];
+                let loaded = 0;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.byteLength;
+                    if (message.jobId) {
+                        const item = activeDownloads.get(message.jobId);
+                        const percent = total > 0 ? (loaded / total) * 100 : undefined;
+                        if (item) { item.loaded = loaded; item.total = total; item.percent = percent; item.status = 'Downloading...'; }
+                        broadcastAudioJob({ action: 'audioJobUpdate', jobId: message.jobId, filename: item?.filename, text: item?.status, percent, loaded, total, indeterminate: total === 0 });
+                        if (item) browser.runtime.sendMessage({ action: 'audioPopupStatus', id: item.url, text: formatAudioJobStatus(item), percent, indeterminate: total === 0 }).catch(() => {});
+                    } else if (tabId !== undefined) {
+                        browser.tabs.sendMessage(tabId, {
+                            action: 'audioFetchProgress',
+                            url: message.url,
+                            loaded,
+                            total
+                        }).catch(() => {});
+                    }
+                }
+
+                const bytes = new Uint8Array(loaded);
+                let offset = 0;
+                for (const chunk of chunks) {
+                    bytes.set(chunk, offset);
+                    offset += chunk.byteLength;
+                }
+                sendResponse({ success: true, arrayBuffer: bytes.buffer, mime });
+            } catch (error) {
+                sendResponse({ success: false, error: error?.message || String(error) });
+            }
+        })();
+        return true;
+    }
+    if (message.action === 'download_arraybuffer') {
+        const blob = new Blob([message.arrayBuffer], { type: message.mime || 'application/octet-stream' });
+        const downloadId = 'tab_' + Date.now();
+        storeInCache(downloadId, blob, message.mime).then(() => {
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            browser.tabs.create({
+                url: browser.runtime.getURL(`download.html?id=${downloadId}&url=${encodeURIComponent(downloadId)}&filename=${encodeURIComponent(message.filename)}`),
+                active: isAndroid
+            });
+            sendResponse({ success: true });
+        }).catch(err => {
+            sendResponse({ success: false, error: err.message });
+        });
+        return true;
+    }
     if (message.action === 'extract' && message.videoId) {
         const extractor = getYoutubeExtractor();
         if (extractor) {
@@ -2081,7 +2346,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const isFirefox = typeof browser.runtime.getBrowserInfo === 'function' || !browser.offscreen;
                 const notificationOptions = {
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    iconUrl: browser.runtime.getURL("icons/icon.png"),
                     title: drmTitle,
                     message: drmMsg
                 };
@@ -2183,10 +2448,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         addToHistory({ url: message.url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
 
-        let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(message.url)}&filename=${encodeURIComponent(finalName)}&quality=${encodeURIComponent(message.quality)}`;
-        browser.tabs.create({
-            url: browser.runtime.getURL(streamTabUrl),
-            active: true
+        browser.runtime.sendMessage({
+            action: 'startPersistentStreamJob', url: message.url, filename: finalName,
+            quality: message.quality || 'highest', request: message.request || {}, downloadMethod: 'browser'
         });
         return;
     }
@@ -2234,10 +2498,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (url.toLowerCase().includes('.m3u8') && streamPref === 'offline') {
                     addToHistory({ url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
-                    let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(finalName)}&quality=highest`;
-                    browser.tabs.create({
-                        url: browser.runtime.getURL(streamTabUrl),
-                        active: true
+                    browser.runtime.sendMessage({
+                        action: 'startPersistentStreamJob', url, filename: finalName,
+                        quality: 'highest', request: request || {}, downloadMethod: method
                     });
                     return;
                 }
@@ -2703,6 +2966,15 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (targetId) {
             const item = activeDownloads.get(targetId);
             if (item) {
+                if (item.isZip) cancelledZipDownloads.add(targetId);
+                if (item.isAudioJob) {
+                    if (item.abortController) item.abortController.abort();
+                    browser.runtime.sendMessage({ action: 'cancelPersistentAudioJob', jobId: targetId, url: item.url, audioUrl: item.audioUrl }).catch(() => {});
+                    if (item.processorTabId !== undefined) browser.tabs.remove(item.processorTabId).catch(() => {});
+                    browser.storage.local.remove(`audioJob_${targetId}`).catch(() => {});
+                    broadcastAudioJob({ action: 'audioJobUpdate', jobId: targetId, filename: item.filename, text: 'Cancelled', percent: item.percent, loaded: item.loaded, total: item.total, complete: true, success: false });
+                    browser.runtime.sendMessage({ action: 'downloadError', id: item.url, url: item.url, error: 'USER_CANCELED' }).catch(() => {});
+                }
                 if (isNative || item.isNative) {
                     browser.downloads.cancel(targetId).catch(() => {});
                 } else if (item.abortController) {
@@ -2793,23 +3065,33 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 filename: value.filename,
                 isParallel: !!value.isParallel,
                 isPaused: !!value.isPaused,
-                mediaType: value.mediaType || getMediaType(value.url, [])
+                mediaType: value.mediaType || getMediaType(value.url, []),
+                percent: value.percent,
+                status: value.status,
+                statusText: value.statusText,
+                currentFile: value.currentFile,
+                isAudioJob: !!value.isAudioJob,
+                isStreamJob: !!value.isStreamJob,
+                isZip: !!value.isZip,
+                isPersistentZipJob: !!value.isPersistentZipJob
             };
         }
         sendResponse(downloadsObj);
         return true;
     }
 
-    if (message.action === 'downloadComplete') {
+    if (message.action === 'downloadComplete' || message.action === 'downloadError') {
         const id = message.id || message.url;
         if (id) {
             activeDownloads.delete(id);
             removeDownloadState(id);
             
-            if (message.url) {
-                removeMediaRequest(message.url);
-            } else if (id && id.startsWith('http')) {
-                removeMediaRequest(id);
+            if (message.action === 'downloadComplete') {
+                if (message.url) {
+                    removeMediaRequest(message.url);
+                } else if (id && id.startsWith('http')) {
+                    removeMediaRequest(id);
+                }
             }
 
             if (message.cloud || message.background) {
@@ -2870,6 +3152,7 @@ async function askUserToContinue(filename, error) {
 }
 
 async function handleDownloadAllAsZip(items, downloadId) {
+    await ensureClientZipLoaded();
     try {
         activeDownloads.set(downloadId, { loaded: 0, total: items.length, url: 'zip://' + downloadId, isZip: true });
 
@@ -2877,9 +3160,10 @@ async function handleDownloadAllAsZip(items, downloadId) {
             let skipAllErrors = false;
             const usedNames = new Set();
             for (let i = 0; i < items.length; i++) {
+                if (cancelledZipDownloads.has(downloadId)) throw new Error("Cancelled");
                 const item = items[i];
                 const url = item.url;
-                const originalRequest = item.originalRequest;
+                const originalRequest = item.originalRequest || item.request;
                 const originalFileName = item.filename || "file";
                 let filename = originalFileName;
 
@@ -2893,6 +3177,27 @@ async function handleDownloadAllAsZip(items, downloadId) {
                 }).catch(() => {});
 
                 try {
+                    if (/\.(m3u8|mpd)(?:$|[?#])/i.test(url)) {
+                        const processedFiles = await processStreamItemForZip({
+                            ...item, request: originalRequest, filename
+                        }, downloadId);
+                        if (cancelledZipDownloads.has(downloadId)) throw new Error("Cancelled");
+                        for (const file of processedFiles) {
+                            const resolvedName = file.filename || filename;
+                            let entryName = resolvedName;
+                            let entryCounter = 1;
+                            while (usedNames.has(entryName)) {
+                                const parts = resolvedName.split('.');
+                                const ext = parts.length > 1 ? '.' + parts.pop() : '';
+                                entryName = `${parts.join('.')}_${entryCounter}${ext}`;
+                                entryCounter++;
+                            }
+                            usedNames.add(entryName);
+                            yield { name: entryName, input: new Blob([file.arrayBuffer], { type: file.mime || 'application/octet-stream' }) };
+                        }
+                        activeDownloads.get(downloadId).loaded = i + 1;
+                        continue;
+                    }
                     const fetchOptions = {
                         method: originalRequest ? originalRequest.method : 'GET',
                         headers: {},
@@ -2968,6 +3273,7 @@ async function handleDownloadAllAsZip(items, downloadId) {
 
                     activeDownloads.get(downloadId).loaded = i + 1;
                 } catch (err) {
+                    if (cancelledZipDownloads.has(downloadId) || err.message === "Cancelled") throw new Error("Cancelled");
                     if (err.message === "Cancelled by user after error") throw err;
                     console.warn(`Error fetching ${url} for ZIP:`, err);
                     if (skipAllErrors) continue;
@@ -3185,7 +3491,9 @@ async function handleDownloadAllAsZip(items, downloadId) {
     } catch (error) {
         console.error("Background ZIP error:", error);
         activeDownloads.delete(downloadId);
-        browser.runtime.sendMessage({ action: 'zipError', id: downloadId, error: error.message }).catch(() => {});
+        browser.runtime.sendMessage({ action: 'zipError', id: downloadId, error: error.message === 'Cancelled' ? 'USER_CANCELED' : error.message }).catch(() => {});
+    } finally {
+        cancelledZipDownloads.delete(downloadId);
     }
 }
 
@@ -4384,6 +4692,72 @@ async function uploadStreamChunk(sessionUri, chunk, offset, totalSize) {
         throw e;
     }
 }
+function createMediaFetchOptions(url, originalRequest = null, signal = null) {
+    const fetchOptions = {
+        method: (originalRequest && originalRequest.method) ? originalRequest.method : 'GET',
+        headers: (originalRequest && originalRequest.headers && !Array.isArray(originalRequest.headers)) ? { ...originalRequest.headers } : {},
+        credentials: (originalRequest && originalRequest.credentials) ? originalRequest.credentials : 'include'
+    };
+    if (signal) fetchOptions.signal = signal;
+
+    if (originalRequest && originalRequest.requestHeaders && Array.isArray(originalRequest.requestHeaders)) {
+        originalRequest.requestHeaders.forEach(h => {
+            const name = h.name.toLowerCase();
+            if (name !== 'cookie' && name !== 'referer' && name !== 'range' && name !== 'host') {
+                fetchOptions.headers[h.name] = h.value;
+            }
+        });
+    }
+
+    const storedHeaders = urlToHeaderMap.get(url);
+    if (storedHeaders) {
+        for (const [name, value] of Object.entries(storedHeaders)) {
+            if (name === 'cookie') {
+                fetchOptions.headers.Cookie = value;
+            } else if (name === 'referer') {
+                fetchOptions.referrer = value;
+                fetchOptions.headers.Referer = value;
+            } else if (name !== 'host' && name !== 'content-length') {
+                fetchOptions.headers[name] = value;
+            }
+        }
+        if (storedHeaders.referer && !fetchOptions.headers.Origin) {
+            try {
+                const refUrl = new URL(storedHeaders.referer);
+                if (refUrl.protocol.startsWith('http')) fetchOptions.headers.Origin = refUrl.origin;
+            } catch (e) {}
+        }
+    }
+
+    const manualReferer = originalRequest?.requestHeaders?.find(h => h.name.toLowerCase() === 'referer')?.value;
+    if (manualReferer) {
+        fetchOptions.referrer = manualReferer;
+        fetchOptions.headers.Referer = manualReferer;
+        if (!fetchOptions.headers.Origin) {
+            try {
+                const refUrl = new URL(manualReferer);
+                if (refUrl.protocol.startsWith('http')) fetchOptions.headers.Origin = refUrl.origin;
+            } catch (e) {}
+        }
+    }
+
+    if (originalRequest && originalRequest.method !== 'GET' && originalRequest.requestBody) {
+        if (originalRequest.requestBody.type === 'formData') {
+            const formData = new FormData();
+            for (const key in originalRequest.requestBody.data) {
+                originalRequest.requestBody.data[key].forEach(val => formData.append(key, val));
+            }
+            fetchOptions.body = formData;
+        } else if (originalRequest.requestBody.type === 'base64') {
+            const bin = atob(originalRequest.requestBody.data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            fetchOptions.body = bytes;
+        }
+    }
+    return fetchOptions;
+}
+
 async function handleFetchDownload(url, filename, originalRequest = null, providedId = null, isResuming = false, isManualResume = false, providedResumeOffset = null, providedMediaType = null, providedDropboxSessionId = null) {
     providedResumeOffset = parseInt(providedResumeOffset) || 0;
     const settings = await browser.storage.local.get(['speed-boost', 'speed-boost-resume', 'connections', 'save-to-gdrive', 'gdrive-stream', 'gdrive_token', 'save-to-dropbox', 'dropbox-stream', 'dropbox_token', 'fetch-notification']);
@@ -4403,7 +4777,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
         try {
             browser.notifications.create(downloadId, {
                 type: "basic",
-                iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
                 title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
                 message: filename
             });
@@ -4486,77 +4860,12 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
     }
 
     try {
-        const fetchOptions = {
-            method: (originalRequest && originalRequest.method) ? originalRequest.method : 'GET',
-            headers: (originalRequest && originalRequest.headers && !Array.isArray(originalRequest.headers)) ? { ...originalRequest.headers } : {},
-            credentials: (originalRequest && originalRequest.credentials) ? originalRequest.credentials : 'include',
-            signal: abortController.signal
-        };
+        const fetchOptions = createMediaFetchOptions(url, originalRequest, abortController.signal);
 
         if (resumeOffset > 0) {
             fetchOptions.headers['Range'] = `bytes=${resumeOffset}-`;
         } else if (speedBoostEnabled && connections > 1 && !gdriveStreamEnabled && !dropboxStreamEnabled) {
             fetchOptions.headers['Range'] = `bytes=0-`;
-        }
-
-        if (originalRequest && originalRequest.requestHeaders && Array.isArray(originalRequest.requestHeaders)) {
-            originalRequest.requestHeaders.forEach(h => {
-                const name = h.name.toLowerCase();
-
-                if (name !== 'cookie' && name !== 'referer' && name !== 'range' && name !== 'host') {
-                    fetchOptions.headers[h.name] = h.value;
-                }
-            });
-        }
-
-        const storedHeaders = urlToHeaderMap.get(url);
-        if (storedHeaders) {
-            for (const [name, value] of Object.entries(storedHeaders)) {
-                if (name === 'cookie') {
-                    fetchOptions.headers['Cookie'] = value;
-                } else if (name === 'referer') {
-                    fetchOptions.referrer = value;
-                    fetchOptions.headers['Referer'] = value;
-                } else if (name !== 'host' && name !== 'content-length') {
-                    fetchOptions.headers[name] = value;
-                }
-            }
-
-            if (storedHeaders.referer && !fetchOptions.headers['Origin']) {
-                try {
-                    const refUrl = new URL(storedHeaders.referer);
-                    if (refUrl.protocol.startsWith('http')) {
-                        fetchOptions.headers['Origin'] = refUrl.origin;
-                    }
-                } catch (e) {}
-            }
-        }
-
-        const manualReferer = originalRequest?.requestHeaders?.find(h => h.name.toLowerCase() === 'referer')?.value;
-        if (manualReferer) {
-            fetchOptions.referrer = manualReferer;
-            fetchOptions.headers['Referer'] = manualReferer;
-            if (!fetchOptions.headers['Origin']) {
-                try {
-                    const refUrl = new URL(manualReferer);
-                    if (refUrl.protocol.startsWith('http')) fetchOptions.headers['Origin'] = refUrl.origin;
-                } catch(e) {}
-            }
-        }
-
-        if (originalRequest && originalRequest.method !== 'GET' && originalRequest.requestBody) {
-            if (originalRequest.requestBody.type === 'formData') {
-                const formData = new FormData();
-                for (const key in originalRequest.requestBody.data) {
-                    originalRequest.requestBody.data[key].forEach(val => formData.append(key, val));
-                }
-                fetchOptions.body = formData;
-            } else if (originalRequest.requestBody.type === 'base64') {
-                const bin = atob(originalRequest.requestBody.data);
-                const u = new Uint8Array(bin.length);
-                for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-                fetchOptions.body = u;
-            }
         }
 
         if (activeDownloads.has(downloadId)) {
@@ -4895,7 +5204,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 const completeId = downloadId + '_complete';
                 browser.notifications.create(completeId, {
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    iconUrl: browser.runtime.getURL("icons/icon.png"),
                     title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
                     message: finalFilename
                 });
@@ -4913,7 +5222,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 if (error.name !== 'AbortError' && error.message !== 'Cancelled') {
                     browser.notifications.create(downloadId + '_error', {
                         type: "basic",
-                        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                        iconUrl: browser.runtime.getURL("icons/icon.png"),
                         title: "Download failed",
                         message: error.message
                     });
@@ -5251,6 +5560,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 });
 
 initCacheState();
+restoreActiveDownloadsFromSession();
 
 browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && (changes['speed-boost-resume'] || changes['speed-boost'])) {

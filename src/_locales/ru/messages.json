@@ -15,6 +15,10 @@
     "message": "Пропустить",
     "description": "Reinstall warning skip button"
   },
+  "confirmReinstalledBtn": {
+    "message": "Уже переустановлено",
+    "description": "Button to confirm reinstallation"
+  },
   "welcomeTitle": {
     "message": "Впервые используете это расширение?",
     "description": "Welcome popup title"
@@ -31,6 +35,34 @@
     "message": "Пропустить",
     "description": "Welcome popup dismiss button"
   },
+  "embedSubtitlesMkvTitle": {
+    "message": "Встроить субтитры (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Если включено, скачивание всех субтитров встроит их в видеофайл (MP4). Если выключено, субтитры будут скачаны в виде ZIP-архива.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Вшивать субтитры (Обычное видео)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Если включено, на карточке обычного видео будет отображаться выбор субтитров для их вшивания.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Выберите субтитры для вшивания:",
+    "description": "Label for checklist to select subtitles to embed"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Контейнерный формат встроенных субтитров",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Все субтитры (Встроенные)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
   "actionTitle": {
     "message": "Скачать медиа",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -38,6 +70,21 @@
   "extensionDescription": {
     "message": "Скачивайте видео, музыку и прямые трансляции на свое устройство!",
     "description": "The description of the extension shown in the browser's settings page."
+  },
+  "limitMediaListTitle": {
+    "message": "Ограничить список обнаруженных медиафайлов"
+  },
+  "limitMediaListExplain": {
+    "message": "Ограничьте количество отображаемых медиафайлов, чтобы уменьшить задержку."
+  },
+  "limitMediaListCustom": {
+    "message": "Пользовательский (0 = все)"
+  },
+  "limitMediaListCustomTitle": {
+    "message": "Пользовательский лимит медиафайлов"
+  },
+  "limitMediaListCustomExplain": {
+    "message": "Введите пользовательский лимит медиафайлов (0 = все)"
   },
   "errorTitle1": {
     "message": "Что-то пошло не так!",
@@ -390,6 +437,12 @@
   "mediaNotificationExplain": {
     "message": "Показывает небольшое всплывающее окно прямо на просматриваемой странице при обнаружении нового медиа."
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "Показывать уведомление о ходе загрузки аудио, потоков и zip-файлов"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "Показывает ход загрузки аудио, потоков и zip-файлов на веб-страницах. Фоновая задача продолжается, даже если функция отключена."
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "Показывать уведомление устройства при обнаружении медиа"
   },
@@ -507,6 +560,14 @@
   "mpdFixCheckbox": {
     "message": "Исправлять MPD-файлы (рекомендуется)",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "Объединить аудио и видео MPD в MP4",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "Объединяет выбранные видео- и аудиопотоки в один файл MP4 вместо их архивации в ZIP.",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "Предпочтение открытия расширения",
@@ -1118,6 +1179,10 @@
     "message": "Выбранный медиафайл является потоком MPEG-DASH. Видео- и аудиопотоки будут скачаны отдельно и упакованы в ZIP-архив, чтобы вы могли воспроизвести .mpd-файл из архива с помощью VLC или любого другого совместимого плеера.",
     "description": "Explanation shown in a snackbar when starting an MPD download."
   },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "Выбранный медиафайл представляет собой поток MPEG-DASH. Видео- и аудиодорожки будут загружены и объединены в один файл MP4.",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+  },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "Скачаны отдельные файлы аудио и видео для «$BASENAME$».",
     "description": "Success message when separate audio and video files are downloaded.",
@@ -1695,6 +1760,14 @@
     "message": "Выберите способ отображения настроек.",
     "description": "Explanation of the setting that controls the presentation layout of settings."
   },
+  "uiScaleTitle": {
+    "message": "Масштаб интерфейса (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Настройка масштаба и размера интерфейса расширения.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
   "layoutDefault": {
     "message": "По умолчанию",
     "description": "Label for the default settings layout."
@@ -1742,6 +1815,10 @@
   "groupBySubtitleTitle": {
     "message": "Субтитры",
     "description": "Folder title for subtitles."
+  },
+  "noSubtitles": {
+    "message": "Без субтитров",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "groupByFileTitle": {
     "message": "Другие файлы",
@@ -1943,6 +2020,12 @@
   "sortNumberAsc": {
     "message": "Цифра (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "Размер (Сначала большие)"
+  },
+  "sortSizeAsc": {
+    "message": "Размер (Сначала маленькие)"
+  },
   "optimizeLowEndTitle": {
     "message": "Оптимизация для слабых устройств",
     "description": "Setting title for optimizing on low-end devices"
@@ -1950,21 +2033,6 @@
   "optimizeLowEndExplain": {
     "message": "Снижает загрузку процессора, но может пропустить некоторые медиафайлы.",
     "description": "Explanation for optimizing on low-end devices"
-  },
-  "limitMediaListTitle": {
-    "message": "Ограничить список обнаруженных медиафайлов"
-  },
-  "limitMediaListExplain": {
-    "message": "Ограничьте количество отображаемых медиафайлов, чтобы уменьшить задержку."
-  },
-  "limitMediaListCustom": {
-    "message": "Пользовательский (0 = все)"
-  },
-  "limitMediaListCustomTitle": {
-    "message": "Пользовательский лимит медиафайлов"
-  },
-  "limitMediaListCustomExplain": {
-    "message": "Введите пользовательский лимит медиафайлов (0 = все)"
   },
   "uploadResumedTitle": {
     "message": "Загрузка возобновлена"
@@ -2040,12 +2108,6 @@
   "youtubeDetectionExplain": {
     "message": "Расширенное обнаружение видео и аудио форматов YouTube."
   },
-  "sortSizeDesc": {
-    "message": "Размер (Сначала большие)"
-  },
-  "sortSizeAsc": {
-    "message": "Размер (Сначала маленькие)"
-  },
   "downloadNormal": {
     "message": "Скачивание (Обычное)"
   },
@@ -2100,14 +2162,6 @@
   "uploadSuccessDropbox": {
     "message": "Успешно сохранено $1 в Dropbox!"
   },
-  "uiScaleTitle": {
-    "message": "Масштаб интерфейса (DPI)",
-    "description": "Title for UI scaling / DPI setting."
-  },
-  "uiScaleExplain": {
-    "message": "Настройка масштаба и размера интерфейса расширения.",
-    "description": "Explanation for UI scaling / DPI setting."
-  },
   "customUiScaleTitle": {
     "message": "Пользовательский процент масштаба (50% - 150%)",
     "description": "Title for custom UI scale percentage input."
@@ -2119,10 +2173,6 @@
   "limitCustom": {
     "message": "Пользовательский лимит",
     "description": "Label for custom limit setting option."
-  },
-  "noSubtitles": {
-    "message": "Без субтитров",
-    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "allLanguagesZip": {
     "message": "Все языки (ZIP)",
@@ -2140,34 +2190,6 @@
     "message": "Объединяет все аудиодорожки в итоговый видеофайл в виде нескольких выбираемых аудиодорожек вместо их раздельного архивирования в zip.",
     "description": "Setting explanation for muxing all audio tracks on YouTube download."
   },
-  "embedSubtitlesMkvTitle": {
-    "message": "Встроить субтитры (YouTube)",
-    "description": "Setting title for embedding all subtitle tracks"
-  },
-  "embedSubtitlesMkvExplain": {
-    "message": "Если включено, скачивание всех субтитров встроит их в видеофайл (MKV/MP4) с помощью Mediabunny. Если выключено, субтитры будут скачаны в виде ZIP-архива.",
-    "description": "Explanation for subtitle embedding setting"
-  },
-  "embedSubtitlesNonYtTitle": {
-    "message": "Вшивать субтитры (Обычное видео)",
-    "description": "Setting title for embedding selected subtitle tracks on standard videos"
-  },
-  "embedSubtitlesNonYtExplain": {
-    "message": "Если включено, на карточке обычного видео будет отображаться выбор субтитров для их вшивания.",
-    "description": "Explanation for standard video subtitle embedding setting"
-  },
-  "selectSubtitlesToEmbed": {
-    "message": "Выберите субтитры для вшивания:",
-    "description": "Label for checklist to select subtitles to embed"
-  },
-  "embedSubtitlesContainerTitle": {
-    "message": "Контейнерный формат встроенных субтитров",
-    "description": "Format selector title for subtitle embedding"
-  },
-  "allSubtitlesMux": {
-    "message": "Все субтитры (Встроенные)",
-    "description": "Dropdown label when subtitles are embedded"
-  },
   "allLanguagesMux": {
     "message": "Все языки (Встроенные)",
     "description": "Option to download all audio tracks embedded in the video"
@@ -2182,9 +2204,5 @@
   "updateSourceLabel": {
     "message": "Источник:",
     "description": "Label for the update source in the update popup"
-  },
-  "confirmReinstalledBtn": {
-    "message": "Уже переустановлено",
-    "description": "Button to confirm reinstallation"
   }
 }

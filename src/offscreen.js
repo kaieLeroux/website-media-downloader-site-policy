@@ -33,6 +33,11 @@ function openCacheDB() {
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'startOffscreenAudioJob') {
+        runPersistentAudioJob(message.jobId, { offscreen: true });
+        sendResponse({ success: true });
+        return;
+    }
     if (message.action === 'triggerOffscreenDownload') {
         const { id, filename } = message.data;
         handleOffscreenDownload(id, filename)
@@ -174,4 +179,3 @@ function ensureFileExtension(filename, mimeType) {
     
     return filename;
 }
-

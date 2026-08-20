@@ -55,7 +55,10 @@ async function initTheme() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+let settingsPageInitPromise = null;
+window.initializeSettingsPage = function initializeSettingsPage() {
+  if (settingsPageInitPromise) return settingsPageInitPromise;
+  settingsPageInitPromise = (async () => {
     await initTheme();
 
     const cloudLocationSelect = document.getElementById('cloud-save-location');
@@ -151,7 +154,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (gdriveBtn) gdriveBtn.click();
         }
     }
-});
+  })();
+  return settingsPageInitPromise;
+};
 
 let pendingChanges = {};
 let isInitializing = false;
@@ -165,16 +170,24 @@ function setupConfirmationBar() {
 
     applyBtn.addEventListener('click', async () => {
         if (Object.keys(pendingChanges).length === 0) return;
-
-        const navbar = document.getElementById('navbar');
-        if (navbar && typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('activeTab', navbar.value);
-            sessionStorage.setItem('scrollPos', window.scrollY);
+        applyBtn.loading = true;
+        applyBtn.disabled = true;
+        try {
+            await browser.storage.local.set({ ...pendingChanges });
+            pendingChanges = {};
+            bar.style.display = 'none';
+            if (typeof mdui !== 'undefined' && mdui.snackbar) {
+                mdui.snackbar({
+                    message: browser.i18n.getMessage('settingsSaved') || 'Settings saved',
+                    placement: 'top'
+                });
+            }
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+        } finally {
+            applyBtn.loading = false;
+            applyBtn.disabled = false;
         }
-
-        await browser.storage.local.set(pendingChanges);
-
-        location.reload();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -202,7 +215,7 @@ async function initializeSettings() {
         'url-detection', 'mime-detection', 'detect-download-links', 'hide-segments', 'hide-page-components', 'disable-deduplication', 'optimize-low-end', 'limit-media-list', 'limit-media-list-custom', 'min-file-size', 'min-file-size-custom',
         'only-video', 'only-audio', 'only-stream', 'only-image', 'only-subtitle', 'only-file', 'ignore-disabled-types',
         'media-notification', 'media-system-notification', 'stack-notifications', 'download-method', 'fetch-notification', 'media-cache', 'speed-boost', 'speed-boost-resume', 'connections', 'stream-download',
-        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'embed-subtitles-nonyt',
+        'stream-quality', 'subtitle-conversion', 'mpd-fix', 'background-download', 'auto-resume', 'stream-to-mp4', 'audio-to-mp3', 'mp3-bitrate', 'open-preference', 'embed-subtitles-nonyt', 'mpd-to-mp4',
         'filename-template', 'disable-rename-dialog', 'history-page', 'settings-layout', 'theme-mode', 'group-by-type', 'save-to-gdrive', 'gdrive-stream', 'media-sort-order',
         'save-to-dropbox', 'dropbox-stream', 'auto-check-update', 'badge-counter', 'ui-scale', 'ui-scale-custom'
     ];
@@ -221,7 +234,7 @@ async function initializeSettings() {
             if (defaultsEnabled.includes(setting)) {
                 value = '1';
                 browser.storage.local.set({ [setting]: value });
-            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'embed-subtitles-nonyt'].includes(setting)) {
+            } else if (['ignore-disabled-types', 'history-page', 'save-to-gdrive', 'gdrive-stream', 'save-to-dropbox', 'dropbox-stream', 'stack-notifications', 'embed-subtitles-nonyt', 'mpd-to-mp4'].includes(setting)) {
                 value = '0';
                 browser.storage.local.set({ [setting]: value });
             } else if (setting === 'speed-boost' || setting === 'speed-boost-resume' || setting === 'disable-rename-dialog') {
@@ -607,7 +620,7 @@ async function initializeSettings() {
 
         if (element.tagName === 'MDUI-SELECT' || element.tagName === 'SELECT' || element.tagName === 'MDUI-SEGMENTED-BUTTON-GROUP') {
             const defaultValue = setting === 'limit-media-list' ? 'custom' :
-                                (setting === 'settings-layout' ? 'default' :
+                                (setting === 'settings-layout' ? 'tabs-icons' :
                                 (setting === 'theme-mode' ? 'auto' :
                                 (setting === 'open-preference' ? 'popup' :
                                 (setting === 'download-method' ? 'fetch' :
@@ -617,7 +630,7 @@ async function initializeSettings() {
                                 (setting === 'media-sort-order' ? 'newest' :
                                 (setting === 'mp3-bitrate' ? '320' :
                                 (setting === 'min-file-size' ? '0' :
-                                (setting === 'ui-scale' ? '100%' :
+                                (setting === 'ui-scale' ? '85%' :
                                 (setting === 'stream-download' ? 'offline' : 'stream')))))))))))) ;
 
             element.value = value || defaultValue;
@@ -1071,7 +1084,7 @@ async function initializeSettings() {
     }
 
     const layoutResult = await browser.storage.local.get('settings-layout');
-    let layoutVal = layoutResult['settings-layout'] || 'default';
+    let layoutVal = layoutResult['settings-layout'] || 'tabs-icons';
     if (!layoutResult['settings-layout']) {
         const cleanViewResult = await browser.storage.local.get('clean-view');
         if (cleanViewResult['clean-view'] === '1') {
@@ -1200,14 +1213,6 @@ function syncNotificationSetting(isBgEnabled) {
     } else {
 
         notificationSwitch.disabled = false;
-    }
-}
-
-function updatePopupState(value) {
-    if (value === 'popup') {
-        browser.action.setPopup({ popup: 'popup.html' });
-    } else {
-        browser.action.setPopup({ popup: '' });
     }
 }
 
@@ -1356,7 +1361,7 @@ function setupCollapsibleLogic() {
 
         header.addEventListener('click', async () => {
             const layoutResult = await browser.storage.local.get('settings-layout');
-            let layoutVal = layoutResult['settings-layout'] || 'default';
+            let layoutVal = layoutResult['settings-layout'] || 'tabs-icons';
             if (!layoutResult['settings-layout']) {
                 const cleanViewResult = await browser.storage.local.get('clean-view');
                 if (cleanViewResult['clean-view'] === '1') {

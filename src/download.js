@@ -20,6 +20,28 @@ if (typeof browser === 'undefined') {
     var browser = chrome;
 }
 
+async function ensureScriptLoaded(src, globalVarName) {
+  if (typeof window[globalVarName] !== 'undefined') return;
+  if (document.querySelector(`script[src="${src}"]`)) {
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (typeof window[globalVarName] !== 'undefined') {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = browser.runtime.getURL(src);
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load script ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
 const DB_NAME = "MediaCacheDB";
 const STORE_NAME = "network-cache";
 const CHUNK_STORE_NAME = "download-chunks";
@@ -1036,16 +1058,14 @@ async function initTheme() {
 document.addEventListener('DOMContentLoaded', async () => {
     await initTheme();
     const colorResult = await browser.storage.local.get('ui-scale');
-    if (colorResult['ui-scale']) {
-        document.documentElement.style.zoom = colorResult['ui-scale'];
-    }
+    document.documentElement.style.zoom = colorResult['ui-scale'] || '85%';
 
     browser.storage.onChanged.addListener((changes) => {
         if (changes['theme-color'] || changes['theme-mode']) {
             initTheme();
         }
         if (changes['ui-scale']) {
-            document.documentElement.style.zoom = changes['ui-scale'].newValue || '100%';
+            document.documentElement.style.zoom = changes['ui-scale'].newValue || '85%';
         }
     });
 
@@ -1087,6 +1107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveAllZipBtn.textContent = isSelectedMode ? "Preparing Selected ZIP..." : "Preparing ZIP...";
             
             try {
+                await ensureScriptLoaded('libraries/client-zip.js', 'downloadZip');
                 let stored = await getStoredDownloads();
                 if (isSelectedMode) {
                     stored = stored.filter(item => selectedIds.includes(item.id));

@@ -67,12 +67,19 @@ async function getM3U8VariantsBg(url) {
     }
 }
 
-if (typeof downloadZip === 'undefined') {
-    try {
-        importScripts('libraries/client-zip.js');
-    } catch (e) {
-        console.error("Failed to import client-zip.js:", e);
+let clientZipLoadPromise = null;
+async function ensureClientZipLoaded() {
+    if (typeof downloadZip !== 'undefined') return;
+    if (!clientZipLoadPromise) {
+        clientZipLoadPromise = Promise.resolve().then(() => {
+            importScripts('libraries/client-zip.js');
+            if (typeof downloadZip === 'undefined') throw new Error('client-zip.js did not expose downloadZip');
+        }).catch(error => {
+            clientZipLoadPromise = null;
+            throw error;
+        });
     }
+    return clientZipLoadPromise;
 }
 
 if (!browser.storage.session) {
@@ -594,7 +601,7 @@ function getSettings(callback) {
             optimizeLowEnd: isFlagEnabled(result['optimize-low-end'], false),
             filenameTemplate: (result['filename-template'] && result['filename-template'] !== '0') ? result['filename-template'] : '',
             themeColor: result['theme-color'] ? (result['theme-color'].startsWith('#') || result['theme-color'].startsWith('rgb') ? result['theme-color'] : '#' + result['theme-color']) : '#bbdefb',
-            uiScale: result['ui-scale'] || '100%'
+            uiScale: result['ui-scale'] || '85%'
         };
         cachedSettings = s;
         if (callback) callback(s);
@@ -660,21 +667,64 @@ const _origActiveDownloadsSet = activeDownloads.set.bind(activeDownloads);
 const _origActiveDownloadsDelete = activeDownloads.delete.bind(activeDownloads);
 const _origActiveDownloadsClear = activeDownloads.clear.bind(activeDownloads);
 
+function saveActiveDownloadsToSession() {
+    const storageSession = (typeof browser !== 'undefined' && browser.storage && browser.storage.session) ? browser.storage.session : (typeof browser !== 'undefined' && browser.storage ? browser.storage.local : null);
+    if (!storageSession) return;
+
+    const list = [];
+    for (let [id, val] of activeDownloads) {
+        list.push({
+            id: id,
+            url: val.url,
+            filename: val.filename,
+            loaded: val.loaded || 0,
+            total: val.total || 0,
+            isParallel: !!val.isParallel,
+            isPaused: !!val.isPaused,
+            isNative: !!val.isNative,
+            mediaType: val.mediaType,
+            percent: val.percent,
+            status: val.status
+        });
+    }
+    storageSession.set({ wmd_active_downloads: list }).catch(() => {});
+}
+
+function restoreActiveDownloadsFromSession() {
+    const storageSession = (typeof browser !== 'undefined' && browser.storage && browser.storage.session) ? browser.storage.session : (typeof browser !== 'undefined' && browser.storage ? browser.storage.local : null);
+    if (!storageSession) return;
+
+    storageSession.get('wmd_active_downloads').then(res => {
+        const list = res.wmd_active_downloads;
+        if (list && Array.isArray(list)) {
+            list.forEach(val => {
+                if (!activeDownloads.has(val.id)) {
+                    _origActiveDownloadsSet(val.id, val);
+                }
+            });
+            updateActiveDownloadsBadge();
+        }
+    }).catch(() => {});
+}
+
 activeDownloads.set = function(key, value) {
     const res = _origActiveDownloadsSet(key, value);
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
 activeDownloads.delete = function(key) {
     const res = _origActiveDownloadsDelete(key);
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
 activeDownloads.clear = function() {
     const res = _origActiveDownloadsClear();
     updateActiveDownloadsBadge();
+    saveActiveDownloadsToSession();
     return res;
 };
 
@@ -686,7 +736,7 @@ if (browser.storage && browser.storage.onChanged) {
     });
 }
 
-function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, hlsFormats = null, stackNotifications = false, uiScale = '100%') {
+function injectNotificationScript(tabId, filename, url, mediaType, title, themeColor, isDrm = false, hlsFormats = null, stackNotifications = false, uiScale = '85%') {
     if (!browser.scripting) return;
 
     const modalTranslations = {
@@ -783,7 +833,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 animation: mdu-toast-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 touch-action: pan-y; user-select: none; -webkit-user-select: none;
-                zoom: ${uiScale || '100%'};
+                zoom: ${uiScale || '85%'};
             `;
             if (uiScale) toast.style.zoom = uiScale;
 
@@ -820,7 +870,7 @@ function injectNotificationScript(tabId, filename, url, mediaType, title, themeC
                 `;
 
                 modalBackdrop.innerHTML = `
-                    <div class="mdu-media-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '100%'};">
+                    <div class="mdu-media-modal" style="background: rgba(30, 30, 30, 0.85); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(25px); color: white; border-radius: 28px; width: 420px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; animation: mdu-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); zoom: ${uiScale || '85%'};">
                         <div style="font-size: 18px; font-weight: 600; color: ${safeColor};">${t.qualityModalTitle}</div>
                         <div style="font-size: 14px; color: rgba(255,255,255,0.7); max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</div>
                         
@@ -1540,7 +1590,7 @@ async function showMediaNotification(details, settings) {
     const finalDisplayFilename = isDrm ? drmMsg : displayFilename;
     const notificationTitle = isDrm ? (browser.i18n.getMessage("drmWarningTitle") || "DRM Detected") : (browser.i18n.getMessage("mediaNotificationTitle") || "Media detected!");
 
-    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, hlsFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '100%');
+    injectNotificationScript(tabId, finalDisplayFilename, url, mediaType, notificationTitle, settings.themeColor, isDrm, hlsFormats, settings.stackNotifications, settings.uiScale || cachedSettings.uiScale || '85%');
 
     const notificationButtons = isDrm ? [] : [
         { title: browser.i18n.getMessage("mediaNotificationDownloadAction") || "Download" }
@@ -1549,7 +1599,7 @@ async function showMediaNotification(details, settings) {
     if (settings.mediaSystemNotification) {
         browser.notifications.create({
             type: "basic",
-            iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+            iconUrl: browser.runtime.getURL("icons/icon.png"),
             title: notificationTitle,
             message: finalDisplayFilename,
             buttons: notificationButtons
@@ -2006,7 +2056,57 @@ browser.downloads.onChanged.addListener((delta) => {
     }
 });
 
+const cancelledZipDownloads = new Set();
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'customStatus') {
+        const id = message.id;
+        if (id) {
+            let item = activeDownloads.get(id);
+            if (!item) {
+                item = {
+                    id: id,
+                    url: id,
+                    loaded: 0,
+                    total: 100,
+                    percent: 0,
+                    status: 'downloading',
+                    isParallel: false,
+                    isPaused: false,
+                    mediaType: getMediaType(id) || 'audio'
+                };
+                activeDownloads.set(id, item);
+            }
+            if (message.percent !== undefined) {
+                item.percent = message.percent;
+                item.loaded = message.percent;
+                item.total = 100;
+            }
+            if (message.text) {
+                item.status = message.text;
+            }
+            if (message.indeterminate) {
+                item.loaded = 0;
+                item.total = 0;
+            }
+        }
+        return;
+    }
+    if (message.action === 'download_arraybuffer') {
+        const blob = new Blob([message.arrayBuffer], { type: message.mime || 'application/octet-stream' });
+        const downloadId = 'tab_' + Date.now();
+        storeInCache(downloadId, blob, message.mime).then(() => {
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            browser.tabs.create({
+                url: browser.runtime.getURL(`download.html?id=${downloadId}&url=${encodeURIComponent(downloadId)}&filename=${encodeURIComponent(message.filename)}`),
+                active: isAndroid
+            });
+            sendResponse({ success: true });
+        }).catch(err => {
+            sendResponse({ success: false, error: err.message });
+        });
+        return true;
+    }
     if (message.action === 'heartbeat') {
         sendResponse({ status: 'alive' });
         return true;
@@ -2037,7 +2137,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 browser.notifications.clear(notificationId);
                 browser.notifications.create({
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    iconUrl: browser.runtime.getURL("icons/icon.png"),
                     title: drmTitle,
                     message: drmMsg,
                     buttons: []
@@ -2087,10 +2187,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         addToHistory({ url: message.url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
 
-        let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(message.url)}&filename=${encodeURIComponent(finalName)}&quality=${encodeURIComponent(message.quality)}`;
-        browser.tabs.create({
-            url: browser.runtime.getURL(streamTabUrl),
-            active: true
+        browser.runtime.sendMessage({
+            action: 'startPersistentStreamJob', url: message.url, filename: finalName,
+            quality: message.quality || 'highest', request: message.request || {}, downloadMethod: 'browser'
         });
         return;
     }
@@ -2138,10 +2237,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (url.toLowerCase().includes('.m3u8') && streamPref === 'offline') {
                     addToHistory({ url, filename: finalName, timestamp: Date.now(), pageUrl, pageTitle });
-                    let streamTabUrl = `stream_downloader.html?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(finalName)}&quality=highest`;
-                    browser.tabs.create({
-                        url: browser.runtime.getURL(streamTabUrl),
-                        active: true
+                    browser.runtime.sendMessage({
+                        action: 'startPersistentStreamJob', url, filename: finalName,
+                        quality: 'highest', request: request || {}, downloadMethod: method
                     });
                     return;
                 }
@@ -2304,6 +2402,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (targetId) {
             const item = activeDownloads.get(targetId);
             if (item) {
+                if (item.isZip) cancelledZipDownloads.add(targetId);
                 if (isNative || item.isNative) {
                     browser.downloads.cancel(targetId).catch(() => {});
                 } else if (item.abortController) {
@@ -2394,23 +2493,32 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 filename: value.filename,
                 isParallel: !!value.isParallel,
                 isPaused: !!value.isPaused,
-                mediaType: value.mediaType || getMediaType(value.url, [])
+                mediaType: value.mediaType || getMediaType(value.url, []),
+                percent: value.percent,
+                status: value.status,
+                statusText: value.statusText,
+                currentFile: value.currentFile,
+                isStreamJob: !!value.isStreamJob,
+                isZip: !!value.isZip,
+                isPersistentZipJob: !!value.isPersistentZipJob
             };
         }
         sendResponse(downloadsObj);
         return;
     }
 
-    if (message.action === 'downloadComplete') {
+    if (message.action === 'downloadComplete' || message.action === 'downloadError') {
         const id = message.id || message.url;
         if (id) {
             activeDownloads.delete(id);
             removeDownloadState(id);
             
-            if (message.url) {
-                removeMediaRequest(message.url);
-            } else if (id && id.startsWith('http')) {
-                removeMediaRequest(id);
+            if (message.action === 'downloadComplete') {
+                if (message.url) {
+                    removeMediaRequest(message.url);
+                } else if (id && id.startsWith('http')) {
+                    removeMediaRequest(id);
+                }
             }
 
             if (message.cloud || message.background) {
@@ -2471,6 +2579,7 @@ async function askUserToContinue(filename, error) {
 }
 
 async function handleDownloadAllAsZip(items, downloadId) {
+    await ensureClientZipLoaded();
     try {
         activeDownloads.set(downloadId, { loaded: 0, total: items.length, url: 'zip://' + downloadId, isZip: true });
 
@@ -2478,9 +2587,10 @@ async function handleDownloadAllAsZip(items, downloadId) {
             let skipAllErrors = false;
             const usedNames = new Set();
             for (let i = 0; i < items.length; i++) {
+                if (cancelledZipDownloads.has(downloadId)) throw new Error("Cancelled");
                 const item = items[i];
                 const url = item.url;
-                const originalRequest = item.originalRequest;
+                const originalRequest = item.originalRequest || item.request;
                 const originalFileName = item.filename || "file";
                 let filename = originalFileName;
 
@@ -2494,6 +2604,27 @@ async function handleDownloadAllAsZip(items, downloadId) {
                 }).catch(() => {});
 
                 try {
+                    if (/\.(m3u8|mpd)(?:$|[?#])/i.test(url)) {
+                        const processedFiles = await processStreamItemForZip({
+                            ...item, request: originalRequest, filename
+                        }, downloadId);
+                        if (cancelledZipDownloads.has(downloadId)) throw new Error("Cancelled");
+                        for (const file of processedFiles) {
+                            const resolvedName = file.filename || filename;
+                            let entryName = resolvedName;
+                            let entryCounter = 1;
+                            while (usedNames.has(entryName)) {
+                                const parts = resolvedName.split('.');
+                                const ext = parts.length > 1 ? '.' + parts.pop() : '';
+                                entryName = `${parts.join('.')}_${entryCounter}${ext}`;
+                                entryCounter++;
+                            }
+                            usedNames.add(entryName);
+                            yield { name: entryName, input: new Blob([file.arrayBuffer], { type: file.mime || 'application/octet-stream' }) };
+                        }
+                        activeDownloads.get(downloadId).loaded = i + 1;
+                        continue;
+                    }
                     const fetchOptions = {
                         method: originalRequest ? originalRequest.method : 'GET',
                         headers: {},
@@ -2569,6 +2700,7 @@ async function handleDownloadAllAsZip(items, downloadId) {
 
                     activeDownloads.get(downloadId).loaded = i + 1;
                 } catch (err) {
+                    if (cancelledZipDownloads.has(downloadId) || err.message === "Cancelled") throw new Error("Cancelled");
                     if (err.message === "Cancelled by user after error") throw err;
                     console.warn(`Error fetching ${url} for ZIP:`, err);
                     if (skipAllErrors) continue;
@@ -2786,7 +2918,9 @@ async function handleDownloadAllAsZip(items, downloadId) {
     } catch (error) {
         console.error("Background ZIP error:", error);
         activeDownloads.delete(downloadId);
-        browser.runtime.sendMessage({ action: 'zipError', id: downloadId, error: error.message }).catch(() => {});
+        browser.runtime.sendMessage({ action: 'zipError', id: downloadId, error: error.message === 'Cancelled' ? 'USER_CANCELED' : error.message }).catch(() => {});
+    } finally {
+        cancelledZipDownloads.delete(downloadId);
     }
 }
 
@@ -4012,7 +4146,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
         try {
             browser.notifications.create(downloadId, {
                 type: "basic",
-                iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                iconUrl: browser.runtime.getURL("icons/icon.png"),
                 title: (browser.i18n.getMessage("downloadingTitle") || "Downloading..."),
                 message: filename
             });
@@ -4504,7 +4638,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 const completeId = downloadId + '_complete';
                 browser.notifications.create(completeId, {
                     type: "basic",
-                    iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                    iconUrl: browser.runtime.getURL("icons/icon.png"),
                     title: browser.i18n.getMessage("downloadCompleteTitle") || "Download completed",
                     message: finalFilename
                 });
@@ -4522,7 +4656,7 @@ async function handleFetchDownload(url, filename, originalRequest = null, provid
                 if (error.name !== 'AbortError' && error.message !== 'Cancelled') {
                     browser.notifications.create(downloadId + '_error', {
                         type: "basic",
-                        iconUrl: browser.runtime.getURL("src/icons/icon.png"),
+                        iconUrl: browser.runtime.getURL("icons/icon.png"),
                         title: "Download failed",
                         message: error.message
                     });
@@ -4860,6 +4994,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 });
 
 initCacheState();
+restoreActiveDownloadsFromSession();
 
 browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && (changes['speed-boost-resume'] || changes['speed-boost'])) {
@@ -4962,3 +5097,5 @@ function ensureFileExtension(filename, mimeType) {
     
     return filename;
 }
+importScripts('chrome_audio_jobs.js');
+importScripts('stream_jobs.js');

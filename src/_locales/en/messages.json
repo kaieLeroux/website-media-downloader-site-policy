@@ -40,7 +40,7 @@
     "description": "Setting title for embedding all subtitle tracks"
   },
   "embedSubtitlesMkvExplain": {
-    "message": "When enabled, downloading all subtitles embeds them into the video file (MKV/MP4) using Mediabunny. When disabled, subtitles are downloaded in a ZIP archive.",
+    "message": "When enabled, downloading all subtitles embeds them into the video file (MP4). When disabled, subtitles are downloaded in a ZIP archive.",
     "description": "Explanation for subtitle embedding setting"
   },
   "embedSubtitlesNonYtTitle": {
@@ -442,6 +442,12 @@
   "mediaNotificationExplain": {
     "message": "Shows a small popup directly on the page you are browsing when new media is found."
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "Show progress notification for audio, stream, and zip downloads"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "Shows progress for audio, stream, and zip file downloads inside web pages. The background job continues when disabled."
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "Show device notification when media detected"
   },
@@ -559,6 +565,14 @@
   "mpdFixCheckbox": {
     "message": "Fix MPD files (recommended)",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "Merge MPD audio and video into MP4",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "Muxes the chosen video and audio representations into a single MP4 file instead of zipping them.",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "Add-on opening preference",
@@ -1169,6 +1183,10 @@
   "mpdDownloadExplainSnackbar": {
     "message": "Selected media is an MPEG-DASH stream. This will download the video and audio streams separately, packaged in a ZIP file, so you can play the .mpd file in the ZIP file with VLC or any other compatible player.",
     "description": "Explanation shown in a snackbar when starting an MPD download."
+  },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "Selected media is an MPEG-DASH stream. The video and audio tracks will be downloaded and merged into a single MP4 file.",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
   },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "Downloaded separate audio and video files for \"$BASENAME$\".",

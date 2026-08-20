@@ -2059,5 +2059,17 @@
     "allLanguagesZip": null,
     "allLanguagesMux": null,
     "allSubtitlesZip": null,
-    "allSubtitlesMux": null
+    "allSubtitlesMux": null,
+    "mpdToMp4Checkbox": {
+        "message": "MPDのオーディオとビデオをMP4に結合する",
+        "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+    },
+    "mpdToMp4Explain": {
+        "message": "選択したビデオとオーディオのストリームを、ZIPに圧縮する代わりに、単一のMP4ファイルに結合します。",
+        "description": "The explanation of the merge MPD option."
+    },
+    "mpdDownloadMergeExplainSnackbar": {
+        "message": "選択されたメディアはMPEG-DASHストリームです。ビデオとオーディオのトラックがダウンロードされ、単一のMP4ファイルに結合されます。",
+        "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+    }
 }

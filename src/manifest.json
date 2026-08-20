@@ -50,7 +50,7 @@
         "service_worker": "network_detector.js",
         "scripts": [
             "libraries/wymd.js",
-            "libraries/client-zip.js",
+            "stream_jobs.js",
             "network_detector.js"
         ]
     },
@@ -59,8 +59,12 @@
             "matches": [
                 "<all_urls>"
             ],
+            "css": [
+                "styles/content-toast.css"
+            ],
             "js": [
                 "surgical_scrapers.js",
+                "offlineStreamConvert.js",
                 "content_detector.js"
             ],
             "run_at": "document_end"

@@ -2053,5 +2053,17 @@
     "allLanguagesZip": null,
     "allLanguagesMux": null,
     "allSubtitlesZip": null,
-    "allSubtitlesMux": null
+    "allSubtitlesMux": null,
+    "mpdToMp4Checkbox": {
+        "message": "دمج صوت وفيديو MPD في ملف MP4",
+        "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+    },
+    "mpdToMp4Explain": {
+        "message": "دمج مسارات الفيديو والصوت المختارة في ملف MP4 واحد بدلاً من ضغطها في ملف ZIP.",
+        "description": "The explanation of the merge MPD option."
+    },
+    "mpdDownloadMergeExplainSnackbar": {
+        "message": "الوسائط المحددة هي بث MPEG-DASH. سيتم تنزيل مسارات الفيديو والصوت ودمجها في ملف MP4 واحد.",
+        "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+    }
 }

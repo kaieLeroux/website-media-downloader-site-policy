@@ -15,6 +15,10 @@
     "message": "Ignorer",
     "description": "Reinstall warning skip button"
   },
+  "confirmReinstalledBtn": {
+    "message": "Déjà réinstallé",
+    "description": "Button to confirm reinstallation"
+  },
   "welcomeTitle": {
     "message": "Nouveau sur cette extension ?",
     "description": "Welcome popup title"
@@ -31,6 +35,34 @@
     "message": "Passer",
     "description": "Welcome popup dismiss button"
   },
+  "embedSubtitlesMkvTitle": {
+    "message": "Intégrer les sous-titres (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "Lorsqu'elle est activée, le téléchargement de tous les sous-titres les intègre dans le fichier vidéo (MP4). Lorsqu'elle est désactivée, les sous-titres sont téléchargés dans une archive ZIP.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "Intégrer les sous-titres (Vidéo standard)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "Lorsqu'il est activé, affiche une carte de sélection des sous-titres sur les éléments vidéo standard pour intégrer les sous-titres sélectionnés.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "Sélectionner les sous-titres à intégrer :",
+    "description": "Label for checklist to select subtitles to embed"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "Format du conteneur d'intégration des sous-titres",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "Tous les sous-titres (Intégrés)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
   "actionTitle": {
     "message": "Télécharger les médias",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -38,6 +70,21 @@
   "extensionDescription": {
     "message": "Téléchargez facilement des vidéos, des flux vidéos et des fichiers audios depuis la plupart des sites web, directement sur votre appareil!",
     "description": "The description of the extension shown in the browser's settings page."
+  },
+  "limitMediaListTitle": {
+    "message": "Limiter la liste des médias détectés"
+  },
+  "limitMediaListExplain": {
+    "message": "Limitez le nombre de médias affichés pour réduire les ralentissements."
+  },
+  "limitMediaListCustom": {
+    "message": "Personnalisé (0 = tout)"
+  },
+  "limitMediaListCustomTitle": {
+    "message": "Limite de médias personnalisée"
+  },
+  "limitMediaListCustomExplain": {
+    "message": "Entrez une limite de médias personnalisée (0 = tout)"
   },
   "errorTitle1": {
     "message": "Quelque chose a mal tourné!",
@@ -390,6 +437,12 @@
   "mediaNotificationExplain": {
     "message": "Affiche un petit popup directement sur la page que vous visitez quand un nouveau média est trouvé."
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "Afficher la notification de progression pour les téléchargements audio, de flux et zip"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "Affiche la progression des téléchargements audio, de flux et de fichiers zip dans les pages Web. La tâche en arrière-plan continue lorsqu'elle est désactivée."
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "Afficher une notification sur l'appareil quand un média est détecté"
   },
@@ -507,6 +560,14 @@
   "mpdFixCheckbox": {
     "message": "Corriger les fichiers MPD",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "Fusionner l'audio et la vidéo MPD en MP4",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "Fusionne les flux vidéo et audio sélectionnés dans un seul fichier MP4 au lieu de les compresser dans un fichier ZIP.",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "Préférence d'ouverture",
@@ -1123,6 +1184,10 @@
     "message": "Le média sélectionné est un flux MPEG-DASH. Cela téléchargera les flux vidéo et audio séparément, emballés dans un arquivo ZIP.",
     "description": "Explanation shown in a snackbar when starting an MPD download."
   },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "Le média sélectionné est un flux MPEG-DASH. Les pistes vidéo et audio seront téléchargées et fusionnées dans un seul fichier MP4.",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+  },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "Fichiers audio et vidéo séparés téléchargés pour \"$BASENAME$\".",
     "description": "Success message when separate audio and video files are downloaded.",
@@ -1695,6 +1760,14 @@
     "message": "Choisissez comment présenter les paramètres.",
     "description": "Explanation of the setting that controls the presentation layout of settings."
   },
+  "uiScaleTitle": {
+    "message": "Échelle de l'interface (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "Ajustez l'échelle et la taille de l'interface de l'extension.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
   "layoutDefault": {
     "message": "Par défaut",
     "description": "Label for the default settings layout."
@@ -1742,6 +1815,10 @@
   "groupBySubtitleTitle": {
     "message": "Sous-titres",
     "description": "Folder title for subtitles."
+  },
+  "noSubtitles": {
+    "message": "Pas de sous-titres",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "groupByFileTitle": {
     "message": "Autres fichiers",
@@ -1943,6 +2020,12 @@
   "sortNumberAsc": {
     "message": "Numéro (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "Taille (Plus grande en premier)"
+  },
+  "sortSizeAsc": {
+    "message": "Taille (Plus petite en premier)"
+  },
   "optimizeLowEndTitle": {
     "message": "Optimiser pour les appareils bas de gamme",
     "description": "Setting title for optimizing on low-end devices"
@@ -1950,21 +2033,6 @@
   "optimizeLowEndExplain": {
     "message": "Réduit l'utilisation du processeur mais peut manquer certains médias.",
     "description": "Explanation for optimizing on low-end devices"
-  },
-  "limitMediaListTitle": {
-    "message": "Limiter la liste des médias détectés"
-  },
-  "limitMediaListExplain": {
-    "message": "Limitez le nombre de médias affichés pour réduire les ralentissements."
-  },
-  "limitMediaListCustom": {
-    "message": "Personnalisé (0 = tout)"
-  },
-  "limitMediaListCustomTitle": {
-    "message": "Limite de médias personnalisée"
-  },
-  "limitMediaListCustomExplain": {
-    "message": "Entrez une limite de médias personnalisée (0 = tout)"
   },
   "uploadResumedTitle": {
     "message": "Téléchargement repris"
@@ -2040,12 +2108,6 @@
   "youtubeDetectionExplain": {
     "message": "Détection avancée pour les vidéos et formats audio YouTube."
   },
-  "sortSizeDesc": {
-    "message": "Taille (Plus grande en premier)"
-  },
-  "sortSizeAsc": {
-    "message": "Taille (Plus petite en premier)"
-  },
   "downloadNormal": {
     "message": "Téléchargement (Normal)"
   },
@@ -2100,14 +2162,6 @@
   "uploadSuccessDropbox": {
     "message": "Le fichier $1 a été enregistré avec succès dans Dropbox !"
   },
-  "uiScaleTitle": {
-    "message": "Échelle de l'interface (DPI)",
-    "description": "Title for UI scaling / DPI setting."
-  },
-  "uiScaleExplain": {
-    "message": "Ajustez l'échelle et la taille de l'interface de l'extension.",
-    "description": "Explanation for UI scaling / DPI setting."
-  },
   "customUiScaleTitle": {
     "message": "Pourcentage d'échelle personnalisé (50% - 150%)",
     "description": "Title for custom UI scale percentage input."
@@ -2119,10 +2173,6 @@
   "limitCustom": {
     "message": "Limite personnalisée",
     "description": "Label for custom limit setting option."
-  },
-  "noSubtitles": {
-    "message": "Pas de sous-titres",
-    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "allLanguagesZip": {
     "message": "Toutes les langues (ZIP)",
@@ -2140,34 +2190,6 @@
     "message": "Combine toutes les pistes audio dans le fichier vidéo final sous forme de plusieurs pistes audio sélectionnables au lieu de les compresser séparément dans un zip.",
     "description": "Setting explanation for muxing all audio tracks on YouTube download."
   },
-  "embedSubtitlesMkvTitle": {
-    "message": "Intégrer les sous-titres (YouTube)",
-    "description": "Setting title for embedding all subtitle tracks"
-  },
-  "embedSubtitlesMkvExplain": {
-    "message": "Lorsqu'elle est activée, le téléchargement de tous les sous-titres les intègre dans le fichier vidéo (MKV/MP4) à l'aide de Mediabunny. Lorsqu'elle est désactivée, les sous-titres sont téléchargés dans une archive ZIP.",
-    "description": "Explanation for subtitle embedding setting"
-  },
-  "embedSubtitlesNonYtTitle": {
-    "message": "Intégrer les sous-titres (Vidéo standard)",
-    "description": "Setting title for embedding selected subtitle tracks on standard videos"
-  },
-  "embedSubtitlesNonYtExplain": {
-    "message": "Lorsqu'il est activé, affiche une carte de sélection des sous-titres sur les éléments vidéo standard pour intégrer les sous-titres sélectionnés.",
-    "description": "Explanation for standard video subtitle embedding setting"
-  },
-  "selectSubtitlesToEmbed": {
-    "message": "Sélectionner les sous-titres à intégrer :",
-    "description": "Label for checklist to select subtitles to embed"
-  },
-  "embedSubtitlesContainerTitle": {
-    "message": "Format du conteneur d'intégration des sous-titres",
-    "description": "Format selector title for subtitle embedding"
-  },
-  "allSubtitlesMux": {
-    "message": "Tous les sous-titres (Intégrés)",
-    "description": "Dropdown label when subtitles are embedded"
-  },
   "allLanguagesMux": {
     "message": "Toutes les langues (Intégrées)",
     "description": "Option to download all audio tracks embedded in the video"
@@ -2182,9 +2204,5 @@
   "updateSourceLabel": {
     "message": "Source :",
     "description": "Label for the update source in the update popup"
-  },
-  "confirmReinstalledBtn": {
-    "message": "Déjà réinstallé",
-    "description": "Button to confirm reinstallation"
   }
 }

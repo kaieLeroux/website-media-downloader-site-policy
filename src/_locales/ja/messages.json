@@ -15,6 +15,10 @@
     "message": "スキップ",
     "description": "Reinstall warning skip button"
   },
+  "confirmReinstalledBtn": {
+    "message": "再インストール済み",
+    "description": "Button to confirm reinstallation"
+  },
   "welcomeTitle": {
     "message": "この拡張機能を初めて使いますか？",
     "description": "Welcome popup title"
@@ -31,6 +35,34 @@
     "message": "スキップ",
     "description": "Welcome popup dismiss button"
   },
+  "embedSubtitlesMkvTitle": {
+    "message": "字幕の埋め込み (YouTube)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "有効にすると、すべての字幕をダウンロードしたときにビデオファイル (MP4) に埋め込みます。無効にすると、字幕はZIPアーカイブでダウンロードされます。",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "字幕を埋め込む (標準ビデオ)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "有効にすると、標準ビデオアイテムに字幕選択カードが表示され、選択した字幕が埋め込まれます。",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "埋め込む字幕を選択:",
+    "description": "Label for checklist to select subtitles to embed"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "字幕埋め込みコンテナ形式",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "すべての字幕 (埋め込み)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
   "actionTitle": {
     "message": "メディアをダウンロード",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -38,6 +70,21 @@
   "extensionDescription": {
     "message": "ビデオ、音楽、ライブストリームをデバイスにダウンロードします！",
     "description": "The description of the extension shown in the browser's settings page."
+  },
+  "limitMediaListTitle": {
+    "message": "検出されたメディアリストを制限する"
+  },
+  "limitMediaListExplain": {
+    "message": "表示されるメディアの数を制限して、遅延を減らします。"
+  },
+  "limitMediaListCustom": {
+    "message": "カスタム (0 = すべて)"
+  },
+  "limitMediaListCustomTitle": {
+    "message": "カスタムメディア制限"
+  },
+  "limitMediaListCustomExplain": {
+    "message": "カスタムメディア制限を入力 (0 = すべて)"
   },
   "errorTitle1": {
     "message": "問題が発生しました！",
@@ -390,6 +437,12 @@
   "mediaNotificationExplain": {
     "message": "新しいメディアが見つかった時に、閲覧中のページに小さなポップアップを直接表示します。"
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "オーディオ、ストリーム、およびZIPダウンロードの進行状況通知を表示"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "ウェブページ内にオーディオ、ストリーム、およびZIPファイルのダウンロード進行状況を表示します。無効にしてもバックグラウンド処理は継続されます。"
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "メディア検出時にデバイスの通知を表示"
   },
@@ -507,6 +560,14 @@
   "mpdFixCheckbox": {
     "message": "MPDファイルを修正する（推奨）",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "MPDのオーディオとビデオをMP4に結合する",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "選択したビデオとオーディオのストリームを、ZIPに圧縮する代わりに、単一のMP4ファイルに結合します。",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "拡張機能の開き方の設定",
@@ -1123,6 +1184,10 @@
     "message": "選択されたメディアはMPEG-DASHストリームです。ビデオとオーディオのストリームを個別にダウンロードし、ZIPファイルにパッケージ化します。ZIPファイル内の.mpdファイルをVLCなどで再生できます。",
     "description": "Explanation shown in a snackbar when starting an MPD download."
   },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "選択されたメディアはMPEG-DASHストリームです。ビデオとオーディオのトラックがダウンロードされ、単一のMP4ファイルに結合されます。",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+  },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "\"$BASENAME$\" の個別のオーディオおよびビデオファイルをダウンロードしました。",
     "description": "Success message when separate audio and video files are downloaded.",
@@ -1695,6 +1760,14 @@
     "message": "設定の表示方法を選択します。",
     "description": "Explanation of the setting that controls the presentation layout of settings."
   },
+  "uiScaleTitle": {
+    "message": "UIスケール / DPI",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "拡張機能のインターフェースのサイズとスケールを調整します。",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
   "layoutDefault": {
     "message": "デフォルト",
     "description": "Label for the default settings layout."
@@ -1742,6 +1815,10 @@
   "groupBySubtitleTitle": {
     "message": "字幕",
     "description": "Folder title for subtitles."
+  },
+  "noSubtitles": {
+    "message": "字幕なし",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "groupByFileTitle": {
     "message": "その他のファイル",
@@ -1943,6 +2020,12 @@
   "sortNumberAsc": {
     "message": "数字 (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "サイズ (大きい順)"
+  },
+  "sortSizeAsc": {
+    "message": "サイズ (小さい順)"
+  },
   "optimizeLowEndTitle": {
     "message": "低スペックデバイス向けに最適化",
     "description": "Setting title for optimizing on low-end devices"
@@ -1950,21 +2033,6 @@
   "optimizeLowEndExplain": {
     "message": "CPU使用率を下げますが、一部のメディアを見逃す可能性があります。",
     "description": "Explanation for optimizing on low-end devices"
-  },
-  "limitMediaListTitle": {
-    "message": "検出されたメディアリストを制限する"
-  },
-  "limitMediaListExplain": {
-    "message": "表示されるメディアの数を制限して、遅延を減らします。"
-  },
-  "limitMediaListCustom": {
-    "message": "カスタム (0 = すべて)"
-  },
-  "limitMediaListCustomTitle": {
-    "message": "カスタムメディア制限"
-  },
-  "limitMediaListCustomExplain": {
-    "message": "カスタムメディア制限を入力 (0 = すべて)"
   },
   "uploadResumedTitle": {
     "message": "アップロード再開"
@@ -2040,12 +2108,6 @@
   "youtubeDetectionExplain": {
     "message": "YouTubeの動画および音声フォーマットの高度な検出。"
   },
-  "sortSizeDesc": {
-    "message": "サイズ (大きい順)"
-  },
-  "sortSizeAsc": {
-    "message": "サイズ (小さい順)"
-  },
   "downloadNormal": {
     "message": "ダウンロード (通常)"
   },
@@ -2100,14 +2162,6 @@
   "uploadSuccessDropbox": {
     "message": "$1 をDropboxに正常に保存しました！"
   },
-  "uiScaleTitle": {
-    "message": "UIスケール / DPI",
-    "description": "Title for UI scaling / DPI setting."
-  },
-  "uiScaleExplain": {
-    "message": "拡張機能のインターフェースのサイズとスケールを調整します。",
-    "description": "Explanation for UI scaling / DPI setting."
-  },
   "customUiScaleTitle": {
     "message": "カスタムスケール率 (50% - 150%)",
     "description": "Title for custom UI scale percentage input."
@@ -2119,10 +2173,6 @@
   "limitCustom": {
     "message": "カスタム制限",
     "description": "Label for custom limit setting option."
-  },
-  "noSubtitles": {
-    "message": "字幕なし",
-    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "allLanguagesZip": {
     "message": "すべての言語 (ZIP)",
@@ -2140,34 +2190,6 @@
     "message": "個別にzip圧縮するのではなく、選択可能な複数のオーディオトラックとして、すべてのオーディオトラックを最終的なビデオファイルに結合します。",
     "description": "Setting explanation for muxing all audio tracks on YouTube download."
   },
-  "embedSubtitlesMkvTitle": {
-    "message": "字幕の埋め込み (YouTube)",
-    "description": "Setting title for embedding all subtitle tracks"
-  },
-  "embedSubtitlesMkvExplain": {
-    "message": "有効にすると、すべての字幕をダウンロードしたときにMediabunnyを使用してビデオファイル (MKV/MP4) に埋め込みます。無効にすると、字幕はZIPアーカイブでダウンロードされます。",
-    "description": "Explanation for subtitle embedding setting"
-  },
-  "embedSubtitlesNonYtTitle": {
-    "message": "字幕を埋め込む (標準ビデオ)",
-    "description": "Setting title for embedding selected subtitle tracks on standard videos"
-  },
-  "embedSubtitlesNonYtExplain": {
-    "message": "有効にすると、標準ビデオアイテムに字幕選択カードが表示され、選択した字幕が埋め込まれます。",
-    "description": "Explanation for standard video subtitle embedding setting"
-  },
-  "selectSubtitlesToEmbed": {
-    "message": "埋め込む字幕を選択:",
-    "description": "Label for checklist to select subtitles to embed"
-  },
-  "embedSubtitlesContainerTitle": {
-    "message": "字幕埋め込みコンテナ形式",
-    "description": "Format selector title for subtitle embedding"
-  },
-  "allSubtitlesMux": {
-    "message": "すべての字幕 (埋め込み)",
-    "description": "Dropdown label when subtitles are embedded"
-  },
   "allLanguagesMux": {
     "message": "すべての言語 (埋め込み)",
     "description": "Option to download all audio tracks embedded in the video"
@@ -2182,9 +2204,5 @@
   "updateSourceLabel": {
     "message": "ソース:",
     "description": "Label for the update source in the update popup"
-  },
-  "confirmReinstalledBtn": {
-    "message": "再インストール済み",
-    "description": "Button to confirm reinstallation"
   }
 }

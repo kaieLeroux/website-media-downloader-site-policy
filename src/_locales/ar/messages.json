@@ -15,6 +15,10 @@
     "message": "تخطي",
     "description": "Reinstall warning skip button"
   },
+  "confirmReinstalledBtn": {
+    "message": "تمت إعادة التثبيت بالفعل",
+    "description": "Button to confirm reinstallation"
+  },
   "welcomeTitle": {
     "message": "هل أنت جديد على هذا الامتداد؟",
     "description": "Welcome popup title"
@@ -31,6 +35,34 @@
     "message": "تخطي",
     "description": "Welcome popup dismiss button"
   },
+  "embedSubtitlesMkvTitle": {
+    "message": "دمج الترجمات (يوتيوب)",
+    "description": "Setting title for embedding all subtitle tracks"
+  },
+  "embedSubtitlesMkvExplain": {
+    "message": "عند التفعيل، سيتم دمج جميع الترجمات التي تم تنزيلها في ملف الفيديو (MP4). عند التعطيل، يتم تنزيل الترجمات كأرشيف ZIP.",
+    "description": "Explanation for subtitle embedding setting"
+  },
+  "embedSubtitlesNonYtTitle": {
+    "message": "دمج الترجمة (فيديو قياسي)",
+    "description": "Setting title for embedding selected subtitle tracks on standard videos"
+  },
+  "embedSubtitlesNonYtExplain": {
+    "message": "عند التفعيل، يتم عرض بطاقة اختيار الترجمة على عناصر الفيديو القياسي لدمج الترجمات المحددة.",
+    "description": "Explanation for standard video subtitle embedding setting"
+  },
+  "selectSubtitlesToEmbed": {
+    "message": "اختر الترجمة للدمج:",
+    "description": "Label for checklist to select subtitles to embed"
+  },
+  "embedSubtitlesContainerTitle": {
+    "message": "تنسيق حاوية دمج الترجمة",
+    "description": "Format selector title for subtitle embedding"
+  },
+  "allSubtitlesMux": {
+    "message": "كل الترجمات (مدمجة)",
+    "description": "Dropdown label when subtitles are embedded"
+  },
   "actionTitle": {
     "message": "تنزيل الوسائط",
     "description": "The contents of the context menu when hovering over the extension icon."
@@ -38,6 +70,21 @@
   "extensionDescription": {
     "message": "قم بتنزيل مقاطع الفيديو والموسيقى والبث المباشر على جهازك!",
     "description": "The description of the extension shown in the browser's settings page."
+  },
+  "limitMediaListTitle": {
+    "message": "الحد من قائمة الوسائط المكتشفة"
+  },
+  "limitMediaListExplain": {
+    "message": "حدد عدد الوسائط المعروضة لتقليل التأخير."
+  },
+  "limitMediaListCustom": {
+    "message": "مخصص (0 = الكل)"
+  },
+  "limitMediaListCustomTitle": {
+    "message": "حد الوسائط المخصص"
+  },
+  "limitMediaListCustomExplain": {
+    "message": "أدخل حد الوسائط المخصص (0 = الكل)"
   },
   "errorTitle1": {
     "message": "حدث خطأ ما!",
@@ -390,6 +437,12 @@
   "mediaNotificationExplain": {
     "message": "يعرض نافذة منبثقة صغيرة مباشرة في الصفحة التي تتصفحها عند العثور على وسائط جديدة."
   },
+  "audioProcessNotificationCheckbox": {
+    "message": "إظهار إشعار تقدم تنزيل الصوت والبث وملفات zip"
+  },
+  "audioProcessNotificationExplain": {
+    "message": "يعرض تقدم تنزيل الصوت والبث وملفات zip داخل صفحات الويب. تستمر مهمة الخلفية عند تعطيلها."
+  },
   "mediaSystemNotificationCheckbox": {
     "message": "إظهار إشعار الجهاز عند اكتشاف وسائط"
   },
@@ -507,6 +560,14 @@
   "mpdFixCheckbox": {
     "message": "إصلاح ملفات MPD (موصى به)",
     "description": "The label of the checkbox to enable the MPD fix option."
+  },
+  "mpdToMp4Checkbox": {
+    "message": "دمج صوت وفيديو MPD في ملف MP4",
+    "description": "The label of the checkbox to enable merging MPD video and audio tracks."
+  },
+  "mpdToMp4Explain": {
+    "message": "دمج مسارات الفيديو والصوت المختارة في ملف MP4 واحد بدلاً من ضغطها في ملف ZIP.",
+    "description": "The explanation of the merge MPD option."
   },
   "openPreference": {
     "message": "تفضيل فتح الإضافة",
@@ -1118,6 +1179,10 @@
     "message": "الوسائط المحددة هي بث MPEG-DASH. سيؤدي هذا إلى تنزيل بثوث الفيديو والصوت بشكل منفصل، معبأة في ملف ZIP، بحيث يمكنك تشغيل ملف .mpd في ملف ZIP باستخدام VLC أو أي مشغل متوافق آخر.",
     "description": "Explanation shown in a snackbar when starting an MPD download."
   },
+  "mpdDownloadMergeExplainSnackbar": {
+    "message": "الوسائط المحددة هي بث MPEG-DASH. سيتم تنزيل مسارات الفيديو والصوت ودمجها في ملف MP4 واحد.",
+    "description": "Explanation shown in a snackbar when starting an MPD download to be merged into MP4."
+  },
   "splitAudioVideoDownloadCompleteSuccess": {
     "message": "تم تنزيل ملفات الصوت والفيديو المنفصلة لـ \"$BASENAME$\".",
     "description": "Success message when separate audio and video files are downloaded.",
@@ -1695,6 +1760,14 @@
     "message": "اختر طريقة عرض الإعدادات.",
     "description": "Explanation of the setting that controls the presentation layout of settings."
   },
+  "uiScaleTitle": {
+    "message": "حجم واجهة المستخدم (DPI)",
+    "description": "Title for UI scaling / DPI setting."
+  },
+  "uiScaleExplain": {
+    "message": "ضبط مقياس وحجم عناصر واجهة الإضافة.",
+    "description": "Explanation for UI scaling / DPI setting."
+  },
   "layoutDefault": {
     "message": "افتراضي",
     "description": "Label for the default settings layout."
@@ -1742,6 +1815,10 @@
   "groupBySubtitleTitle": {
     "message": "الترجمات",
     "description": "Folder title for subtitles."
+  },
+  "noSubtitles": {
+    "message": "بلا ترجمة",
+    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "groupByFileTitle": {
     "message": "ملفات أخرى",
@@ -1943,6 +2020,12 @@
   "sortNumberAsc": {
     "message": "الأرقام (0-9)"
   },
+  "sortSizeDesc": {
+    "message": "الحجم (الأكبر أولاً)"
+  },
+  "sortSizeAsc": {
+    "message": "الحجم (الأصغر أولاً)"
+  },
   "optimizeLowEndTitle": {
     "message": "تحسين للأجهزة الضعيفة",
     "description": "Setting title for optimizing on low-end devices"
@@ -1950,21 +2033,6 @@
   "optimizeLowEndExplain": {
     "message": "يقلل من استهلاك المعالج ولكن قد يغفل بعض الوسائط.",
     "description": "Explanation for optimizing on low-end devices"
-  },
-  "limitMediaListTitle": {
-    "message": "الحد من قائمة الوسائط المكتشفة"
-  },
-  "limitMediaListExplain": {
-    "message": "حدد عدد الوسائط المعروضة لتقليل التأخير."
-  },
-  "limitMediaListCustom": {
-    "message": "مخصص (0 = الكل)"
-  },
-  "limitMediaListCustomTitle": {
-    "message": "حد الوسائط المخصص"
-  },
-  "limitMediaListCustomExplain": {
-    "message": "أدخل حد الوسائط المخصص (0 = الكل)"
   },
   "uploadResumedTitle": {
     "message": "تم استئناف الرفع"
@@ -2040,12 +2108,6 @@
   "youtubeDetectionExplain": {
     "message": "اكتشاف متقدم لمقاطع فيديو وتنسيقات الصوت في يوتيوب."
   },
-  "sortSizeDesc": {
-    "message": "الحجم (الأكبر أولاً)"
-  },
-  "sortSizeAsc": {
-    "message": "الحجم (الأصغر أولاً)"
-  },
   "downloadNormal": {
     "message": "تنزيل (عادي)"
   },
@@ -2100,14 +2162,6 @@
   "uploadSuccessDropbox": {
     "message": "تم حفظ $1 بنجاح في Dropbox!"
   },
-  "uiScaleTitle": {
-    "message": "حجم واجهة المستخدم (DPI)",
-    "description": "Title for UI scaling / DPI setting."
-  },
-  "uiScaleExplain": {
-    "message": "ضبط مقياس وحجم عناصر واجهة الإضافة.",
-    "description": "Explanation for UI scaling / DPI setting."
-  },
   "customUiScaleTitle": {
     "message": "نسبة المقياس المخصصة (50% - 150%)",
     "description": "Title for custom UI scale percentage input."
@@ -2119,10 +2173,6 @@
   "limitCustom": {
     "message": "حد مخصص",
     "description": "Label for custom limit setting option."
-  },
-  "noSubtitles": {
-    "message": "بلا ترجمة",
-    "description": "Label for selecting no subtitles in Youtube multi-track options."
   },
   "allLanguagesZip": {
     "message": "كل اللغات (ZIP)",
@@ -2140,34 +2190,6 @@
     "message": "يجمع كل المسارات الصوتية في ملف الفيديو النهائي كمسارات صوتية متعددة قابلة للتحديد بدلاً من ضغطها بشكل منفصل في ملف zip.",
     "description": "Setting explanation for muxing all audio tracks on YouTube download."
   },
-  "embedSubtitlesMkvTitle": {
-    "message": "دمج الترجمات (يوتيوب)",
-    "description": "Setting title for embedding all subtitle tracks"
-  },
-  "embedSubtitlesMkvExplain": {
-    "message": "عند التفعيل، سيتم دمج جميع الترجمات التي تم تنزيلها في ملف الفيديو (MKV/MP4) باستخدام Mediabunny. عند التعطيل، يتم تنزيل الترجمات كأرشيف ZIP.",
-    "description": "Explanation for subtitle embedding setting"
-  },
-  "embedSubtitlesNonYtTitle": {
-    "message": "دمج الترجمة (فيديو قياسي)",
-    "description": "Setting title for embedding selected subtitle tracks on standard videos"
-  },
-  "embedSubtitlesNonYtExplain": {
-    "message": "عند التفعيل، يتم عرض بطاقة اختيار الترجمة على عناصر الفيديو القياسي لدمج الترجمات المحددة.",
-    "description": "Explanation for standard video subtitle embedding setting"
-  },
-  "selectSubtitlesToEmbed": {
-    "message": "اختر الترجمة للدمج:",
-    "description": "Label for checklist to select subtitles to embed"
-  },
-  "embedSubtitlesContainerTitle": {
-    "message": "تنسيق حاوية دمج الترجمة",
-    "description": "Format selector title for subtitle embedding"
-  },
-  "allSubtitlesMux": {
-    "message": "كل الترجمات (مدمجة)",
-    "description": "Dropdown label when subtitles are embedded"
-  },
   "allLanguagesMux": {
     "message": "كل اللغات (مدمجة)",
     "description": "Option to download all audio tracks embedded in the video"
@@ -2182,9 +2204,5 @@
   "updateSourceLabel": {
     "message": "المصدر:",
     "description": "Label for the update source in the update popup"
-  },
-  "confirmReinstalledBtn": {
-    "message": "تمت إعادة التثبيت بالفعل",
-    "description": "Button to confirm reinstallation"
   }
 }
