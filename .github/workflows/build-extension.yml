@@ -51,7 +51,7 @@ jobs:
       - name: Create Source Code Archives
         run: |
           # Firefox clean source code (mirrors root: src/ folder, metadata in root)
-          zip -9 -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js" "src/minify.js"
+          zip -9 -r website-media-downloader-firefox-source-${{ steps.get_version.outputs.version }}.zip src README.md LICENSE.md CONTRIBUTING.md licenses -x "src/overrides/*" "src/build.js" "src/minify.js" "src/chrome_audio_jobs.js" "src/offscreen.html" "src/offscreen.js"
 
           # Chrome clean source code (mirrors root: src/ folder with overrides applied, metadata in root)
           mkdir -p chrome-source-temp/src
