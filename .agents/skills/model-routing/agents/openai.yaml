@@ -1,0 +1,3 @@
+interface:
+  display_name: "モデル振り分け"
+  short_description: "品質を保ってモデルと推論量を最適化"

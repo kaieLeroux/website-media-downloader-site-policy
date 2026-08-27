@@ -1,0 +1,18 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# Quality-first parent default. Specialized work is routed to the cheaper
+# project agents below instead of lowering this safety net globally.
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
+model_verbosity = "medium"
+
+# /review is intentionally independent of the parent model. Terra at the
+# current medium effort is the normal review path; AGENTS.md defines when to
+# use the high-effort reviewer or Sol deep reviewer instead.
+review_model = "gpt-5.6-terra"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+default_subagent_model = "gpt-5.6-terra"
+default_subagent_reasoning_effort = "medium"

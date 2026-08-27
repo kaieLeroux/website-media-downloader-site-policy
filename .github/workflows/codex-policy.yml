@@ -1,0 +1,47 @@
+name: Codex Policy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - wmd-1
+    paths:
+      - AGENTS.md
+      - .codex/**
+      - .agents/skills/model-routing/**
+      - docs/CODEX_MODEL_ROUTING_JA.md
+      - scripts/check_codex_policy.py
+      - scripts/install_codex_user_policy.py
+      - tests/test_codex_user_policy.py
+      - .github/workflows/codex-policy.yml
+  pull_request:
+    paths:
+      - AGENTS.md
+      - .codex/**
+      - .agents/skills/model-routing/**
+      - docs/CODEX_MODEL_ROUTING_JA.md
+      - scripts/check_codex_policy.py
+      - scripts/install_codex_user_policy.py
+      - tests/test_codex_user_policy.py
+      - .github/workflows/codex-policy.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate policy
+        run: python3 scripts/check_codex_policy.py
+
+      - name: Test user installer
+        run: python3 -m unittest tests/test_codex_user_policy.py

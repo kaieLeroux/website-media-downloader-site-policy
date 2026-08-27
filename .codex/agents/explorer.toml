@@ -1,0 +1,11 @@
+name = "explorer"
+description = "Read-only repository explorer for locating the smallest relevant code path and returning evidence."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "low"
+sandbox_mode = "read-only"
+developer_instructions = """
+Stay in exploration mode. Use targeted search and small file reads. Trace entry
+points, configuration layers, and affected call paths. Return concise file and
+symbol evidence plus unresolved questions. Do not edit files or propose a broad
+redesign.
+"""
