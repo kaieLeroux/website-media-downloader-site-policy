@@ -21,6 +21,66 @@ if (typeof browser === 'undefined') {
 }
 
 const tabMetadata = new Map(); // tabId -> { title, url }
+const allowedTabPolicies = new Map();
+let sitePoliciesReady = false;
+const policyCounters = { webRequestEvents: 0, rejectedByGate: 0, candidates: 0, storedCandidates: 0, autoDownloads: 0 };
+
+function policyForTab(tabId) { return Number.isInteger(tabId) && tabId >= 0 ? allowedTabPolicies.get(tabId) || null : null; }
+function requestAllowed(details) {
+    policyCounters.webRequestEvents++;
+    const allowed = !!policyForTab(details?.tabId);
+    if (!allowed) policyCounters.rejectedByGate++;
+    return allowed;
+}
+async function updateTabPolicy(tabId, url) {
+    const policy = SitePolicy.matchSitePolicy(url);
+    if (policy?.enabled) allowedTabPolicies.set(tabId, policy); else allowedTabPolicies.delete(tabId);
+}
+(async () => {
+    try {
+        const response = await fetch(browser.runtime.getURL('site-policies.json'));
+        SitePolicy.configure(await response.json());
+        const tabs = await browser.tabs.query({});
+        await Promise.all(tabs.map(tab => updateTabPolicy(tab.id, tab.url)));
+        sitePoliciesReady = true;
+    } catch (error) { console.error('[site-policy] failed to initialize; detection remains denied', error); }
+})();
+browser.tabs.onUpdated.addListener((tabId, change, tab) => { if (change.url || tab.url) updateTabPolicy(tabId, change.url || tab.url); });
+browser.tabs.onRemoved.addListener(tabId => allowedTabPolicies.delete(tabId));
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.action !== 'getSitePolicyStatus') return;
+    const respond = tabId => {
+        const p = policyForTab(tabId);
+        sendResponse({ ready: sitePoliciesReady, enabled: !!p, policy: p ? {
+            id: p.id, autoDownload: p.autoDownload, media: p.media, silent: p.silent,
+            quietWindowMs: p.quietWindowMs, maxWaitMs: p.maxWaitMs
+        } : null, counters: policyCounters });
+    };
+    if (message.tabId != null) respond(message.tabId);
+    else browser.tabs.query({ active: true, currentWindow: true }).then(tabs => respond(tabs[0]?.id));
+    return true;
+});
+
+const autoArchiveCoordinator = new AutoArchive.Coordinator(async candidate => {
+    const safeBase = String(candidate.pageTitle || 'media').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 160) || 'media';
+    if (candidate.ytFormats?.length) {
+        const format = [...candidate.ytFormats].sort((a, b) => (b.height || 0) - (a.height || 0) || (b.bitrate || 0) - (a.bitrate || 0))[0];
+        const response = await browser.runtime.sendMessage({
+            action: 'startPersistentAudioJob', url: format.videoUrl, audioUrl: format.audioUrl || null,
+            filename: `${safeBase}.${format.demuxer || 'mp4'}`, isYouTube: true, audioOnly: false,
+            request: candidate.request || {}, downloadMethod: 'browser'
+        });
+        if (!response?.success) throw new Error(response?.error || 'Unable to start YouTube mux job');
+    } else if (SitePolicy.mediaType(candidate) === 'stream') {
+        const response = await browser.runtime.sendMessage({ action: 'startPersistentStreamJob', url: candidate.url,
+            filename: `${safeBase}.mp4`, quality: 'highest', request: candidate.request || {}, downloadMethod: 'browser' });
+        if (!response?.success) throw new Error(response?.error || 'Unable to start stream reconstruction');
+    } else {
+        await browser.downloads.download({ url: candidate.url, filename: safeBase, saveAs: false, conflictAction: 'uniquify' });
+    }
+    policyCounters.autoDownloads++;
+    return true;
+});
 
 const m3u8VariantsCacheBg = new Map();
 
@@ -497,7 +557,7 @@ let cachedSettings = {
     urlDetection: true,
     youtubeDetection: true,
     mediaNotification: true,
-    mediaSystemNotification: true,
+    mediaSystemNotification: false,
     stackNotifications: false,
     hideSegments: false,
     hidePageComponents: true,
@@ -523,8 +583,8 @@ function getSettings(callback) {
             mimeDetection: isFlagEnabled(result['mime-detection'], true),
             urlDetection: isFlagEnabled(result['url-detection'], true),
             youtubeDetection: isFlagEnabled(result['youtube-detection'], true),
-            mediaNotification: isFlagEnabled(result['media-notification'], true),
-            mediaSystemNotification: isFlagEnabled(result['media-system-notification'], true),
+            mediaNotification: isFlagEnabled(result['media-notification'], false),
+            mediaSystemNotification: isFlagEnabled(result['media-system-notification'], false),
             stackNotifications: isFlagEnabled(result['stack-notifications'], false),
             hideSegments: isFlagEnabled(result['hide-segments'], false),
             hidePageComponents: isFlagEnabled(result['hide-page-components'], true),
@@ -1771,6 +1831,7 @@ function initListener() {
 
         beforeRequestListener = function (details) {
             try {
+                if (!requestAllowed(details)) return;
                 if (!details || !details.requestBody) return;
                 const mType = getMediaType(details.url);
                 if (isMediaTypeDisabled(mType, cachedSettings)) return;
@@ -1832,6 +1893,7 @@ function initListener() {
         }
 
         beforeSendHeadersListener = async function (details) {
+            if (!requestAllowed(details)) return {};
             const cookie = details.requestHeaders?.find(h => h.name.toLowerCase() === 'cookie')?.value || '';
             temporaryCookieMap.set(details.requestId, cookie);
 
@@ -1846,6 +1908,7 @@ function initListener() {
 
         headersSentListener = async function (details) {
             try {
+                if (!requestAllowed(details)) return;
                 const mType = getMediaType(details.url);
                 if (isMediaTypeDisabled(mType, cachedSettings)) return;
 
@@ -1912,6 +1975,7 @@ function initListener() {
 
         headersReceivedListener = async function (details) {
             try {
+                if (!requestAllowed(details)) return;
 
                 const responseHeaders = details.responseHeaders || [];
                 let size = 'unknown';
@@ -2020,6 +2084,12 @@ function initListener() {
                             };
                             if (!isDrmMedia) {
                                 existingRequests.push(mediaRequest);
+                                const policy = policyForTab(details.tabId);
+                                policyCounters.candidates++;
+                                if (autoArchiveCoordinator.add({
+                                    url: details.url, pageUrl, pageTitle, contentLength: size, type: mType,
+                                    request: mediaRequest
+                                }, policy)) policyCounters.storedCandidates++;
                             }
                         }
 
@@ -2701,6 +2771,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.action === 'reportDetectedMedia') {
+        const sourcePolicy = policyForTab(sender.tab?.id);
+        if (!sourcePolicy) return false;
         getSettings(function(settings) {
             let { urls, pageTitle, pageUrl, is_youtube, ytFormats, ytSubtitles } = message;
             if (!urls || !Array.isArray(urls)) return;
@@ -2849,6 +2921,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 if (hasNew) {
                     browser.storage.session.set(updates);
+                    for (const url in updates) {
+                        const req = updates[url][0];
+                        policyCounters.candidates++;
+                        if (autoArchiveCoordinator.add({ url, pageUrl: req.pageUrl, pageTitle: req.pageTitle,
+                            contentLength: req.size, type: getMediaType(url), request: req,
+                            ytFormats: req.ytFormats || ytFormats }, sourcePolicy)) policyCounters.storedCandidates++;
+                    }
 
                     if (settings.mediaNotification) {
                         for (const url in updates) {

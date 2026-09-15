@@ -35,8 +35,8 @@
 
     let cachedContentSettings = {};
     function processNotificationsEnabled() {
-        return cachedContentSettings['audio-process-notification'] !== '0' &&
-            cachedContentSettings['audio-process-notification'] !== false;
+        return cachedContentSettings['audio-process-notification'] === '1' ||
+            cachedContentSettings['audio-process-notification'] === true;
     }
 
     async function updateSettingsCache() {

@@ -17,8 +17,21 @@
 */
 
 if (typeof browser === 'undefined') {
-  var browser = chrome;
+    var browser = chrome;
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const panel = document.createElement('section');
+  panel.id = 'site-policy-status';
+  panel.style.cssText = 'margin:12px;padding:12px;border:1px solid #777;border-radius:12px;white-space:pre-line';
+  panel.textContent = 'Site Policy: loading…';
+  (document.querySelector('main') || document.body).prepend(panel);
+  try {
+    const status = await browser.runtime.sendMessage({ action: 'getSitePolicyStatus' });
+    const p = status?.policy;
+    panel.textContent = p ? `Site Policy: ${p.id}\nGlobal Auto Archive: ${p.autoDownload ? 'ON' : 'OFF'} · Site: ON\nVideo ${p.media.video?'ON':'OFF'} · Audio ${p.media.audio?'ON':'OFF'} · Images ${p.media.image} · Subtitles ${p.media.subtitle?'ON':'OFF'}\nSilent ${p.silent?'ON':'OFF'} · Quiet ${p.quietWindowMs}ms · Max ${p.maxWaitMs}ms` : 'Site Policy: disabled for current site\nGlobal Auto Archive: ON · Site: OFF';
+  } catch (_) { panel.textContent = 'Site Policy: unavailable'; }
+});
 
 async function ensureScriptLoaded(src, globalVarName) {
   if (typeof window[globalVarName] !== 'undefined') return;

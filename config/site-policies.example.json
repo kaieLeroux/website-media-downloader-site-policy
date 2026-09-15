@@ -1,0 +1,17 @@
+{
+  "policies": [
+    {
+      "id": "example-gallery",
+      "domains": ["media.example.org"],
+      "pathPrefix": "/works/",
+      "enabled": true,
+      "autoDownload": true,
+      "highestQualityOnly": true,
+      "media": { "video": true, "audio": true, "stream": true, "image": "ORIGINAL_ONLY", "subtitle": false },
+      "silent": true,
+      "quietWindowMs": 3000,
+      "maxWaitMs": 15000,
+      "drm": "SKIP"
+    }
+  ]
+}
