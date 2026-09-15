@@ -1,0 +1,5 @@
+config/site-policies.local.json
+build/
+node_modules/
+
+artifacts/*.xpi

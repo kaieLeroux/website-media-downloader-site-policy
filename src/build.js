@@ -141,6 +141,22 @@ function finalizeManifest(target, outDir) {
     const manifestPath = path.join(outDir, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
+    const localPolicyPath = path.join(ROOT, 'config', 'site-policies.local.json');
+    if (fs.existsSync(localPolicyPath)) {
+        const local = JSON.parse(fs.readFileSync(localPolicyPath, 'utf8'));
+        fs.writeFileSync(path.join(outDir, 'site-policies.json'), JSON.stringify(local, null, 2) + '\n');
+        const matches = [];
+        for (const policy of local.policies || []) {
+            if (!policy.enabled) continue;
+            for (const rawDomain of policy.domains || []) {
+                const domain = rawDomain.replace(/^\*\./, '');
+                const pathMatch = policy.pathPrefix ? `${policy.pathPrefix.replace(/\*+$/, '')}*` : '/*';
+                matches.push(`*://${domain}${pathMatch}`, `*://*.${domain}${pathMatch}`);
+            }
+        }
+        if (matches.length && manifest.content_scripts?.[0]) manifest.content_scripts[0].matches = [...new Set(matches)];
+    }
+
     if (target === 'firefox') {
         manifest.permissions = (manifest.permissions || []).filter(permission => permission !== 'offscreen');
         if (manifest.background) delete manifest.background.service_worker;

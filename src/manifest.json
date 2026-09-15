@@ -1,7 +1,7 @@
 {
-    "name": "Website Media Downloader",
+    "name": "Website Media Downloader — Site Policy",
     "manifest_version": 3,
-    "version": "2.3.2",
+    "version": "2.3.2.1",
     "description": "__MSG_extensionDescription__",
     "author": "anpa26",
     "developer": {
@@ -10,7 +10,7 @@
     },
     "browser_specific_settings": {
         "gecko": {
-            "id": "{924f7c81-8b1e-4b6e-9e7c-8e4a9e1d2c3f}",
+            "id": "website-media-downloader-site-policy@local.invalid",
             "data_collection_permissions": {
                 "required": [
                     "none"
@@ -50,6 +50,8 @@
         "service_worker": "network_detector.js",
         "scripts": [
             "libraries/wymd.js",
+            "site_policy.js",
+            "auto_archive.js",
             "stream_jobs.js",
             "network_detector.js"
         ]
@@ -57,7 +59,7 @@
     "content_scripts": [
         {
             "matches": [
-                "<all_urls>"
+                "*://media.example.org/works/*"
             ],
             "css": [
                 "styles/content-toast.css"
